@@ -1,5 +1,6 @@
 # Petbot
-## A discord bot by RustedAperture 2024
+A discord bot by RustedAperture 2024
+
 ---
 
 ## Setup
