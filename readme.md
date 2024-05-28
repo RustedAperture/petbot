@@ -1,8 +1,6 @@
 # Petbot
 A discord bot by RustedAperture 2024
 
----
-
 ## Setup
 1. In root directory create `config.json` with the below code
 ```json
