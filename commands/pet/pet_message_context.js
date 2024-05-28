@@ -74,6 +74,6 @@ module.exports = {
             .setImage(petdata[guild][target.id]["url"])
             .setFooter({ text: `${target.displayName} has been pet ${petdata[guild][target.id]["has_been_pet"]} times`, iconURL: target.displayAvatarURL() });
 		
-        await interaction.reply({ embeds: [petEmbed] });
-	},
+        await interaction.reply({ content: `<@${target.id}>`, embeds: [petEmbed] });
+    },
 };

@@ -3,6 +3,8 @@ const fs = require('fs').promises;
 const { checkUser } = require('../../utilities/check_user');
 const { log } = require('../../utilities/log');
 const botData = require('../../data/bot_settings.json')
+const { checkImage } = require('../../utilities/check_image')
+
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -34,10 +36,14 @@ module.exports = {
 
         const logMsg = `${interaction.member.displayName} has updated ${target.displayName} image`
 
-        petData[guild][target.id]["url"] = url
-        await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
-        await interaction.reply({ content: `Updated ${target.displayName} image to the new url`, ephemeral: true });
+        if (await checkImage(url)){
+            petData[guild][target.id]["url"] = url
+            await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
+            await interaction.reply({ content: `Updated ${target.displayName} image to the new url`, ephemeral: true });
 
-        await log('Updated Pet Image', logMsg, channel, url)
+            await log('Updated Pet Image', logMsg, channel, url)
+        } else {
+            await interaction.reply({ content: `Invalid url please try again.`, ephemeral: true });
+        }
     }
 }

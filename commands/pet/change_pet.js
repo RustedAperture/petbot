@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const { log } = require('../../utilities/log')
 const botData = require('../../data/bot_settings.json')
 const { checkUser } = require('../../utilities/check_user')
+const { checkImage } = require('../../utilities/check_image')
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -35,11 +36,15 @@ module.exports = {
 
         if (interaction.options.getSubcommand() === 'update') {
             const url = interaction.options.getString('url')
-            petData[guild][target.id]["url"] = url
-            await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
-            await interaction.reply({ content: 'Updated your image to the new url', ephemeral: true });
-            let log_msg = `${target.displayName} has updated their image`
-            await log('Updated Pet Image', log_msg, channel, url)
+            if (await checkImage(url)){
+                petData[guild][target.id]["url"] = url
+                await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
+                await interaction.reply({ content: 'Updated your image to the new url', ephemeral: true });
+                let log_msg = `${target.displayName} has updated their image`
+                await log('Updated Pet Image', log_msg, channel, url)
+            } else {
+                await interaction.reply({ content: 'Your URL is invalid, please try again', ephemeral: true });
+            }
         } else if (interaction.options.getSubcommand() === 'remove') {
             petData[guild][target.id]["url"] = botData[guild]["default_pet"]
             await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
