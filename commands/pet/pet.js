@@ -62,19 +62,21 @@ module.exports = {
         const author = interaction.member
         const guild = interaction.guildId
 
-        let targets = [target1]
+        const targets = new Set([target1])
         if (target2) {
-            targets.push(target2);
+            targets.add(target2);
         }
         if (target3) {
-            targets.push(target3);
+            targets.add(target3);
         }
+
+        const uniqueTargets = [...targets];
 
         await checkUser(author, guild)
 
         let embeds = []
         
-        for (const target of targets) {
+        for (const target of uniqueTargets) {
             const data = await fs.readFile('data/pet_data.json', 'utf-8');
             const petData = JSON.parse(data);
 
@@ -95,8 +97,8 @@ module.exports = {
             embeds.push(petEmbed)
         }
 
-		for (let i = 0; i < targets.length; i++) {
-            const target = targets[i];
+		for (let i = 0; i < uniqueTargets.length; i++) {
+            const target = uniqueTargets[i];
             if (i == 0) {
                 await interaction.reply({ content: `<@${target.id}>`, embeds: [embeds[i]]});
             } else {
