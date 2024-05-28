@@ -16,7 +16,7 @@ module.exports = {
         const petdata = JSON.parse(data);
         const guild = interaction.guildId
 
-        let target = interaction.options.get('target');
+        let target = interaction.options.getMember('target');
         if(!target) {
             target = interaction.member
         }
