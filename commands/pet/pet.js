@@ -39,31 +39,65 @@ module.exports = {
 		.setDescription('Pets another user')
         .addUserOption(option =>
             option
-                .setName('target')
+                .setName('target1')
                 .setDescription('The user you want to pet')
                 .setRequired(true)
+        )
+        .addUserOption(option =>
+            option
+                .setName('target2')
+                .setDescription('The user you want to pet')
+                .setRequired(false)
+        )
+        .addUserOption(option =>
+            option
+                .setName('target3')
+                .setDescription('The user you want to pet')
+                .setRequired(false)
         ),
 	async execute(interaction) {
-        const target = await interaction.options.getMember('target').fetch(true);
+        const target1 = await interaction.options.getMember('target1').fetch(true);
+        const target2 = await interaction.options.getMember('target2').fetch(true);
+        const target3 = await interaction.options.getMember('target3').fetch(true);
         const author = interaction.member
         const guild = interaction.guildId
 
-        await checkUser(target, guild)
+        let targets = [target1]
+        targets.push(target2 ?? null);
+        targets.push(target3 ?? null);
+
         await checkUser(author, guild)
 
         const data = await fs.readFile('data/pet_data.json', 'utf-8');
         const petData = JSON.parse(data);
 
-        increaseIntegerInJson('data/pet_data.json', guild, target.id, 'has_been_pet')
-        increaseIntegerInJson('data/pet_data.json', guild, author.id, 'has_pet')
+        let embeds = []
+        
+        for (const target of targets) {
 
-        const petEmbed = new EmbedBuilder()
-            .setColor(target.displayHexColor)
-            .setTitle(`${target.displayName} has been pet`)
-            .setAuthor({ name: author.displayName, iconURL: author.displayAvatarURL()})
-            .setImage(petData[guild][target.id]["url"])
-            .setFooter({ text: `${target.displayName} has been pet ${petData[guild][target.id]["has_been_pet"]} times`, iconURL: target.displayAvatarURL() });
-		
-        await interaction.reply({ content: `<@${target.id}>`, embeds: [petEmbed] });
+            await checkUser(target, guild)
+
+            increaseIntegerInJson('data/pet_data.json', guild, target.id, 'has_been_pet')
+            increaseIntegerInJson('data/pet_data.json', guild, author.id, 'has_pet')
+
+            const petEmbed = new EmbedBuilder()
+                .setColor(target.displayHexColor)
+                .setTitle(`${target.displayName} has been pet`)
+                .setAuthor({ name: author.displayName, iconURL: author.displayAvatarURL()})
+                .setImage(petData[guild][target.id]["url"])
+                .setFooter({ text: `${target.displayName} has been pet ${petData[guild][target.id]["has_been_pet"]} times`, iconURL: target.displayAvatarURL() });
+        
+            embeds.push(petEmbed)
+
+        }
+
+		for (let i = 0; i < targets.length; i++) {
+            const target = targets[i];
+            if (i == 0) {
+                await interaction.reply({ content: `<@${target.id}>`, embeds: [embeds[i]]});
+            } else {
+                await interaction.channel.send({ content: `<@${target.id}>`, embeds: [embeds[i]]});
+            }
+        }
 	},
 };
