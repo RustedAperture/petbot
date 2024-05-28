@@ -2,6 +2,9 @@
 A discord bot by RustedAperture 2024
 
 ## Setup
+
+**NOTE**: This bot is to be setup on your own. It does support running on multiple guilds at once but I do not have the proccessing power to host it.
+
 1. In root directory create `config.json` with the below code
 ```json
 {
