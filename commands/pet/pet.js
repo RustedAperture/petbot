@@ -56,29 +56,34 @@ module.exports = {
                 .setRequired(false)
         ),
 	async execute(interaction) {
-        const target1 = await interaction.options.getMember('target1').fetch(true);
-        const target2 = await interaction.options.getMember('target2').fetch(true);
-        const target3 = await interaction.options.getMember('target3').fetch(true);
+        const target1 = await interaction.options.getMember('target1');
+        const target2 = await interaction.options.getMember('target2');
+        const target3 = await interaction.options.getMember('target3');
         const author = interaction.member
         const guild = interaction.guildId
 
         let targets = [target1]
-        targets.push(target2 ?? null);
-        targets.push(target3 ?? null);
+        if (target2) {
+            targets.push(target2);
+        }
+        if (target3) {
+            targets.push(target3);
+        }
 
         await checkUser(author, guild)
-
-        const data = await fs.readFile('data/pet_data.json', 'utf-8');
-        const petData = JSON.parse(data);
 
         let embeds = []
         
         for (const target of targets) {
+            const data = await fs.readFile('data/pet_data.json', 'utf-8');
+            const petData = JSON.parse(data);
+
+            await target.fetch(true)
 
             await checkUser(target, guild)
 
-            increaseIntegerInJson('data/pet_data.json', guild, target.id, 'has_been_pet')
-            increaseIntegerInJson('data/pet_data.json', guild, author.id, 'has_pet')
+            await increaseIntegerInJson('data/pet_data.json', guild, target.id, 'has_been_pet')
+            await increaseIntegerInJson('data/pet_data.json', guild, author.id, 'has_pet')
 
             const petEmbed = new EmbedBuilder()
                 .setColor(target.displayHexColor)
@@ -88,7 +93,6 @@ module.exports = {
                 .setFooter({ text: `${target.displayName} has been pet ${petData[guild][target.id]["has_been_pet"]} times`, iconURL: target.displayAvatarURL() });
         
             embeds.push(petEmbed)
-
         }
 
 		for (let i = 0; i < targets.length; i++) {
