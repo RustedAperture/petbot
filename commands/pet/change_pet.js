@@ -40,8 +40,8 @@ module.exports = {
                 petData[guild][target.id]["url"] = url
                 await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
                 await interaction.reply({ content: 'Updated your image to the new url', ephemeral: true });
-                let log_msg = `${target.displayName} has updated their image`
-                await log('Updated Pet Image', log_msg, channel, url)
+                let log_msg = `${target.displayName} pet image has been updated.`
+                await log('Updated Pet Image', log_msg, channel, `<@${interaction.member.id}>`, url)
             } else {
                 await interaction.reply({ content: 'Your URL is invalid, please try again', ephemeral: true });
             }
@@ -49,8 +49,8 @@ module.exports = {
             petData[guild][target.id]["url"] = botData[guild]["default_pet"]
             await fs.writeFile('data/pet_data.json', JSON.stringify(petData, null, 2), 'utf-8');
             await interaction.reply({ content: 'Reset image to default image', ephemeral: true });
-            let log_msg = `${target.displayName} has reset their image`
-            await log('Updated Pet Image', log_msg, channel, botData[guild]["default_pet"])
+            let log_msg = `${target.displayName} pet image has been reset`
+            await log('Updated Pet Image', log_msg, channel, `<@${interaction.member.id}>`, botData[guild]["default_pet"])
         }
 	},
 };

@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 
-exports.log = async (title, desc, channel, image=null) => {
+exports.log = async (title, desc, channel, trigger, image=null, reason=null) => {
     let logEmbed = new EmbedBuilder()
 
     if(!image){
@@ -8,6 +8,12 @@ exports.log = async (title, desc, channel, image=null) => {
     } else {
         logEmbed.setTitle(title).setDescription(desc).setThumbnail(image)
     }
+
+    if(reason != null){
+        logEmbed.addFields({ name: 'Reason:', value: reason})
+    }
+
+    logEmbed.addFields({ name: 'Triggered By:', value: trigger})
 
     channel.send({embeds: [logEmbed]})
 }

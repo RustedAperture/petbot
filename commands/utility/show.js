@@ -18,10 +18,17 @@ module.exports = {
                 .setDescription('The channel you want to hide')
                 .setRequired(false)
         )
+        .addStringOption(option =>
+            option
+                .setName('reason')
+                .setDescription('The reason you are hiding')
+                .setRequired(false)
+        )
         .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
 	async execute(interaction) {
         let channel = interaction.options.getChannel('channel')
         let target = interaction.options.getMember('target')
+        let reason = interaction.options.getString('reason')
         const guild = interaction.guildId
         const logChannel = await interaction.guild.channels.fetch(botData[guild]["log_channel"])
 
@@ -33,11 +40,15 @@ module.exports = {
             target = interaction.member
         }
 
+        if(!reason) {
+            reason = "None"
+        }
+
         const logMsg = `<#${channel.id}> has been revealed to <@${target.id}>`
 
         channel.permissionOverwrites.create(target, { ViewChannel: true });
 
-        await log('Channel Permission Update!', logMsg, logChannel)
+        await log('Channel Permission Update!', logMsg, logChannel, `<@${interaction.member.id}>`, undefined, reason)
         interaction.reply({content: logMsg, ephemeral: true})
     }
 }
