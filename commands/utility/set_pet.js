@@ -35,7 +35,9 @@ module.exports = {
 	async execute(interaction) {
 		const url = interaction.options.getString("url");
 		const target = interaction.options.getMember("target");
-		const reason = interaction.options.getString("reason");
+
+		let reason = interaction.options.getString("reason");
+
 		const guild = interaction.guildId;
 		const channel = await interaction.guild.channels.fetch(
 			botData[guild]["log_channel"]
