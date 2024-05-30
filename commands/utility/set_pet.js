@@ -33,10 +33,10 @@ module.exports = {
 		)
 		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
 	async execute(interaction) {
-		const url = interaction.options.getString("url");
 		const target = interaction.options.getMember("target");
 
 		let reason = interaction.options.getString("reason");
+		let url = interaction.options.getString("url");
 
 		const guild = interaction.guildId;
 		const channel = await interaction.guild.channels.fetch(
@@ -48,6 +48,10 @@ module.exports = {
 
 		if (!reason) {
 			reason = "None";
+		}
+
+		if (url == 'default') {
+			url = botdata[guild]["default_pet"]
 		}
 
 		await checkUser(target, guild);
