@@ -1,13 +1,7 @@
-const {
-	SlashCommandBuilder,
-	PermissionsBitField,
-	EmbedBuilder,
-} = require("discord.js");
-const fs = require("fs").promises;
+const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
-const { log } = require("../../utilities/log");
-const botData = require("../../data/bot_settings.json");
 const { checkImage } = require("../../utilities/check_image");
+const { updatePet } = require("../../utilities/update-pet");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -39,45 +33,19 @@ module.exports = {
 		let url = interaction.options.getString("url");
 
 		const guild = interaction.guildId;
-		const channel = await interaction.guild.channels.fetch(
-			botData[guild]["log_channel"]
-		);
-
-		const petRead = await fs.readFile("data/pet_data.json", "utf-8");
-		const petData = JSON.parse(petRead);
 
 		if (!reason) {
 			reason = "None";
 		}
 
-		if (url == 'default') {
-			url = botdata[guild]["default_pet"]
+		if (url == "default") {
+			url = botdata[guild]["default_pet"];
 		}
 
 		await checkUser(target, guild);
 
-		const logMsg = `${target.displayName} pet Image has been updated`;
-
 		if (await checkImage(url)) {
-			petData[guild][target.id]["url"] = url;
-			await fs.writeFile(
-				"data/pet_data.json",
-				JSON.stringify(petData, null, 2),
-				"utf-8"
-			);
-			await interaction.reply({
-				content: `Updated ${target.displayName} image to the new url`,
-				ephemeral: true,
-			});
-
-			await log(
-				"Updated Pet Image",
-				logMsg,
-				channel,
-				`<@${interaction.member.id}>`,
-				url,
-				reason
-			);
+			await updatePet(interaction, target, url, reason);
 		} else {
 			await interaction.reply({
 				content: `Invalid url please try again.`,

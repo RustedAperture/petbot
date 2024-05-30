@@ -1,14 +1,10 @@
 const {
 	SlashCommandBuilder,
-	ButtonStyle,
-	ButtonBuilder,
-	ActionRowBuilder,
 } = require("discord.js");
-const fs = require("fs").promises;
-const { log } = require("../../utilities/log");
-const botData = require("../../data/bot_settings.json");
 const { checkUser } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
+const { resetPet } = require("../../utilities/reset-pet");
+const { updatePet } = require("../../utilities/update-pet");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -35,44 +31,13 @@ module.exports = {
 	async execute(interaction) {
 		const guild = interaction.guildId;
 		const target = interaction.member;
-		const channel = await interaction.guild.channels.fetch(
-			botData[guild]["log_channel"]
-		);
 
 		await checkUser(target, guild);
-
-		const petRead = await fs.readFile("data/pet_data.json", "utf-8");
-		const petData = JSON.parse(petRead);
 
 		if (interaction.options.getSubcommand() === "update") {
 			const url = interaction.options.getString("url");
 			if (await checkImage(url)) {
-				petData[guild][target.id]["url"] = url;
-				await fs.writeFile(
-					"data/pet_data.json",
-					JSON.stringify(petData, null, 2),
-					"utf-8"
-				);
-				await interaction.reply({
-					content: "Updated your image to the new url",
-					ephemeral: true,
-				});
-				let log_msg = `${target.displayName} pet image has been updated.`;
-				const reset = new ButtonBuilder()
-					.setCustomId("reset-pet")
-					.setLabel("Reset Pet")
-					.setStyle(ButtonStyle.Danger);
-				const row = new ActionRowBuilder()
-					.addComponents(reset)
-				await log(
-					"Updated Pet Image",
-					log_msg,
-					channel,
-					`<@${interaction.member.id}>`,
-					url,
-					undefined,
-					row
-				);
+				await updatePet(interaction, target.id, url);
 			} else {
 				await interaction.reply({
 					content: "Your URL is invalid, please try again",
@@ -80,24 +45,11 @@ module.exports = {
 				});
 			}
 		} else if (interaction.options.getSubcommand() === "remove") {
-			petData[guild][target.id]["url"] = botData[guild]["default_pet"];
-			await fs.writeFile(
-				"data/pet_data.json",
-				JSON.stringify(petData, null, 2),
-				"utf-8"
-			);
+			await resetPet(interaction, target.id);
 			await interaction.reply({
 				content: "Reset image to default image",
 				ephemeral: true,
 			});
-			let log_msg = `${target.displayName} pet image has been reset`;
-			await log(
-				"Updated Pet Image",
-				log_msg,
-				channel,
-				`<@${interaction.member.id}>`,
-				botData[guild]["default_pet"]
-			);
 		}
 	},
 };

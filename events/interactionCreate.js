@@ -40,7 +40,17 @@ module.exports = {
 			}
 		} else if (interaction.isButton()) {
 			if (interaction.customId === "reset-pet") {
-				resetPet(interaction)
+				const msg = await interaction.message
+				const mention = msg.embeds[0].fields[0]["value"].replace(
+					/<@!?|>/g,
+					""
+				);
+				resetPet(interaction, mention)
+				msg.edit({components: []});
+				await interaction.reply({
+					content: `${mention} has been reset`,
+					ephemeral: true,
+				});
 			}
 		} else if (interaction.isStringSelectMenu()) {
 			// respond to the select menu
