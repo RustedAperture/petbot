@@ -1,9 +1,14 @@
 const { Events } = require("discord.js");
+const { resetPet } = require("../utilities/reset-pet");
 
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
-		if (interaction.isChatInputCommand() || interaction.isUserContextMenuCommand() || interaction.isMessageContextMenuCommand()) {
+		if (
+			interaction.isChatInputCommand() ||
+			interaction.isUserContextMenuCommand() ||
+			interaction.isMessageContextMenuCommand()
+		) {
 			const command = interaction.client.commands.get(
 				interaction.commandName
 			);
@@ -34,7 +39,9 @@ module.exports = {
 				}
 			}
 		} else if (interaction.isButton()) {
-			// respond to the button
+			if (interaction.customId === "reset-pet") {
+				resetPet(interaction)
+			}
 		} else if (interaction.isStringSelectMenu()) {
 			// respond to the select menu
 		}

@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, ActionRow } = require("discord.js");
 
 exports.log = async (
 	title,
@@ -6,7 +6,8 @@ exports.log = async (
 	channel,
 	trigger,
 	image = null,
-	reason = null
+	reason = null,
+	actionRow = null
 ) => {
 	let logEmbed = new EmbedBuilder();
 
@@ -22,5 +23,9 @@ exports.log = async (
 
 	logEmbed.addFields({ name: "Triggered By:", value: trigger });
 
-	channel.send({ embeds: [logEmbed] });
+	if (!actionRow) {
+		channel.send({ embeds: [logEmbed] });
+	} else {
+		channel.send({ embeds: [logEmbed], components: [actionRow] });
+	}
 };

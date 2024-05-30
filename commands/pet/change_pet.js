@@ -1,4 +1,9 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+	SlashCommandBuilder,
+	ButtonStyle,
+	ButtonBuilder,
+	ActionRowBuilder,
+} = require("discord.js");
 const fs = require("fs").promises;
 const { log } = require("../../utilities/log");
 const botData = require("../../data/bot_settings.json");
@@ -53,12 +58,20 @@ module.exports = {
 					ephemeral: true,
 				});
 				let log_msg = `${target.displayName} pet image has been updated.`;
+				const reset = new ButtonBuilder()
+					.setCustomId("reset-pet")
+					.setLabel("Reset Pet")
+					.setStyle(ButtonStyle.Danger);
+				const row = new ActionRowBuilder()
+					.addComponents(reset)
 				await log(
 					"Updated Pet Image",
 					log_msg,
 					channel,
 					`<@${interaction.member.id}>`,
-					url
+					url,
+					undefined,
+					row
 				);
 			} else {
 				await interaction.reply({
