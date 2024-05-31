@@ -17,19 +17,19 @@ module.exports = {
 		)
 		.addChannelOption((option) =>
 			option
-				.setName("logChannel")
+				.setName("log_channel")
 				.setDescription("The Channel that the bot should log too")
 				.setRequired(false)
 		)
 		.addChannelOption((option) =>
 			option
-				.setName("oocChannel")
+				.setName("ooc_channel")
 				.setDescription("The Channel that the bot should post out of context messages too")
 				.setRequired(false)
 		)
 		.addStringOption((option) =>
 			option
-				.setName("defaultPet")
+				.setName("default_pet")
 				.setDescription(
 					"The URL for the default pet emoji, used when a user doesnt have one already."
 				)
@@ -38,9 +38,9 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
 	async execute(interaction) {
 		const nickname = interaction.options.getString("nickname");
-		const logChannel = interaction.options.getChannel("logChannel");
-		const oocChannel = interaction.options.getChannel("oocChannel");
-		const defaultPet = interaction.options.getString("defaultPet");
+		const logChannel = interaction.options.getChannel("log_channel");
+		const oocChannel = interaction.options.getChannel("ooc_channel");
+		const defaultPet = interaction.options.getString("default_pet");
 
 		let setupEmbed = new EmbedBuilder().setTitle("Setup");
 
@@ -70,7 +70,7 @@ module.exports = {
 			});
 		}
 		if (oocChannel != null) {
-			botData[interaction.guildId]["ooc"] = `${oocChannel.id}`;
+			botData[interaction.guildId]["ooc_channel"] = `${oocChannel.id}`;
 			setupEmbed.addFields({
 				name: "OOC Channel",
 				value: `<#${oocChannel.id}>`,

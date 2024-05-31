@@ -13,7 +13,7 @@ module.exports = {
 		const message = interaction.targetMessage;
 		const guild = interaction.guildId;
 		const oocChannel = await interaction.guild.channels.fetch(
-			botData[guild]["ooc"]
+			botData[guild]["ooc_channel"]
 		);
 		const author = await interaction.guild.members.fetch(message.author.id);
 
