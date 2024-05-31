@@ -4,7 +4,7 @@ const {
 	ApplicationCommandType,
 } = require("discord.js");
 const fs = require("fs").promises;
-const botdata = require("../../data/bot_settings.json");
+const { checkUser } = require("../../utilities/check_user");
 
 async function increaseIntegerInJson(filePath, guild, userId, key) {
 	try {
@@ -43,25 +43,6 @@ async function increaseIntegerInJson(filePath, guild, userId, key) {
 		);
 	} catch (error) {
 		console.error("Error increasing integer:", error);
-	}
-}
-
-async function checkUser(user, guild) {
-	const data = await fs.readFile("data/pet_data.json", "utf-8");
-	const petdata = JSON.parse(data);
-
-	// Check if the user ID exists
-	if (!petdata[guild].hasOwnProperty(user.id)) {
-		petdata[guild][user.id] = {
-			url: botdata[guild]["default_pet"],
-			has_pet: 0,
-			has_been_pet: 0,
-		};
-		await fs.writeFile(
-			"data/pet_data.json",
-			JSON.stringify(petdata, null, 2),
-			"utf-8"
-		);
 	}
 }
 
