@@ -22,18 +22,17 @@ module.exports = {
 				name: author.displayName,
 				iconURL: author.displayAvatarURL(),
 			})
-			.setDescription(message.content);
+			.setTitle(message.content);
 
 		await interaction.reply({
 			content: `Message sent to <#${oocChannel.id}>`,
-            ephemeral: true,
+			ephemeral: true,
 		});
 
-        const oocMsg = await oocChannel.send({
-            embeds: [oocEmbed],
-        })
+		const oocMsg = await oocChannel.send({
+			embeds: [oocEmbed],
+		});
 
-        oocMsg.react('⬆️').then(() => oocMsg.react('⬇️'))
-        
+		oocMsg.react("⬆️").then(() => oocMsg.react("⬇️"));
 	},
 };
