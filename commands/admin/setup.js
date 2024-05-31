@@ -17,13 +17,19 @@ module.exports = {
 		)
 		.addChannelOption((option) =>
 			option
-				.setName("log_channel")
+				.setName("logChannel")
 				.setDescription("The Channel that the bot should log too")
+				.setRequired(false)
+		)
+		.addChannelOption((option) =>
+			option
+				.setName("oocChannel")
+				.setDescription("The Channel that the bot should post out of context messages too")
 				.setRequired(false)
 		)
 		.addStringOption((option) =>
 			option
-				.setName("default_pet")
+				.setName("defaultPet")
 				.setDescription(
 					"The URL for the default pet emoji, used when a user doesnt have one already."
 				)
@@ -32,8 +38,9 @@ module.exports = {
 		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
 	async execute(interaction) {
 		const nickname = interaction.options.getString("nickname");
-		const log_channel = interaction.options.getChannel("log_channel");
-		const default_pet = interaction.options.getString("default_pet");
+		const logChannel = interaction.options.getChannel("logChannel");
+		const oocChannel = interaction.options.getChannel("oocChannel");
+		const defaultPet = interaction.options.getString("defaultPet");
 
 		let setupEmbed = new EmbedBuilder().setTitle("Setup");
 
@@ -43,8 +50,8 @@ module.exports = {
 		if (!botData.hasOwnProperty(interaction.guildId)) {
 			botData[interaction.guildId] = {
 				nickname: "",
-				log_channel: "",
-				default_pet: "",
+				logChannel: "",
+				defaultPet: "",
 			};
 		}
 
@@ -55,16 +62,23 @@ module.exports = {
 			const bot = await interaction.guild.members.fetch(botId);
 			bot.setNickname(nickname);
 		}
-		if (log_channel != null) {
-			botData[interaction.guildId]["log_channel"] = `${log_channel.id}`;
+		if (logChannel != null) {
+			botData[interaction.guildId]["log_channel"] = `${logChannel.id}`;
 			setupEmbed.addFields({
 				name: "Log Channel",
-				value: `<#${log_channel.id}>`,
+				value: `<#${logChannel.id}>`,
 			});
 		}
-		if (default_pet != null) {
-			botData[interaction.guildId]["default_pet"] = `${default_pet}`;
-			setupEmbed.addFields({ name: "Default Image", value: default_pet });
+		if (oocChannel != null) {
+			botData[interaction.guildId]["ooc"] = `${oocChannel.id}`;
+			setupEmbed.addFields({
+				name: "OOC Channel",
+				value: `<#${oocChannel.id}>`,
+			});
+		}
+		if (defaultPet != null) {
+			botData[interaction.guildId]["default_pet"] = `${defaultPet}`;
+			setupEmbed.addFields({ name: "Default Image", value: defaultPet });
 		}
 
 		setupEmbed.addFields({
@@ -72,7 +86,7 @@ module.exports = {
 			value: `<@${interaction.member.id}>`,
 		});
 
-		log_channel.send({ embeds: [setupEmbed] });
+		logChannel.send({ embeds: [setupEmbed] });
 
 		interaction.reply({
 			content: "Updated Configs. This has been logged.",
