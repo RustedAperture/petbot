@@ -8,7 +8,7 @@ module.exports = {
 		.setType(ApplicationCommandType.User)
 		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
 	async execute(interaction) {
-		let target = await interaction.options.getMember("target");
+		const target = interaction.targetMember;
 		const guild = interaction.guildId;
 		const logChannel = await interaction.guild.channels.fetch(
 			botData[guild]["log_channel"]
