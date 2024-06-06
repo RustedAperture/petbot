@@ -33,6 +33,10 @@ module.exports = {
 			embeds: [oocEmbed],
 		});
 
-		oocMsg.react("⬆️").then(() => oocMsg.react("⬇️"));
+		oocMsg.react("⬆️").then(() => oocMsg.react("⬇️")).then(() => oocMsg.startThread({
+			name: `${author.displayName}-${message.content}`,
+			autoArchiveDuration: 60,
+			type: 'GUILD_PUBLIC_THREAD'
+		}));
 	},
 };
