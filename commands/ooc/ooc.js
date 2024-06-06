@@ -34,7 +34,7 @@ module.exports = {
 		});
 
 		oocMsg.react("⬆️").then(() => oocMsg.react("⬇️")).then(() => oocMsg.startThread({
-			name: `${author.displayName}-${message.content}`,
+			name: `${author.displayName} - ${message.content}`,
 			autoArchiveDuration: 60,
 			type: 'GUILD_PUBLIC_THREAD'
 		}));
