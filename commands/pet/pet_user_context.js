@@ -48,7 +48,7 @@ async function increaseIntegerInJson(filePath, guild, userId, key) {
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()
-		.setName("pet")
+		.setName("pet-user")
 		.setType(ApplicationCommandType.User),
 	async execute(interaction) {
 		const target = interaction.targetMember;
