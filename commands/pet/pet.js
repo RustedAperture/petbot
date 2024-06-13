@@ -86,12 +86,11 @@ module.exports = {
 		let embeds = [];
 
 		for (const target of uniqueTargets) {
+			await target.fetch(true);
+			await checkUser(target, guild);
+
 			const data = await fs.readFile("data/pet_data.json", "utf-8");
 			const petData = JSON.parse(data);
-
-			await target.fetch(true);
-
-			await checkUser(target, guild);
 
 			await increaseIntegerInJson(
 				"data/pet_data.json",
