@@ -1,25 +1,30 @@
 const { ButtonStyle, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const fs = require("fs").promises;
-const botData = require("../data/bot_settings.json");
+const { botData, petData } = require("./../../utilities/db");
 const { log } = require("../utilities/log");
 
 exports.updatePet = async (interaction, userId, url, reason=null) => {
     const cmd = interaction.commandName;
 	const guild = interaction.guildId;
-	const channel = await interaction.guild.channels.fetch(
-		botData[guild]["log_channel"]
+	const guildSettings = await botData.findOne({
+		where: {
+			guild_id: guild,
+		},
+	});
+	const logChannel = await interaction.guild.channels.fetch(
+		guildSettings.get("log_channel")
 	);
 	const target = await interaction.guild.members.fetch(userId);
-	
-    const petRead = await fs.readFile("data/pet_data.json", "utf-8");
-	const petData = JSON.parse(petRead);
 
-	petData[guild][target.id]["url"] = url;
-    
-	await fs.writeFile(
-		"data/pet_data.json",
-		JSON.stringify(petData, null, 2),
-		"utf-8"
+    await petData.update(
+		{
+			pet_img: url,
+		},
+		{
+			where: {
+				user_id: target.id,
+				guild_id: guild,
+			},
+		}
 	);
     
     const logMsg = `${target.displayName} pet Image has been updated`;
@@ -46,7 +51,7 @@ exports.updatePet = async (interaction, userId, url, reason=null) => {
     await log(
         "Updated Pet Image",
         logMsg,
-        channel,
+        logChannel,
         `<@${interaction.member.id}>`,
         url,
         reason,

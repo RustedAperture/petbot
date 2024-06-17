@@ -1,46 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const fs = require("fs").promises;
 const { checkUser } = require("../../utilities/check_user");
-
-async function increaseIntegerInJson(filePath, guild, userId, key) {
-	try {
-		// Read the JSON file
-		const data = await fs.readFile(filePath, "utf-8");
-		const jsonData = JSON.parse(data);
-
-		// Check if the guild ID exists
-		if (!jsonData.hasOwnProperty(guild)) {
-			throw new Error(`Duild ID "${guild}" not found in JSON file.`);
-		}
-
-		// Check if the user ID exists
-		if (!jsonData[guild].hasOwnProperty(userId)) {
-			throw new Error(`User ID "${userId}" not found in JSON file.`);
-		}
-
-		// Check if the pet data exists and has_pet is an integer
-		if (
-			!jsonData[guild][userId].hasOwnProperty(key) ||
-			typeof jsonData[guild][userId][key] !== "number"
-		) {
-			throw new Error(
-				`Key "${key}" not found or not an integer for user "${userId}".`
-			);
-		}
-
-		// Increase the value
-		jsonData[guild][userId][key]++;
-
-		// Write the updated JSON data back to the file
-		await fs.writeFile(
-			filePath,
-			JSON.stringify(jsonData, null, 2),
-			"utf-8"
-		);
-	} catch (error) {
-		console.error("Error increasing integer:", error);
-	}
-}
+const { petData } = require('./../../utilities/db');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -89,21 +49,11 @@ module.exports = {
 			await target.fetch(true);
 			await checkUser(target, guild);
 
-			const data = await fs.readFile("data/pet_data.json", "utf-8");
-			const petData = JSON.parse(data);
+			const petTarget = await petData.findOne({ where: { user_id: target.id } });
+			const petAuthor = await petData.findOne({ where: { user_id: author.id } });
 
-			await increaseIntegerInJson(
-				"data/pet_data.json",
-				guild,
-				target.id,
-				"has_been_pet"
-			);
-			await increaseIntegerInJson(
-				"data/pet_data.json",
-				guild,
-				author.id,
-				"has_pet"
-			);
+			petTarget.increment("has_been_pet");
+			petAuthor.increment("has_pet");
 
 			const petEmbed = new EmbedBuilder()
 				.setColor(target.displayHexColor)
@@ -112,10 +62,10 @@ module.exports = {
 					name: author.displayName,
 					iconURL: author.displayAvatarURL(),
 				})
-				.setImage(petData[guild][target.id]["url"])
+				.setImage(petTarget.get('pet_img'))
 				.setFooter({
 					text: `${target.displayName} has been pet ${
-						petData[guild][target.id]["has_been_pet"]
+						petTarget.get('has_been_pet')+1
 					} times`,
 					iconURL: target.displayAvatarURL(),
 				});

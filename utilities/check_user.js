@@ -1,21 +1,33 @@
-const botData = require("../data/bot_settings.json");
-const fs = require("fs").promises;
+const { petData, botData } = require('./../utilities/db');
 
 exports.checkUser = async (user, guild) => {
-	const petRead = await fs.readFile("data/pet_data.json", "utf-8");
-	const petData = JSON.parse(petRead);
+	const guildSettings = await botData.findOne({
+		where: { 
+			guild_id: guild
+		} 
+	});
+	const pet = await petData.findOne({
+		where: { 
+			user_id: user.id,
+			guild_id: guild
+		} 
+	});
+	if (!pet) {
+		try {
+			console.log('No pet data found for user. Creating pet data.')
 
-	// Check if the user ID exists
-	if (!petData[guild].hasOwnProperty(user.id)) {
-		petData[guild][user.id] = {
-			url: botData[guild]["default_pet"],
-			has_pet: 0,
-			has_been_pet: 0,
-		};
-		await fs.writeFile(
-			"data/pet_data.json",
-			JSON.stringify(petData, null, 2),
-			"utf-8"
-		);
+			await petData.create({
+				user_id: user.id,
+				guild_id: guild,
+				pet_img: guildSettings.get("default_pet_image"),
+				has_pet: 0,
+				has_been_pet: 0,
+			});
+
+			console.log(`User: ${user.displayName} has been added.`)
+		}
+		catch(error) {
+			console.error('Something went wrong with adding the user.')
+		}
 	}
 };

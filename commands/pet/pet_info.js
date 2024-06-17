@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const fs = require("fs").promises;
+const { petData, botData } = require('./../../utilities/db');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -12,8 +12,6 @@ module.exports = {
 				.setRequired(false)
 		),
 	async execute(interaction) {
-		const data = await fs.readFile("data/pet_data.json", "utf-8");
-		const petdata = JSON.parse(data);
 		const guild = interaction.guildId;
 
 		let target = interaction.options.getMember("target");
@@ -21,7 +19,14 @@ module.exports = {
 			target = interaction.member;
 		}
 
-		if (!petdata[guild].hasOwnProperty(target.id)) {
+		const pet = await petData.findOne({
+			where: { 
+				user_id: target.id,
+				guild_id: guild
+			} 
+		});
+
+		if (!pet) {
 			await interaction.reply({
 				content: "The user has no pet data",
 				ephemeral: true,
@@ -34,12 +39,12 @@ module.exports = {
 				.addFields(
 					{
 						name: "Has been pet",
-						value: `${petdata[guild][target.id]["has_been_pet"]}x`,
+						value: `${pet.get("has_been_pet")}x`,
 						inline: true,
 					},
 					{
 						name: "Used pet",
-						value: `${petdata[guild][target.id]["has_pet"]}x`,
+						value: `${pet.get("has_pet")}x`,
 						inline: true,
 					}
 				);

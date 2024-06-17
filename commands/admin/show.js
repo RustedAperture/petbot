@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
 const { log } = require("../../utilities/log");
-const botData = require("../../data/bot_settings.json");
+const { botData } = require('./../../utilities/db');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -30,8 +30,13 @@ module.exports = {
 		let target = interaction.options.getMember("target");
 		let reason = interaction.options.getString("reason");
 		const guild = interaction.guildId;
+		const guildSettings = await botData.findOne({
+			where: { 
+				guild_id: guild
+			} 
+		});
 		const logChannel = await interaction.guild.channels.fetch(
-			botData[guild]["log_channel"]
+			guildSettings.get("log_channel")
 		);
 
 		if (!channel) {

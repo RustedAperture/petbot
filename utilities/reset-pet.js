@@ -1,26 +1,33 @@
-const fs = require("fs").promises;
-const botData = require("../data/bot_settings.json");
 const { log } = require("../utilities/log");
+const { botData, petData } = require("./../../utilities/db");
 
 exports.resetPet = async (interaction, userId) => {
 	const guild = interaction.guildId;
-	const channel = await interaction.guild.channels.fetch(
-		botData[guild]["log_channel"]
+	const guildSettings = await botData.findOne({
+		where: {
+			guild_id: guild,
+		},
+	});
+	const logChannel = await interaction.guild.channels.fetch(
+		guildSettings.get("log_channel")
 	);
 	const target = await interaction.guild.members.fetch(userId);
-	const petRead = await fs.readFile("data/pet_data.json", "utf-8");
-	const petData = JSON.parse(petRead);
-	petData[guild][target.id]["url"] = botData[guild]["default_pet"];
-	await fs.writeFile(
-		"data/pet_data.json",
-		JSON.stringify(petData, null, 2),
-		"utf-8"
+	await petData.update(
+		{
+			pet_img: guildSettings.get("default_pet_image"),
+		},
+		{
+			where: {
+				user_id: target.id,
+				guild_id: guild,
+			},
+		}
 	);
 	let log_msg = `${target.displayName} pet image has been reset`;
 	await log(
 		"Updated Pet Image",
 		log_msg,
-		channel,
+		logChannel,
 		`<@${interaction.member.id}>`,
 		botData[guild]["default_pet"]
 	);
