@@ -4,6 +4,7 @@ const {
 	ApplicationCommandType,
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
+const { petData } = require('./../../utilities/db');
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()
