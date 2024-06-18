@@ -1,5 +1,5 @@
-const { log } = require("../utilities/log");
-const { botData, petData } = require("./../../utilities/db");
+const { log } = require("./log");
+const { botData, petData } = require("./db");
 
 exports.resetPet = async (interaction, userId) => {
 	const guild = interaction.guildId;

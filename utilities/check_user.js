@@ -1,4 +1,4 @@
-const { petData, botData } = require('./../utilities/db');
+const { petData, botData } = require('./db');
 
 exports.checkUser = async (user, guild) => {
 	const guildSettings = await botData.findOne({

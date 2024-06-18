@@ -1,6 +1,6 @@
 const { ButtonStyle, ButtonBuilder, ActionRowBuilder } = require("discord.js");
-const { botData, petData } = require("./../../utilities/db");
-const { log } = require("../utilities/log");
+const { botData, petData } = require("./db");
+const { log } = require("./log");
 
 exports.updatePet = async (interaction, userId, url, reason=null) => {
     const cmd = interaction.commandName;

@@ -8,4 +8,4 @@ services:
     working_dir: /home/node/app
     volumes:
       - ./:/home/node/app
-    command: "node ."
+    command: sh -c "npm install discord.js sequelize sqlite3 && node ."
