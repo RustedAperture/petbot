@@ -29,6 +29,6 @@ exports.resetPet = async (interaction, userId) => {
 		log_msg,
 		logChannel,
 		`<@${interaction.member.id}>`,
-		botData[guild]["default_pet"]
+		guildSettings.get("default_pet_image")
 	);
 };

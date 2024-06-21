@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
 const { updatePet } = require("../../utilities/update-pet");
+const { botData } = require("./../../utilities/db");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -34,12 +35,18 @@ module.exports = {
 
 		const guild = interaction.guildId;
 
+		const guildSettings = await botData.findOne({
+			where: {
+				guild_id: guild,
+			},
+		});
+
 		if (!reason) {
 			reason = "None";
 		}
 
 		if (url == "default") {
-			url = botdata[guild]["default_pet"];
+			url = guildSettings.get("default_pet_image");
 		}
 
 		await checkUser(target, guild);
