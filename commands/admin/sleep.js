@@ -32,8 +32,8 @@ module.exports = {
 			.setColor(target.displayHexColor)
 			.setTitle(logMsg)
 			.setAuthor({
-				name: author.displayName,
-				iconURL: author.displayAvatarURL(),
+				name: interaction.member.displayName,
+				iconURL: interaction.member.displayAvatarURL(),
 			})
 			.setImage(guildSettings.get("sleep_image"));
 
