@@ -1,11 +1,11 @@
 version: "2"
 services:
-  node:
-    container_name: petbot
-    image: "node:alpine"
-    user: "node"
-    restart: always
-    working_dir: /home/node/app
-    volumes:
-      - ./:/home/node/app
-    command: sh -c "npm install discord.js sequelize sqlite3 && node ."
+    node:
+        container_name: petbot
+        image: "node:alpine"
+        user: "node"
+        restart: always
+        working_dir: /home/node/app
+        volumes:
+            - ./:/home/node/app
+        command: sh -c "npm install discord.js sequelize sqlite3 umzug && node ."
