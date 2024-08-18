@@ -3,6 +3,26 @@ const path = require("node:path");
 const { Client, Collection, GatewayIntentBits } = require("discord.js");
 const { token } = require("./config.json");
 
+const { Sequelize } = require("sequelize");
+const { Umzug, SequelizeStorage } = require("umzug");
+
+const sequelize = new Sequelize({
+	dialect: "sqlite",
+	storage: "./data/database.sqlite",
+});
+
+const umzug = new Umzug({
+	migrations: { glob: "migrations/*.js" },
+	context: sequelize.getQueryInterface(),
+	storage: new SequelizeStorage({ sequelize }),
+	logger: console,
+});
+
+// Checks migrations and run them if they are not already applied. To keep
+// track of the executed migrations, a table (and sequelize model) called SequelizeMeta
+// will be automatically created (if it doesn't exist already) and parsed.
+umzug.up();
+
 const client = new Client({
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
 });
