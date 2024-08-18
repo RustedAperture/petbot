@@ -48,7 +48,7 @@ module.exports = {
 
 		let logChannel = interaction.options.getChannel("log_channel");
 
-		let sleepImage = interaction.options.getChannel("sleep_image");
+		let sleepImage = interaction.options.getString("sleep_image");
 
 		let setupEmbed = new EmbedBuilder().setTitle("Setup");
 
