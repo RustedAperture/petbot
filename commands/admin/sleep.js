@@ -30,7 +30,7 @@ module.exports = {
 
 		const sleepEmbed = new EmbedBuilder()
 			.setColor(target.displayHexColor)
-			.setTitle(logMsg)
+			.setTitle(`${target.displayName} has been put to sleep!`)
 			.setAuthor({
 				name: interaction.member.displayName,
 				iconURL: interaction.member.displayAvatarURL(),
