@@ -44,6 +44,6 @@ module.exports = {
 			`<@${interaction.member.id}>`
 		);
 
-		interaction.reply({ content: logMsg, embeds: [sleepEmbed] });
+		interaction.reply({ embeds: [sleepEmbed] });
 	},
 };
