@@ -2,6 +2,7 @@ const {
 	ContextMenuCommandBuilder,
 	PermissionsBitField,
 	ApplicationCommandType,
+	EmbedBuilder,
 } = require("discord.js");
 const { log } = require("../../utilities/log");
 const { botData } = require("./../../utilities/db");
