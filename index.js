@@ -5,6 +5,7 @@ const { token } = require("./config.json");
 
 const { Sequelize } = require("sequelize");
 const { Umzug, SequelizeStorage } = require("umzug");
+const logger = require("./logger");
 
 const sequelize = new Sequelize({
 	dialect: "sqlite",
@@ -42,8 +43,8 @@ for (const folder of commandFolders) {
 		if ("data" in command && "execute" in command) {
 			client.commands.set(command.data.name, command);
 		} else {
-			console.log(
-				`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+			logger.warn(
+				`The command at ${filePath} is missing a required "data" or "execute" property.`
 			);
 		}
 	}

@@ -5,6 +5,7 @@ const {
 } = require("discord.js");
 const { botData } = require("./../../utilities/db");
 const sleep = require("./sleep");
+const logger = require("./../../logger");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -67,7 +68,7 @@ module.exports = {
 					guildSettings.get("log_channel")
 				);
 			} catch {
-				console.log("No log channel has been setup yet!");
+				logger.warn("No log channel has been setup yet!");
 			}
 		}
 
@@ -78,7 +79,7 @@ module.exports = {
 			);
 
 			if (affectedRows > 0) {
-				console.log(
+				logger.debug(
 					`Updated nickname of bot for guild: ${interaction.guildId}`
 				);
 				setupEmbed.addFields({ name: "Nickname", value: nickname });
@@ -95,7 +96,7 @@ module.exports = {
 			);
 
 			if (affectedRows > 0) {
-				console.log(
+				logger.debug(
 					`Updated log channel of bot for guild: ${interaction.guildId}`
 				);
 				setupEmbed.addFields({
@@ -111,7 +112,7 @@ module.exports = {
 			);
 
 			if (affectedRows > 0) {
-				console.log(
+				logger.debug(
 					`Updated default image of bot for guild: ${interaction.guildId}`
 				);
 				setupEmbed.addFields({
@@ -127,7 +128,7 @@ module.exports = {
 			);
 
 			if (affectedRows > 0) {
-				console.log(
+				logger.debug(
 					`Updated sleep image of bot for guild: ${interaction.guildId}`
 				);
 				setupEmbed.addFields({

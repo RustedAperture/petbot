@@ -1,4 +1,5 @@
 const { petData, botData } = require("./db");
+const logger = require('./../logger');
 
 exports.checkUser = async (user, guild, interaction) => {
 	let inServer = interaction.guild;
@@ -17,7 +18,7 @@ exports.checkUser = async (user, guild, interaction) => {
 		});
 		if (!pet) {
 			try {
-				console.log("No pet data found for user. Creating pet data.");
+				logger.debug(`No pet data found for user: ${user.displayName}. Creating pet data.`);
 
 				await petData.create({
 					user_id: user.id,
@@ -27,9 +28,9 @@ exports.checkUser = async (user, guild, interaction) => {
 					has_been_pet: 0,
 				});
 
-				console.log(`User: ${user.displayName} has been added.`);
+				logger.debug(`User: ${user.displayName} has been added.`);
 			} catch (error) {
-				console.error("Something went wrong with adding the user.");
+				logger.error("Something went wrong with adding the user.");
 			}
 		}
 	} else {
@@ -46,10 +47,10 @@ exports.checkUser = async (user, guild, interaction) => {
 		});
 		if (!pet) {
 			try {
-				console.log("No pet data found for user. Creating pet data.");
+				logger.debug(`No pet data found for user: ${user.displayName}. Creating pet data.`);
 
 				if (!GuildPet) {
-					console.log("setting default pet image");
+					logger.debug("Using the default pet image.");
 					await petData.create({
 						user_id: user.id,
 						guild_id: guild,
@@ -59,7 +60,7 @@ exports.checkUser = async (user, guild, interaction) => {
 						has_been_pet: 0,
 					});
 				} else {
-					console.log("setting pet image to one in guild");
+					logger.debug("Found an existing image. Updating to use found image.");
 					await petData.create({
 						user_id: user.id,
 						guild_id: guild,
@@ -69,9 +70,9 @@ exports.checkUser = async (user, guild, interaction) => {
 					});
 				}
 
-				console.log(`User: ${user.displayName} has been added.`);
+				logger.debug(`User: ${user.displayName} has been added.`);
 			} catch (error) {
-				console.error("Something went wrong with adding the user.");
+				logger.error("Something went wrong with adding the user.");
 			}
 		}
 	}

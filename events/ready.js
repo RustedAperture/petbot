@@ -1,5 +1,6 @@
 const { Events } = require("discord.js");
 const { petData, botData } = require('./../utilities/db');
+const logger = require('./../logger');
 
 module.exports = {
 	name: Events.ClientReady,
@@ -7,6 +8,6 @@ module.exports = {
 	execute(client) {
 		petData.sync();
 		botData.sync();
-		console.log(`Ready! Logged in as ${client.user.tag}`);
+		logger.info(`Ready! Logged in as ${client.user.tag}`);
 	},
 };

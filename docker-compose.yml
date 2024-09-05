@@ -1,11 +1,14 @@
-version: "2"
 services:
     node:
         container_name: petbot
-        image: "node:alpine"
+        image: "node:20"
         user: "node"
         restart: always
         working_dir: /home/node/app
         volumes:
             - ./:/home/node/app
-        command: sh -c "npm install discord.js sequelize sqlite3 umzug && node ."
+        environment:
+            - NPM_CONFIG_PREFIX=/home/node/.npm-global
+            - PATH=$PATH:/home/node/.npm-global/bin
+        tty: true
+        command: npm run dev
