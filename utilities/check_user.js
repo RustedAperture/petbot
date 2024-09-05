@@ -1,7 +1,8 @@
 const { petData, botData } = require("./db");
 
 exports.checkUser = async (user, guild, interaction) => {
-	if (interaction.context == 0) {
+	let inServer = interaction.guild;
+	if (interaction.context == 0 && inServer != null) {
 		const guildSettings = await botData.findOne({
 			where: {
 				guild_id: guild,

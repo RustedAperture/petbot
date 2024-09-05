@@ -40,12 +40,19 @@ module.exports = {
 		]),
 	async execute(interaction) {
 		let target1, target2, target3, author, guild, petEmbed;
+		let inServer = interaction.guild;
 
-		if (interaction.context == 0) {
+		if (interaction.context == 0 && inServer != null) {
 			target1 = await interaction.options.getMember("target1");
 			target2 = await interaction.options.getMember("target2");
 			target3 = await interaction.options.getMember("target3");
 			author = interaction.member;
+			guild = interaction.guildId;
+		} else if (inServer == null) {
+			target1 = await interaction.options.getUser("target1");
+			target2 = await interaction.options.getUser("target2");
+			target3 = await interaction.options.getUser("target3");
+			author = interaction.user;
 			guild = interaction.guildId;
 		} else {
 			target1 = await interaction.options.getUser("target1");
@@ -83,7 +90,7 @@ module.exports = {
 			petTarget.increment("has_been_pet");
 			petAuthor.increment("has_pet");
 
-			if (interaction.context == 0) {
+			if (interaction.context == 0 && inServer != null) {
 				petEmbed = new EmbedBuilder()
 					.setColor(target.displayHexColor)
 					.setTitle(`${target.displayName} has been pet`)

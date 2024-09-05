@@ -41,10 +41,14 @@ module.exports = {
 		]),
 	async execute(interaction) {
 		let guild, target;
+		let inServer = interaction.guild;
 
-		if (interaction.context == 0) {
+		if (interaction.context == 0 && inServer != null) {
 			guild = interaction.guildId;
 			target = interaction.member;
+		} else if (inServer == null) {
+			guild = interaction.guildId;
+			target = interaction.user;
 		} else {
 			guild = interaction.channelId;
 			target = interaction.user;
@@ -64,10 +68,6 @@ module.exports = {
 			}
 		} else if (interaction.options.getSubcommand() === "remove") {
 			await resetPet(interaction, target.id);
-			await interaction.reply({
-				content: "Reset image to default image",
-				ephemeral: true,
-			});
 		}
 	},
 };

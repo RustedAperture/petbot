@@ -4,8 +4,9 @@ const { log } = require("./log");
 
 exports.updatePet = async (interaction, userId, url, reason = null) => {
 	let guild, guildSettings, logChannel, target;
+	let inServer = interaction.guild;
 
-	if (interaction.context == 0) {
+	if (interaction.context == 0 && inServer != null) {
 		guild = interaction.guildId;
 		guildSettings = await botData.findOne({
 			where: {
@@ -16,6 +17,8 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 			guildSettings.get("log_channel")
 		);
 		target = await interaction.guild.members.fetch(userId);
+	} else if (inServer == null) {
+		guild = interaction.guildId;
 	} else {
 		guild = interaction.channelId;
 	}
@@ -34,7 +37,7 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 		}
 	);
 
-	if (interaction.context == 0) {
+	if (interaction.context == 0 && inServer != null) {
 		const logMsg = `${target.displayName} pet Image has been updated`;
 
 		if (cmd == "change-pet") {

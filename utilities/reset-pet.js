@@ -3,8 +3,9 @@ const { botData, petData } = require("./db");
 
 exports.resetPet = async (interaction, userId) => {
 	let guild, guildSettings, logChannel, target;
+	let inServer = interaction.guild;
 
-	if (interaction.context == 0) {
+	if (interaction.context == 0 && inServer != null) {
 		guild = interaction.guildId;
 
 		guildSettings = await botData.findOne({
@@ -41,7 +42,11 @@ exports.resetPet = async (interaction, userId) => {
 			guildSettings.get("default_pet_image")
 		);
 	} else {
-		guild = interaction.channelId;
+		if (inServer == null) {
+			guild = interaction.guildId;
+		} else {
+			guild = interaction.channelId;
+		}
 
 		await petData.update(
 			{
@@ -55,10 +60,10 @@ exports.resetPet = async (interaction, userId) => {
 				},
 			}
 		);
-
-		await interaction.reply({
-			content: "Reset your image to the base pet image",
-			ephemeral: true,
-		});
 	}
+
+	await interaction.reply({
+		content: "Reset your image to the base pet image",
+		ephemeral: true,
+	});
 };
