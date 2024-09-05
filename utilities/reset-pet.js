@@ -51,7 +51,7 @@ exports.resetPet = async (interaction, userId) => {
 		await petData.update(
 			{
 				pet_img:
-					"https://raw.githubusercontent.com/RustedAperture/Stickers/main/Belly%20Rub%202.0/belly%20rub-base.png",
+					"https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true",
 			},
 			{
 				where: {

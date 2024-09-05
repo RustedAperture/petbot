@@ -54,7 +54,7 @@ exports.checkUser = async (user, guild, interaction) => {
 						user_id: user.id,
 						guild_id: guild,
 						pet_img:
-							"https://raw.githubusercontent.com/RustedAperture/Stickers/main/Belly%20Rub%202.0/belly%20rub-base.png",
+							"https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true",
 						has_pet: 0,
 						has_been_pet: 0,
 					});
