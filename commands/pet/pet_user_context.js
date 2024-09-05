@@ -47,6 +47,10 @@ module.exports = {
 		petTarget.increment("has_been_pet");
 		petAuthor.increment("has_pet");
 
+		await target.fetch(true);
+
+		console.log(target);
+
 		if (interaction.context == 0) {
 			petEmbed = new EmbedBuilder()
 				.setColor(target.displayHexColor)
