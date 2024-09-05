@@ -40,18 +40,18 @@ module.exports = {
 			InteractionContextType.PrivateChannel,
 		]),
 	async execute(interaction) {
-		let guild, target;
+		let target;
 		let inServer = interaction.guild;
 
 		if (interaction.context == 0 && inServer != null) {
-			guild = interaction.guildId;
 			target = interaction.member;
-		} else if (inServer == null) {
-			guild = interaction.guildId;
-			target = interaction.user;
 		} else {
-			guild = interaction.channelId;
 			target = interaction.user;
+		}
+
+		let guild = interaction.guildId;
+		if (guild == null) {
+			guild = interaction.channelId;
 		}
 
 		await checkUser(target, guild, interaction);

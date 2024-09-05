@@ -1,13 +1,13 @@
 const { ButtonStyle, ButtonBuilder, ActionRowBuilder } = require("discord.js");
 const { botData, petData } = require("./db");
 const { log } = require("./log");
+const logger = require("../logger");
 
 exports.updatePet = async (interaction, userId, url, reason = null) => {
-	let guild, guildSettings, logChannel, target;
+	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
 
 	if (interaction.context == 0 && inServer != null) {
-		guild = interaction.guildId;
 		guildSettings = await botData.findOne({
 			where: {
 				guild_id: guild,
@@ -17,28 +17,36 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 			guildSettings.get("log_channel")
 		);
 		target = await interaction.guild.members.fetch(userId);
-	} else if (inServer == null) {
-		guild = interaction.guildId;
-	} else {
+	}
+
+	let guild = interaction.guildId;
+	if (guild == null) {
 		guild = interaction.channelId;
 	}
 
 	const cmd = interaction.commandName;
 
-	await petData.update(
-		{
-			pet_img: url,
-		},
-		{
-			where: {
-				user_id: userId,
-				guild_id: guild,
+	try {
+		await petData.update(
+			{
+				pet_img: url,
 			},
-		}
-	);
+			{
+				where: {
+					user_id: userId,
+					guild_id: guild,
+				},
+			}
+		);
+	} catch (error) {
+		logger.error(
+			{ error: error },
+			"Something went wrong with updating the user image."
+		);
+	}
 
 	if (interaction.context == 0 && inServer != null) {
-		const logMsg = `${target.displayName} pet Image has been updated`;
+		const logMsg = `${target.displayName} pet image has been updated`;
 
 		if (cmd == "change-pet") {
 			await interaction.reply({
@@ -68,10 +76,16 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 			reason,
 			row
 		);
+		logger.debug(
+			`Updated ${target.displayName} image to the new url in ${interaction.guild.name}`
+		);
 	} else {
 		await interaction.reply({
 			content: "Updated your image to the new url",
 			ephemeral: true,
 		});
+		logger.debug(
+			`Updated ${interaction.user.displayName} image to the new url in ${guild}`
+		);
 	}
 };

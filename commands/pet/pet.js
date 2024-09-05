@@ -3,9 +3,11 @@ const {
 	EmbedBuilder,
 	ApplicationIntegrationType,
 	InteractionContextType,
+	Client,
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { petData } = require("./../../utilities/db");
+const logger = require("./../../logger");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -39,26 +41,23 @@ module.exports = {
 			InteractionContextType.PrivateChannel,
 		]),
 	async execute(interaction) {
-		let target1, target2, target3, author, guild, petEmbed;
+		let target1, target2, target3, author, petEmbed;
 		let inServer = interaction.guild;
 
-		if (interaction.context == 0 && inServer != null) {
+		if (interaction.context === 0 && inServer != null) {
 			target1 = await interaction.options.getMember("target1");
 			target2 = await interaction.options.getMember("target2");
 			target3 = await interaction.options.getMember("target3");
 			author = interaction.member;
-			guild = interaction.guildId;
-		} else if (inServer == null) {
-			target1 = await interaction.options.getUser("target1");
-			target2 = await interaction.options.getUser("target2");
-			target3 = await interaction.options.getUser("target3");
-			author = interaction.user;
-			guild = interaction.guildId;
 		} else {
 			target1 = await interaction.options.getUser("target1");
 			target2 = await interaction.options.getUser("target2");
 			target3 = await interaction.options.getUser("target3");
 			author = interaction.user;
+		}
+
+		let guild = interaction.guildId;
+		if (guild == null) {
 			guild = interaction.channelId;
 		}
 
@@ -90,39 +89,39 @@ module.exports = {
 			petTarget.increment("has_been_pet");
 			petAuthor.increment("has_pet");
 
-			if (interaction.context == 0 && inServer != null) {
-				petEmbed = new EmbedBuilder()
-					.setColor(target.displayHexColor)
-					.setTitle(`${target.displayName} has been pet`)
-					.setAuthor({
-						name: author.displayName,
-						iconURL: author.displayAvatarURL(),
-					})
-					.setImage(petTarget.get("pet_img"))
-					.setFooter({
-						text: `${target.displayName} has been pet ${
-							petTarget.get("has_been_pet") + 1
-						} times`,
-						iconURL: target.displayAvatarURL(),
-					});
-			} else {
-				petEmbed = new EmbedBuilder()
-					.setColor(target.accentColor)
-					.setTitle(`${target.globalName} has been pet`)
-					.setAuthor({
-						name: author.globalName,
-						iconURL: author.displayAvatarURL(),
-					})
-					.setImage(petTarget.get("pet_img"))
-					.setFooter({
-						text: `${target.globalName} has been pet ${
-							petTarget.get("has_been_pet") + 1
-						} times`,
-						iconURL: target.displayAvatarURL(),
-					});
-			}
+			const targetName = inServer
+				? target.displayName
+				: target.globalName;
+			const targetColor = inServer
+				? target.displayHexColor
+				: target.accentColor;
+
+			petEmbed = new EmbedBuilder()
+				.setColor(targetColor)
+				.setTitle(`${targetName} has been pet`)
+				.setAuthor({
+					name: author.displayName,
+					iconURL: author.displayAvatarURL(),
+				})
+				.setImage(petTarget.get("pet_img"))
+				.setFooter({
+					text: `${targetName} has been pet ${
+						petTarget.get("has_been_pet") + 1
+					} times`,
+					iconURL: target.displayAvatarURL(),
+				});
 
 			embeds.push(petEmbed);
+			logger.debug(
+				{
+					Context: `${interaction.context}:${
+						inServer ? interaction.guild.name : guild
+					}`,
+					Trigger: author.displayName,
+					Target: targetName,
+				},
+				`A user has been pet`
+			);
 		}
 
 		for (let i = 0; i < uniqueTargets.length; i++) {
