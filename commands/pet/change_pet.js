@@ -1,5 +1,7 @@
 const {
 	SlashCommandBuilder,
+	ApplicationIntegrationType,
+	InteractionContextType,
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
@@ -27,12 +29,28 @@ module.exports = {
 			subcommand
 				.setName("remove")
 				.setDescription("Remove your users pet image.")
-		),
+		)
+		.setIntegrationTypes([
+			ApplicationIntegrationType.GuildInstall,
+			ApplicationIntegrationType.UserInstall,
+		])
+		.setContexts([
+			InteractionContextType.BotDM,
+			InteractionContextType.Guild,
+			InteractionContextType.PrivateChannel,
+		]),
 	async execute(interaction) {
-		const guild = interaction.guildId;
-		const target = interaction.member;
+		let guild, target;
 
-		await checkUser(target, guild);
+		if (interaction.context == 0) {
+			guild = interaction.guildId;
+			target = interaction.member;
+		} else {
+			guild = interaction.channelId;
+			target = interaction.user;
+		}
+
+		await checkUser(target, guild, interaction);
 
 		if (interaction.options.getSubcommand() === "update") {
 			const url = interaction.options.getString("url");

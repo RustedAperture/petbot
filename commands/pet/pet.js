@@ -1,6 +1,11 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+	SlashCommandBuilder,
+	EmbedBuilder,
+	ApplicationIntegrationType,
+	InteractionContextType,
+} = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
-const { petData } = require('./../../utilities/db');
+const { petData } = require("./../../utilities/db");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -23,13 +28,32 @@ module.exports = {
 				.setName("target3")
 				.setDescription("The user you want to pet")
 				.setRequired(false)
-		),
+		)
+		.setIntegrationTypes([
+			ApplicationIntegrationType.GuildInstall,
+			ApplicationIntegrationType.UserInstall,
+		])
+		.setContexts([
+			InteractionContextType.BotDM,
+			InteractionContextType.Guild,
+			InteractionContextType.PrivateChannel,
+		]),
 	async execute(interaction) {
-		const target1 = await interaction.options.getMember("target1");
-		const target2 = await interaction.options.getMember("target2");
-		const target3 = await interaction.options.getMember("target3");
-		const author = interaction.member;
-		const guild = interaction.guildId;
+		let target1, target2, target3, author, guild, petEmbed;
+
+		if (interaction.context == 0) {
+			target1 = await interaction.options.getMember("target1");
+			target2 = await interaction.options.getMember("target2");
+			target3 = await interaction.options.getMember("target3");
+			author = interaction.member;
+			guild = interaction.guildId;
+		} else {
+			target1 = await interaction.options.getUser("target1");
+			target2 = await interaction.options.getUser("target2");
+			target3 = await interaction.options.getUser("target3");
+			author = interaction.user;
+			guild = interaction.channelId;
+		}
 
 		const targets = new Set([target1]);
 		if (target2) {
@@ -41,34 +65,55 @@ module.exports = {
 
 		const uniqueTargets = [...targets];
 
-		await checkUser(author, guild);
+		await checkUser(author, guild, interaction);
 
 		let embeds = [];
 
 		for (const target of uniqueTargets) {
 			await target.fetch(true);
-			await checkUser(target, guild);
+			await checkUser(target, guild, interaction);
 
-			const petTarget = await petData.findOne({ where: { user_id: target.id } });
-			const petAuthor = await petData.findOne({ where: { user_id: author.id } });
+			const petTarget = await petData.findOne({
+				where: { user_id: target.id, guild_id: guild },
+			});
+			const petAuthor = await petData.findOne({
+				where: { user_id: author.id, guild_id: guild },
+			});
 
 			petTarget.increment("has_been_pet");
 			petAuthor.increment("has_pet");
 
-			const petEmbed = new EmbedBuilder()
-				.setColor(target.displayHexColor)
-				.setTitle(`${target.displayName} has been pet`)
-				.setAuthor({
-					name: author.displayName,
-					iconURL: author.displayAvatarURL(),
-				})
-				.setImage(petTarget.get('pet_img'))
-				.setFooter({
-					text: `${target.displayName} has been pet ${
-						petTarget.get('has_been_pet')+1
-					} times`,
-					iconURL: target.displayAvatarURL(),
-				});
+			if (interaction.context == 0) {
+				petEmbed = new EmbedBuilder()
+					.setColor(target.displayHexColor)
+					.setTitle(`${target.displayName} has been pet`)
+					.setAuthor({
+						name: author.displayName,
+						iconURL: author.displayAvatarURL(),
+					})
+					.setImage(petTarget.get("pet_img"))
+					.setFooter({
+						text: `${target.displayName} has been pet ${
+							petTarget.get("has_been_pet") + 1
+						} times`,
+						iconURL: target.displayAvatarURL(),
+					});
+			} else {
+				petEmbed = new EmbedBuilder()
+					.setColor(target.accentColor)
+					.setTitle(`${target.globalName} has been pet`)
+					.setAuthor({
+						name: author.globalName,
+						iconURL: author.displayAvatarURL(),
+					})
+					.setImage(petTarget.get("pet_img"))
+					.setFooter({
+						text: `${target.globalName} has been pet ${
+							petTarget.get("has_been_pet") + 1
+						} times`,
+						iconURL: target.displayAvatarURL(),
+					});
+			}
 
 			embeds.push(petEmbed);
 		}

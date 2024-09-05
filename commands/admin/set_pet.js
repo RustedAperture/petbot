@@ -49,7 +49,7 @@ module.exports = {
 			url = guildSettings.get("default_pet_image");
 		}
 
-		await checkUser(target, guild);
+		await checkUser(target, guild, interaction);
 
 		if (await checkImage(url)) {
 			await updatePet(interaction, target, url, reason);
