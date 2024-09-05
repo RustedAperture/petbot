@@ -1,7 +1,7 @@
 services:
     node:
         container_name: petbot
-        image: "node:20"
+        image: "node:alpine"
         user: "node"
         restart: always
         working_dir: /home/node/app
@@ -11,4 +11,4 @@ services:
             - NPM_CONFIG_PREFIX=/home/node/.npm-global
             - PATH=$PATH:/home/node/.npm-global/bin
         tty: true
-        command: npm run dev
+        command: sh -c 'npm run dev'
