@@ -132,7 +132,7 @@ module.exports = {
 					embeds: [embeds[i]],
 				});
 			} else {
-				await interaction.channel.send({
+				await interaction.followUp({
 					content: `<@${target.id}>`,
 					embeds: [embeds[i]],
 				});
