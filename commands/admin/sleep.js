@@ -11,7 +11,7 @@ module.exports = {
 	data: new ContextMenuCommandBuilder()
 		.setName("sleep")
 		.setType(ApplicationCommandType.User)
-		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+		.setDefaultMemberPermissions(PermissionsBitField.Flags.ModerateMembers),
 	async execute(interaction) {
 		const target = interaction.targetMember;
 		const guild = interaction.guildId;

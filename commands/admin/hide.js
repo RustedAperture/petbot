@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
 const { log } = require("../../utilities/log");
-const { botData } = require('./../../utilities/db');
+const { botData } = require("./../../utilities/db");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -24,15 +24,15 @@ module.exports = {
 				.setDescription("The reason you are hiding")
 				.setRequired(false)
 		)
-		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+		.setDefaultMemberPermissions(PermissionsBitField.Flags.ModerateMembers),
 	async execute(interaction) {
 		let channel = interaction.options.getChannel("channel");
 		let target = interaction.options.getMember("target");
 		let reason = interaction.options.getString("reason");
 		const guildSettings = await botData.findOne({
-			where: { 
-				guild_id: guild
-			} 
+			where: {
+				guild_id: guild,
+			},
 		});
 		const guild = interaction.guildId;
 		const logChannel = await interaction.guild.channels.fetch(

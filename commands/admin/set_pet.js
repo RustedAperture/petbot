@@ -26,7 +26,7 @@ module.exports = {
 				.setDescription("The reason for changing the image")
 				.setRequired(false)
 		)
-		.setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+		.setDefaultMemberPermissions(PermissionsBitField.Flags.ModerateMembers),
 	async execute(interaction) {
 		const target = interaction.options.getMember("target");
 
