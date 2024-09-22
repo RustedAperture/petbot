@@ -7,6 +7,11 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
 
+	let guild = interaction.guildId;
+	if (guild == null) {
+		guild = interaction.channelId;
+	}
+
 	if (interaction.context == 0 && inServer != null) {
 		guildSettings = await botData.findOne({
 			where: {
@@ -17,11 +22,6 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 			guildSettings.get("log_channel")
 		);
 		target = await interaction.guild.members.fetch(userId);
-	}
-
-	let guild = interaction.guildId;
-	if (guild == null) {
-		guild = interaction.channelId;
 	}
 
 	const cmd = interaction.commandName;
