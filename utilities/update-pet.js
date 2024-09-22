@@ -12,6 +12,7 @@ exports.updatePet = async (
 ) => {
 	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
+	let logmsg;
 
 	let guild = interaction.guildId;
 	if (guild == null) {
@@ -95,16 +96,16 @@ exports.updatePet = async (
 			reason,
 			row
 		);
-		logger.debug(
-			`Updated ${target.displayName} image to the new url in ${interaction.guild.name}`
-		);
+		logmsg = `Updated ${target.displayName} image to the new url in ${interaction.guild.name}`;
 	} else {
 		await interaction.reply({
 			content: "Updated your image to the new url",
 			ephemeral: true,
 		});
-		logger.debug(
-			`Updated ${interaction.user.displayName} image to the new url in ${guild}`
-		);
+		logmsg = `Updated ${interaction.user.displayName} image to the new url in ${guild}`;
 	}
+	if (everywhere) {
+		logmsg = `Updated ${target.displayName} image to the new url everywhere`;
+	}
+	logger.debug(logmsg);
 };
