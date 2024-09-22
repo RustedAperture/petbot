@@ -3,7 +3,13 @@ const { botData, petData } = require("./db");
 const { log } = require("./log");
 const logger = require("../logger");
 
-exports.updatePet = async (interaction, userId, url, reason = null) => {
+exports.updatePet = async (
+	interaction,
+	userId,
+	url,
+	everywhere = false,
+	reason = null
+) => {
 	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
 
@@ -27,17 +33,30 @@ exports.updatePet = async (interaction, userId, url, reason = null) => {
 	const cmd = interaction.commandName;
 
 	try {
-		await petData.update(
-			{
-				pet_img: url,
-			},
-			{
-				where: {
-					user_id: userId,
-					guild_id: guild,
+		if (everywhere) {
+			await petData.update(
+				{
+					pet_img: url,
 				},
-			}
-		);
+				{
+					where: {
+						user_id: userId,
+					},
+				}
+			);
+		} else {
+			await petData.update(
+				{
+					pet_img: url,
+				},
+				{
+					where: {
+						user_id: userId,
+						guild_id: guild,
+					},
+				}
+			);
+		}
 	} catch (error) {
 		logger.error(
 			{ error: error },

@@ -24,11 +24,21 @@ module.exports = {
 						)
 						.setRequired(true)
 				)
+				.addBooleanOption((option) =>
+					option
+						.setName("everywhere")
+						.setDescription("Update your image everywhere")
+				)
 		)
 		.addSubcommand((subcommand) =>
 			subcommand
 				.setName("remove")
 				.setDescription("Remove your users pet image.")
+				.addBooleanOption((option) =>
+					option
+						.setName("everywhere")
+						.setDescription("Reset your image everywhere")
+				)
 		)
 		.setIntegrationTypes([
 			ApplicationIntegrationType.GuildInstall,
@@ -42,6 +52,7 @@ module.exports = {
 	async execute(interaction) {
 		let target;
 		let inServer = interaction.guild;
+		let everywhere = interaction.options.getBoolean("everywhere");
 
 		if (interaction.context == 0 && inServer != null) {
 			target = interaction.member;
@@ -59,7 +70,7 @@ module.exports = {
 		if (interaction.options.getSubcommand() === "update") {
 			const url = interaction.options.getString("url");
 			if (await checkImage(url)) {
-				await updatePet(interaction, target.id, url);
+				await updatePet(interaction, target.id, url, everywhere);
 			} else {
 				await interaction.reply({
 					content: "Your URL is invalid, please try again",
