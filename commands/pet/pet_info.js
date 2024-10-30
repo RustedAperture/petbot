@@ -59,41 +59,26 @@ module.exports = {
 
 			let petEmbed2, petEmbed3, petEmbed4;
 
-			if (pet.pet_img_two != null) {
-				petEmbed2 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(`${pet.get("pet_img_two")}`);
-			} else {
-				petEmbed2 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(
+			petEmbed2 = new EmbedBuilder()
+				.setURL("https://discord.js")
+				.setImage(
+					pet.get("pet_img_two") ??
 						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
-					);
-			}
+				);
 
-			if (pet.pet_img_three != null) {
-				petEmbed3 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(`${pet.get("pet_img_three")}`);
-			} else {
-				petEmbed3 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(
+			petEmbed3 = new EmbedBuilder()
+				.setURL("https://discord.js")
+				.setImage(
+					pet.get("pet_img_three") ??
 						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
-					);
-			}
+				);
 
-			if (pet.pet_img_four != null) {
-				petEmbed4 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(`${pet.get("pet_img_four")}`);
-			} else {
-				petEmbed4 = new EmbedBuilder()
-					.setURL("https://discord.js")
-					.setImage(
+			petEmbed4 = new EmbedBuilder()
+				.setURL("https://discord.js")
+				.setImage(
+					pet.get("pet_img_four") ??
 						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
-					);
-			}
+				);
 
 			await interaction.reply({
 				embeds: [petEmbed, petEmbed2, petEmbed3, petEmbed4],

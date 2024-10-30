@@ -1,32 +1,15 @@
 const { log } = require("./log");
 const { botData, petData } = require("./db");
 const logger = require("../logger");
+const { getPetSlot } = require("./helper");
 
 exports.resetPet = async (interaction, userId, slot) => {
 	let guildSettings, logChannel, target, pet_img;
 	let inServer = interaction.guild;
 
-	let petSlot;
+	let petSlot = getPetSlot(slot);
 
-	switch (slot) {
-		case 1:
-			petSlot = "pet_img";
-			break;
-		case 2:
-			petSlot = "pet_img_two";
-			break;
-		case 3:
-			petSlot = "pet_img_three";
-			break;
-		case 4:
-			petSlot = "pet_img_four";
-			break;
-	}
-
-	let guild = interaction.guildId;
-	if (guild == null) {
-		guild = interaction.channelId;
-	}
+	let guild = interaction.guildId ?? interaction.channelId;
 
 	if (interaction.context == 0 && inServer != null) {
 		guildSettings = await botData.findOne({
