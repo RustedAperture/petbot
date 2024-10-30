@@ -20,6 +20,19 @@ module.exports = {
 				.setDescription("The url of the image")
 				.setRequired(true)
 		)
+		.addNumberOption((option) =>
+			option
+				.setName("slot")
+				.setDescription(
+					"1, 2, 3 These are your slots, if left undefined then it will default to 1"
+				)
+				.setRequired(true)
+				.addChoices(
+					{ name: "1", value: 1 },
+					{ name: "2", value: 2 },
+					{ name: "3", value: 3 }
+				)
+		)
 		.addStringOption((option) =>
 			option
 				.setName("reason")
@@ -32,6 +45,7 @@ module.exports = {
 
 		let reason = interaction.options.getString("reason");
 		let url = interaction.options.getString("url");
+		let slot = interaction.options.getNumber("slot");
 
 		const guild = interaction.guildId;
 
@@ -52,7 +66,7 @@ module.exports = {
 		await checkUser(target, guild, interaction);
 
 		if (await checkImage(url)) {
-			await updatePet(interaction, target.id, url, false, reason);
+			await updatePet(interaction, target.id, url, false, reason, slot);
 		} else {
 			await interaction.reply({
 				content: `Invalid url please try again.`,
