@@ -7,6 +7,7 @@ const {
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { petData } = require("./../../utilities/db");
+const { getPetSlot, countPetImages } = require("./../../utilities/helper");
 const logger = require("../../logger");
 
 module.exports = {
@@ -34,15 +35,12 @@ module.exports = {
 			author = interaction.user;
 		}
 
-		let guild = interaction.guildId;
-		if (guild == null) {
-			guild = interaction.channelId;
-		}
+		let guild = interaction.guildId ?? interaction.channelId;
 
 		await target.fetch(true);
 
-		await checkUser(target, guild, interaction);
-		await checkUser(author, guild, interaction);
+		await checkUser(target, guild);
+		await checkUser(author, guild);
 
 		const petTarget = await petData.findOne({
 			where: { user_id: target.id, guild_id: guild },
@@ -51,36 +49,9 @@ module.exports = {
 			where: { user_id: author.id, guild_id: guild },
 		});
 
-		let numPetImages = 0;
-		if (petTarget.pet_img != "") {
-			numPetImages++;
-		}
-		if (petTarget.pet_img_two != null) {
-			numPetImages++;
-		}
-		if (petTarget.pet_img_three != null) {
-			numPetImages++;
-		}
-		if (petTarget.pet_img_four != null) {
-			numPetImages++;
-		}
-
+		let numPetImages = countPetImages(petTarget);
 		let randomPet = Math.floor(Math.random() * numPetImages) + 1;
-		let petSlot;
-		switch (randomPet) {
-			case 1:
-				petSlot = "pet_img";
-				break;
-			case 2:
-				petSlot = "pet_img_two";
-				break;
-			case 3:
-				petSlot = "pet_img_three";
-				break;
-			case 4:
-				petSlot = "pet_img_four";
-				break;
-		}
+		let petSlot = getPetSlot(randomPet);
 
 		petTarget.increment("has_been_pet");
 		petAuthor.increment("has_pet");

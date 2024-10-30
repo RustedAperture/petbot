@@ -91,12 +91,9 @@ module.exports = {
 			target = interaction.user;
 		}
 
-		let guild = interaction.guildId;
-		if (guild == null) {
-			guild = interaction.channelId;
-		}
+		let guild = interaction.guildId ?? interaction.channelId;
 
-		await checkUser(target, guild, interaction);
+		await checkUser(target, guild);
 
 		if (interaction.options.getSubcommand() === "update") {
 			const url = interaction.options.getString("url");

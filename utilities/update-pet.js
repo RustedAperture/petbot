@@ -2,6 +2,7 @@ const { ButtonStyle, ButtonBuilder, ActionRowBuilder } = require("discord.js");
 const { botData, petData } = require("./db");
 const { log } = require("./log");
 const logger = require("../logger");
+const { getPetSlot } = require("./helper");
 
 exports.updatePet = async (
 	interaction,
@@ -14,27 +15,9 @@ exports.updatePet = async (
 	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
 	let loggermsg;
-	let petSlot;
+	let petSlot = getPetSlot(slot);
 
-	switch (slot) {
-		case 1:
-			petSlot = "pet_img";
-			break;
-		case 2:
-			petSlot = "pet_img_two";
-			break;
-		case 3:
-			petSlot = "pet_img_three";
-			break;
-		case 4:
-			petSlot = "pet_img_four";
-			break;
-	}
-
-	let guild = interaction.guildId;
-	if (guild == null) {
-		guild = interaction.channelId;
-	}
+	let guild = interaction.guildId ?? interaction.channelId;
 
 	if (interaction.context == 0 && inServer != null) {
 		guildSettings = await botData.findOne({
