@@ -8,11 +8,25 @@ exports.updatePet = async (
 	userId,
 	url,
 	everywhere = false,
-	reason = null
+	reason = null,
+	slot
 ) => {
 	let guildSettings, logChannel, target;
 	let inServer = interaction.guild;
 	let loggermsg;
+	let petSlot;
+
+	switch (slot) {
+		case 1:
+			petSlot = "pet_img";
+			break;
+		case 2:
+			petSlot = "pet_img_two";
+			break;
+		case 3:
+			petSlot = "pet_img_three";
+			break;
+	}
 
 	let guild = interaction.guildId;
 	if (guild == null) {
@@ -39,7 +53,7 @@ exports.updatePet = async (
 		if (everywhere) {
 			await petData.update(
 				{
-					pet_img: url,
+					[petSlot]: url,
 				},
 				{
 					where: {
@@ -50,7 +64,7 @@ exports.updatePet = async (
 		} else {
 			await petData.update(
 				{
-					pet_img: url,
+					[petSlot]: url,
 				},
 				{
 					where: {
@@ -68,7 +82,7 @@ exports.updatePet = async (
 	}
 
 	if (interaction.context == 0 && inServer != null) {
-		const logMsg = `${target.displayName} pet image has been updated`;
+		const logMsg = `${target.displayName} pet image ${slot} has been updated`;
 
 		if (cmd == "change-pet") {
 			await interaction.reply({
@@ -98,16 +112,16 @@ exports.updatePet = async (
 			reason,
 			row
 		);
-		loggermsg = `Updated ${target.displayName} image to the new url in ${interaction.guild.name}`;
+		loggermsg = `Updated ${target.displayName} image ${slot} to the new url in ${interaction.guild.name}`;
 	} else {
 		await interaction.reply({
 			content: "Updated your image to the new url",
 			ephemeral: true,
 		});
-		loggermsg = `Updated ${target.displayName} image to the new url in ${guild}`;
+		loggermsg = `Updated ${target.displayName} image ${slot} to the new url in ${guild}`;
 	}
 	if (everywhere) {
-		loggermsg = `Updated ${target.displayName} image to the new url everywhere`;
+		loggermsg = `Updated ${target.displayName} image ${slot} to the new url everywhere`;
 	}
 	logger.debug(loggermsg);
 };

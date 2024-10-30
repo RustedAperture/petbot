@@ -1,5 +1,6 @@
 const { Events } = require("discord.js");
 const { resetPet } = require("../utilities/reset-pet");
+const logger = require("../logger");
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -40,16 +41,19 @@ module.exports = {
 			}
 		} else if (interaction.isButton()) {
 			if (interaction.customId === "reset-pet") {
-				const msg = await interaction.message
+				await interaction.deferReply({ ephemeral: true });
+				const msg = await interaction.message;
 				const mention = msg.embeds[0].fields[0]["value"].replace(
 					/<@!?|>/g,
 					""
 				);
-				resetPet(interaction, mention)
-				msg.edit({components: []});
-				await interaction.reply({
+				const slot = parseInt(
+					msg.embeds[0].description.match(/image (\d+)/)[1]
+				);
+				resetPet(interaction, mention, slot);
+				msg.edit({ components: [] });
+				await interaction.editReply({
 					content: `${mention} has been reset`,
-					ephemeral: true,
 				});
 			}
 		} else if (interaction.isStringSelectMenu()) {

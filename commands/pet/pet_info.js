@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const { petData, botData } = require('./../../utilities/db');
+const { petData, botData } = require("./../../utilities/db");
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -20,10 +20,10 @@ module.exports = {
 		}
 
 		const pet = await petData.findOne({
-			where: { 
+			where: {
 				user_id: target.id,
-				guild_id: guild
-			} 
+				guild_id: guild,
+			},
 		});
 
 		if (!pet) {
@@ -34,8 +34,10 @@ module.exports = {
 		} else {
 			const petEmbed = new EmbedBuilder()
 				.setColor(target.displayHexColor)
-				.setTitle(target.displayName)
-				.setThumbnail(target.displayAvatarURL())
+				.setAuthor({
+					name: target.displayName,
+					iconURL: target.displayAvatarURL(),
+				})
 				.addFields(
 					{
 						name: "Has been pet",
@@ -46,10 +48,51 @@ module.exports = {
 						name: "Used pet",
 						value: `${pet.get("has_pet")}x`,
 						inline: true,
+					},
+					{
+						name: "Pet Images",
+						value: "These are the images for the specified user.",
 					}
+				)
+				.setURL("https://discord.js")
+				.setImage(`${pet.get("pet_img")}`);
+
+			let petEmbed2, petEmbed3, petEmbed4;
+
+			if (pet.pet_img_two != null) {
+				petEmbed2 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(`${pet.get("pet_img_two")}`);
+			} else {
+				petEmbed2 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(
+						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
+					);
+			}
+
+			if (pet.pet_img_three != null) {
+				petEmbed3 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(`${pet.get("pet_img_three")}`);
+			} else {
+				petEmbed3 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(
+						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
+					);
+			}
+
+			petEmbed4 = new EmbedBuilder()
+				.setURL("https://discord.js")
+				.setImage(
+					"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
 				);
 
-			await interaction.reply({ embeds: [petEmbed], ephemeral: true });
+			await interaction.reply({
+				embeds: [petEmbed, petEmbed2, petEmbed3, petEmbed4],
+				ephemeral: true,
+			});
 		}
 	},
 };

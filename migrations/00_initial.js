@@ -2,6 +2,9 @@ const { Sequelize } = require("sequelize");
 
 async function up({ context: queryInterface }) {
 	await queryInterface.createTable("botData", {
+		id: {
+			type: Sequelize.INTEGER,
+		},
 		guild_id: {
 			type: Sequelize.STRING,
 		},
@@ -14,9 +17,18 @@ async function up({ context: queryInterface }) {
 		nickname: {
 			type: Sequelize.STRING,
 		},
+		createdAt: {
+			type: Sequelize.DATE,
+		},
+		updatedAt: {
+			type: Sequelize.DATE,
+		},
 	});
 
 	await queryInterface.createTable("petData", {
+		id: {
+			type: Sequelize.INTEGER,
+		},
 		user_id: {
 			type: Sequelize.STRING,
 		},
@@ -31,6 +43,12 @@ async function up({ context: queryInterface }) {
 		},
 		has_been_pet: {
 			type: Sequelize.INTEGER,
+		},
+		createdAt: {
+			type: Sequelize.DATE,
+		},
+		updatedAt: {
+			type: Sequelize.DATE,
 		},
 	});
 }

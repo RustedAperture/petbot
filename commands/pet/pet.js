@@ -86,6 +86,31 @@ module.exports = {
 				where: { user_id: author.id, guild_id: guild },
 			});
 
+			let numPetImages = 0;
+			if (petTarget.pet_img != "") {
+				numPetImages++;
+			}
+			if (petTarget.pet_img_two != null) {
+				numPetImages++;
+			}
+			if (petTarget.pet_img_three != null) {
+				numPetImages++;
+			}
+
+			let randomPet = Math.floor(Math.random() * numPetImages) + 1;
+			let petSlot;
+			switch (randomPet) {
+				case 1:
+					petSlot = "pet_img";
+					break;
+				case 2:
+					petSlot = "pet_img_two";
+					break;
+				case 3:
+					petSlot = "pet_img_three";
+					break;
+			}
+
 			petTarget.increment("has_been_pet");
 			petAuthor.increment("has_pet");
 
@@ -103,7 +128,7 @@ module.exports = {
 					name: author.displayName,
 					iconURL: author.displayAvatarURL(),
 				})
-				.setImage(petTarget.get("pet_img"))
+				.setImage(petTarget.get(petSlot))
 				.setFooter({
 					text: `${targetName} has been pet ${
 						petTarget.get("has_been_pet") + 1
