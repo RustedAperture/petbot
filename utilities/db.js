@@ -15,6 +15,7 @@ const petData = sequelize.define("petData", {
 	pet_img: Sequelize.TEXT,
 	pet_img_two: Sequelize.TEXT,
 	pet_img_three: Sequelize.TEXT,
+	pet_img_four: Sequelize.TEXT,
 	has_pet: Sequelize.INTEGER,
 	has_been_pet: Sequelize.INTEGER,
 	createdAt: Sequelize.DATE,

@@ -60,6 +60,8 @@ exports.checkUser = async (user, guild, interaction) => {
 						petWithHighestHasPet.pet_img_two;
 					petDataForNewEntry.pet_img_three =
 						petWithHighestHasPet.pet_img_three;
+					petDataForNewEntry.pet_img_four =
+						petWithHighestHasPet.pet_img_four;
 				}
 
 				await petData.create(petDataForNewEntry);
@@ -99,6 +101,8 @@ exports.checkUser = async (user, guild, interaction) => {
 						petWithHighestHasPet.pet_img_two;
 					petDataForNewEntry.pet_img_three =
 						petWithHighestHasPet.pet_img_three;
+					petDataForNewEntry.pet_img_four =
+						petWithHighestHasPet.pet_img_four;
 				}
 
 				await petData.create(petDataForNewEntry);

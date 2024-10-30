@@ -83,11 +83,17 @@ module.exports = {
 					);
 			}
 
-			petEmbed4 = new EmbedBuilder()
-				.setURL("https://discord.js")
-				.setImage(
-					"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
-				);
+			if (pet.pet_img_four != null) {
+				petEmbed4 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(`${pet.get("pet_img_four")}`);
+			} else {
+				petEmbed4 = new EmbedBuilder()
+					.setURL("https://discord.js")
+					.setImage(
+						"https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
+					);
+			}
 
 			await interaction.reply({
 				embeds: [petEmbed, petEmbed2, petEmbed3, petEmbed4],
