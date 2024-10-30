@@ -18,6 +18,9 @@ exports.resetPet = async (interaction, userId, slot) => {
 		case 3:
 			petSlot = "pet_img_three";
 			break;
+		case 4:
+			petSlot = "pet_img_four";
+			break;
 	}
 
 	let guild = interaction.guildId;

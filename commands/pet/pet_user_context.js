@@ -61,6 +61,9 @@ module.exports = {
 		if (petTarget.pet_img_three != null) {
 			numPetImages++;
 		}
+		if (petTarget.pet_img_four != null) {
+			numPetImages++;
+		}
 
 		let randomPet = Math.floor(Math.random() * numPetImages) + 1;
 		let petSlot;
@@ -73,6 +76,9 @@ module.exports = {
 				break;
 			case 3:
 				petSlot = "pet_img_three";
+				break;
+			case 4:
+				petSlot = "pet_img_four";
 				break;
 		}
 
