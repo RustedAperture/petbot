@@ -52,7 +52,7 @@ module.exports = {
 		await checkUser(target, guild, interaction);
 
 		if (await checkImage(url)) {
-			await updatePet(interaction, target, url, reason);
+			await updatePet(interaction, target, url, false, reason);
 		} else {
 			await interaction.reply({
 				content: `Invalid url please try again.`,
