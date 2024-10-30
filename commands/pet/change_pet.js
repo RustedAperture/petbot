@@ -30,13 +30,14 @@ module.exports = {
 					option
 						.setName("slot")
 						.setDescription(
-							"1, 2, 3 These are your slots, if left undefined then it will default to 1"
+							"1-4 These are your slots, if left undefined then it will default to 1"
 						)
 						.setRequired(true)
 						.addChoices(
 							{ name: "1", value: 1 },
 							{ name: "2", value: 2 },
-							{ name: "3", value: 3 }
+							{ name: "3", value: 3 },
+							{ name: "4", value: 4 }
 						)
 				)
 				.addBooleanOption((option) =>
