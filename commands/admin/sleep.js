@@ -26,7 +26,7 @@ module.exports = {
 
 		target.timeout(2 * 60 * 60 * 1000, "Sleepy Time");
 
-		const logMsg = `<@${target.id}> has been put to sleep!`;
+		const logMsg = `> **User**: ${interaction.targetUser.username} (<@${target.id}>)`;
 
 		const sleepEmbed = new EmbedBuilder()
 			.setColor(target.displayHexColor)
@@ -41,7 +41,10 @@ module.exports = {
 			"User put to sleep!",
 			logMsg,
 			logChannel,
-			`<@${interaction.member.id}>`
+			interaction.user,
+			null,
+			null,
+			"Blue"
 		);
 
 		interaction.reply({ embeds: [sleepEmbed] });

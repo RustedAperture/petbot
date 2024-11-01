@@ -29,12 +29,12 @@ module.exports = {
 		let channel = interaction.options.getChannel("channel");
 		let target = interaction.options.getMember("target");
 		let reason = interaction.options.getString("reason");
+		const guild = interaction.guildId;
 		const guildSettings = await botData.findOne({
 			where: {
 				guild_id: guild,
 			},
 		});
-		const guild = interaction.guildId;
 		const logChannel = await interaction.guild.channels.fetch(
 			guildSettings.get("log_channel")
 		);
@@ -51,18 +51,24 @@ module.exports = {
 			reason = "None";
 		}
 
-		const logMsg = `<#${channel.id}> has been hidden from <@${target.id}>`;
+		const logMsg = `> **User**: ${
+			interaction.options.getUser("target").username
+		} (<@${target.id}>)
+		> **Channel**: <#${channel.id}>
+		> **Reason**: ${reason}`;
 
 		channel.permissionOverwrites.create(target, { ViewChannel: false });
 
 		await log(
-			"Channel Permission Update!",
+			"Channel now hidden for user!",
 			logMsg,
 			logChannel,
-			`<@${interaction.member.id}>`,
-			undefined,
-			reason
+			interaction.user,
+			null,
+			null,
+			"Red"
 		);
+
 		interaction.reply({ content: logMsg, ephemeral: true });
 	},
 };

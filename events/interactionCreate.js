@@ -43,17 +43,16 @@ module.exports = {
 			if (interaction.customId === "reset-pet") {
 				await interaction.deferReply({ ephemeral: true });
 				const msg = await interaction.message;
-				const mention = msg.embeds[0].fields[0]["value"].replace(
-					/<@!?|>/g,
-					""
-				);
-				const slot = parseInt(
-					msg.embeds[0].description.match(/image (\d+)/)[1]
-				);
-				resetPet(interaction, mention, slot);
+				const msgDesc = msg.embeds[0].description;
+				const mention = msgDesc.match(/<@(\d+)>/)[1];
+				// Split the string by newline characters
+				const lines = msgDesc.split("\n")[1];
+				// Extract the number after "Slot:"
+				const slotNumber = parseInt(lines.trim().split(":")[1].trim());
+				resetPet(interaction, mention, slotNumber);
 				msg.edit({ components: [] });
 				await interaction.editReply({
-					content: `${mention} has been reset`,
+					content: `<@${mention}> pet image has been reset`,
 				});
 			}
 		} else if (interaction.isStringSelectMenu()) {

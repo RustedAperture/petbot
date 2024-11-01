@@ -80,16 +80,9 @@ module.exports = {
 			InteractionContextType.PrivateChannel,
 		]),
 	async execute(interaction) {
-		let target;
-		let inServer = interaction.guild;
+		let target = interaction.user;
 		let everywhere = interaction.options.getBoolean("everywhere");
 		let slot = interaction.options.getNumber("slot");
-
-		if (interaction.context == 0 && inServer != null) {
-			target = interaction.member;
-		} else {
-			target = interaction.user;
-		}
 
 		let guild = interaction.guildId ?? interaction.channelId;
 
@@ -141,6 +134,10 @@ module.exports = {
 			}
 		} else if (interaction.options.getSubcommand() === "remove") {
 			await resetPet(interaction, target.id, slot);
+			await interaction.reply({
+				content: `Your image in slot ${slot} has been reset to the base image.`,
+				ephemeral: true,
+			});
 		}
 	},
 };

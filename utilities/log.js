@@ -6,10 +6,14 @@ exports.log = async (
 	channel,
 	trigger,
 	image = null,
-	reason = null,
-	actionRow = null
+	actionRow = null,
+	color = null
 ) => {
 	let logEmbed = new EmbedBuilder();
+
+	let embedColor = color ?? "Default";
+
+	logEmbed.setColor(embedColor);
 
 	if (!image) {
 		logEmbed.setTitle(title).setDescription(desc);
@@ -17,11 +21,12 @@ exports.log = async (
 		logEmbed.setTitle(title).setDescription(desc).setThumbnail(image);
 	}
 
-	if (reason != null) {
-		logEmbed.addFields({ name: "Reason:", value: reason });
-	}
+	logEmbed.setFooter({
+		text: `@${trigger.username}`,
+		iconURL: `${trigger.avatarURL()}`,
+	});
 
-	logEmbed.addFields({ name: "Triggered By:", value: trigger });
+	logEmbed.setTimestamp();
 
 	if (!actionRow) {
 		channel.send({ embeds: [logEmbed] });
