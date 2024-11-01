@@ -4,8 +4,9 @@ const logger = require("../logger");
 const { getPetSlot } = require("./helper");
 
 exports.resetPet = async (interaction, userId, slot) => {
-	let guildSettings, logChannel, target, pet_img;
+	let guildSettings, logChannel, pet_img;
 	let inServer = interaction.guild;
+	let target = interaction.user;
 
 	let petSlot = getPetSlot(slot);
 
@@ -22,18 +23,19 @@ exports.resetPet = async (interaction, userId, slot) => {
 			guildSettings.get("log_channel")
 		);
 
-		target = await interaction.guild.members.fetch(userId);
-
 		pet_img = guildSettings.get("default_pet_image");
 
-		let log_msg = `${target.displayName} pet image ${slot} has been reset`;
+		const logMsg = `> **User**: ${target.username} (<@${target.id}>)
+		> **Slot**: ${slot}`;
 
 		await log(
-			"Updated Pet Image",
-			log_msg,
+			"Reset Pet Image",
+			logMsg,
 			logChannel,
-			`<@${interaction.member.id}>`,
-			guildSettings.get("default_pet_image")
+			target,
+			guildSettings.get("default_pet_image"),
+			null,
+			"Red"
 		);
 
 		logger.debug(

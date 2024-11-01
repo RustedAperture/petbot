@@ -51,18 +51,24 @@ module.exports = {
 			reason = "None";
 		}
 
-		const logMsg = `<#${channel.id}> has been revealed to <@${target.id}>`;
+		const logMsg = `> **User**: ${
+			interaction.options.getUser("target").username
+		} (<@${target.id}>)
+		> **Channel**: <#${channel.id}>
+		> **Reason**: ${reason}`;
 
 		channel.permissionOverwrites.create(target, { ViewChannel: true });
 
 		await log(
-			"Channel Permission Update!",
+			"Channel now visible for user!",
 			logMsg,
 			logChannel,
-			`<@${interaction.member.id}>`,
+			interaction.user,
 			undefined,
-			reason
+			null,
+			"Green"
 		);
+
 		interaction.reply({ content: logMsg, ephemeral: true });
 	},
 };

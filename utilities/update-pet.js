@@ -12,10 +12,11 @@ exports.updatePet = async (
 	reason = null,
 	slot
 ) => {
-	let guildSettings, logChannel, target;
+	let guildSettings, logChannel;
 	let inServer = interaction.guild;
 	let loggermsg;
 	let petSlot = getPetSlot(slot);
+	let target = interaction.user;
 
 	let guild = interaction.guildId ?? interaction.channelId;
 
@@ -28,9 +29,6 @@ exports.updatePet = async (
 		logChannel = await interaction.guild.channels.fetch(
 			guildSettings.get("log_channel")
 		);
-		target = await interaction.guild.members.fetch(userId);
-	} else {
-		target = interaction.user;
 	}
 
 	const cmd = interaction.commandName;
@@ -68,8 +66,6 @@ exports.updatePet = async (
 	}
 
 	if (interaction.context == 0 && inServer != null) {
-		const logMsg = `${target.displayName} pet image ${slot} has been updated`;
-
 		if (cmd == "change-pet") {
 			await interaction.reply({
 				content: "Updated your image to the new url",
@@ -83,31 +79,35 @@ exports.updatePet = async (
 			reason = undefined;
 		} else {
 			await interaction.reply({
-				content: `Updated ${target.displayName} image to the new url`,
+				content: `Updated ${target.username} image to the new url`,
 				ephemeral: true,
 			});
 			row = undefined;
 		}
 
+		const logMsg = `> **User**: ${target.username} (<@${target.id}>)
+		> **Slot**: ${slot}
+		> **Reason**: ${reason}`;
+
 		await log(
 			"Updated Pet Image",
 			logMsg,
 			logChannel,
-			`<@${interaction.member.id}>`,
+			interaction.user,
 			url,
-			reason,
-			row
+			row,
+			"Orange"
 		);
-		loggermsg = `Updated ${target.displayName} image ${slot} to the new url in ${interaction.guild.name}`;
+		loggermsg = `Updated ${target.username} image ${slot} to the new url in ${interaction.guild.name}`;
 	} else {
 		await interaction.reply({
 			content: "Updated your image to the new url",
 			ephemeral: true,
 		});
-		loggermsg = `Updated ${target.displayName} image ${slot} to the new url in ${guild}`;
+		loggermsg = `Updated ${target.username} image ${slot} to the new url in ${guild}`;
 	}
 	if (everywhere) {
-		loggermsg = `Updated ${target.displayName} image ${slot} to the new url everywhere`;
+		loggermsg = `Updated ${target.username} image ${slot} to the new url everywhere`;
 	}
 	logger.debug(loggermsg);
 };
