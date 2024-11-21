@@ -50,7 +50,6 @@ exports.checkUser = async (user, guild) => {
 			);
 
 			if (!petWithHighestHasPet) {
-				logger.debug(`testing`);
 				if (!guildSettings) {
 					logger.debug(
 						`No guild settings found or in a DM, using defult pet image`
