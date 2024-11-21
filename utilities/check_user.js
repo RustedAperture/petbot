@@ -19,11 +19,15 @@ exports.checkUser = async (user, guild) => {
 		});
 	}
 
-	const petDataForNewEntry = {
+	let petDataForNewEntry = {
 		user_id: user.id,
 		guild_id: guild,
 		has_pet: 0,
 		has_been_pet: 0,
+		pet_img: "",
+		pet_img_two: "",
+		pet_img_three: "",
+		pet_img_four: "",
 	};
 
 	const pet = await petData.findOne({
@@ -46,10 +50,21 @@ exports.checkUser = async (user, guild) => {
 			);
 
 			if (!petWithHighestHasPet) {
-				logger.debug("Using the default pet image.");
-				petDataForNewEntry.pet_img =
-					guildSettings.get("default_pet_image") ??
-					"https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+				logger.debug(`testing`);
+				if (!guildSettings) {
+					logger.debug(
+						`No guild settings found or in a DM, using defult pet image`
+					);
+					petDataForNewEntry.pet_img =
+						"https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+				} else {
+					logger.debug(
+						`Guild settings found, using guild default image`
+					);
+					petDataForNewEntry.pet_img =
+						guildSettings.get("default_pet_image");
+				}
+				logger.debug(`Using the default pet image.`);
 			} else {
 				logger.debug(
 					"Found an existing image. Updating to use found image."

@@ -39,6 +39,8 @@ module.exports = {
 
 		await target.fetch(true);
 
+		logger.debug(guild);
+
 		await checkUser(target, guild);
 		await checkUser(author, guild);
 
