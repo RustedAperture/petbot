@@ -1,9 +1,10 @@
 const {
-	SlashCommandBuilder,
+	ContextMenuCommandBuilder,
 	EmbedBuilder,
 	ApplicationIntegrationType,
 	InteractionContextType,
-	MessageFlags
+    ApplicationCommandType,
+    MessageFlags
 } = require("discord.js");
 const { petData, botData } = require("./../../utilities/db");
 
@@ -20,15 +21,9 @@ function createEmbed(petEmbed) {
 }
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName("pet-stats")
-		.setDescription("Get the stats for a user")
-		.addUserOption((option) =>
-			option
-				.setName("target")
-				.setDescription("The user you want to get pet stats for")
-				.setRequired(false)
-		)
+	data: new ContextMenuCommandBuilder()
+		.setName("petStats")
+		.setType(ApplicationCommandType.User)
 		.setIntegrationTypes([
 			ApplicationIntegrationType.GuildInstall,
 			ApplicationIntegrationType.UserInstall,
@@ -44,12 +39,9 @@ module.exports = {
 		const guild = interaction.guildId ?? interaction.channelId;
 
 		if (interaction.context === 0 && inServer != null) {
-			target = interaction.options.getMember("target");
-			if (!target) {
-				target = interaction.member;
-			}
+			target = interaction.targetMember;
 		} else {
-			target = interaction.options.getUser("target");
+			target = interaction.targetUser;
 		}
 
 		await target.fetch(true);
@@ -61,7 +53,7 @@ module.exports = {
 			},
 		});
 
-		const totalHasBeenPet = await petData.sum('has_been_pet', {
+        const totalHasBeenPet = await petData.sum('has_been_pet', {
 			where: {
 				user_id: target.id
 			},
@@ -92,7 +84,7 @@ module.exports = {
 						value: `${pet.get("has_been_pet")}x`,
 						inline: true,
 					},
-					{
+                    {
 						name: "Total times pet",
 						value: `${totalHasBeenPet}x`,
 						inline: true,

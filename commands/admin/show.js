@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionsBitField } = require("discord.js");
+const { SlashCommandBuilder, PermissionsBitField, MessageFlags } = require("discord.js");
 const { log } = require("../../utilities/log");
 const { botData } = require("./../../utilities/db");
 
@@ -69,6 +69,6 @@ module.exports = {
 			"Green"
 		);
 
-		interaction.reply({ content: logMsg, ephemeral: true });
+		interaction.reply({ content: logMsg, flags: MessageFlags.Ephemeral });
 	},
 };

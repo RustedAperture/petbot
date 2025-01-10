@@ -2,6 +2,7 @@ const {
 	SlashCommandBuilder,
 	PermissionsBitField,
 	EmbedBuilder,
+	MessageFlags
 } = require("discord.js");
 const { botData } = require("./../../utilities/db");
 const sleep = require("./sleep");
@@ -147,12 +148,12 @@ module.exports = {
 			logChannel.send({ embeds: [setupEmbed] });
 			interaction.reply({
 				content: "Updated Configs. This has been logged.",
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch {
 			interaction.reply({
 				content: "No log channel has been set yet.",
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

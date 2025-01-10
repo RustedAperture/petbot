@@ -1,4 +1,4 @@
-const { ButtonStyle, ButtonBuilder, ActionRowBuilder } = require("discord.js");
+const { ButtonStyle, ButtonBuilder, ActionRowBuilder, MessageFlags } = require("discord.js");
 const { botData, petData } = require("./db");
 const { log } = require("./log");
 const logger = require("../logger");
@@ -69,7 +69,7 @@ exports.updatePet = async (
 		if (cmd == "change-pet") {
 			await interaction.reply({
 				content: "Updated your image to the new url",
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 			const reset = new ButtonBuilder()
 				.setCustomId("reset-pet")
@@ -80,7 +80,7 @@ exports.updatePet = async (
 		} else {
 			await interaction.reply({
 				content: `Updated ${target.username} image to the new url`,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 			row = undefined;
 		}
@@ -102,7 +102,7 @@ exports.updatePet = async (
 	} else {
 		await interaction.reply({
 			content: "Updated your image to the new url",
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 		loggermsg = `Updated ${target.username} image ${slot} to the new url in ${guild}`;
 	}

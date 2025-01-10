@@ -1,4 +1,4 @@
-const { Events } = require("discord.js");
+const { Events, MessageFlags } = require("discord.js");
 const { resetPet } = require("../utilities/reset-pet");
 const logger = require("../logger");
 
@@ -29,19 +29,19 @@ module.exports = {
 					await interaction.followUp({
 						content:
 							"There was an error while executing this command!",
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				} else {
 					await interaction.reply({
 						content:
 							"There was an error while executing this command!",
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 			}
 		} else if (interaction.isButton()) {
 			if (interaction.customId === "reset-pet") {
-				await interaction.deferReply({ ephemeral: true });
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 				const msg = await interaction.message;
 				const msgDesc = msg.embeds[0].description;
 				const mention = msgDesc.match(/<@(\d+)>/)[1];

@@ -2,6 +2,7 @@ const {
 	SlashCommandBuilder,
 	ApplicationIntegrationType,
 	InteractionContextType,
+	MessageFlags
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
@@ -129,14 +130,14 @@ module.exports = {
 			} else {
 				await interaction.reply({
 					content: "Your URL is invalid, please try again",
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} else if (interaction.options.getSubcommand() === "remove") {
 			await resetPet(interaction, target.id, slot);
 			await interaction.reply({
 				content: `Your image in slot ${slot} has been reset to the base image.`,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		}
 	},

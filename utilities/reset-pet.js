@@ -2,6 +2,7 @@ const { log } = require("./log");
 const { botData, petData } = require("./db");
 const logger = require("../logger");
 const { getPetSlot } = require("./helper");
+const { MessageFlags } = require("discord.js");
 
 exports.resetPet = async (interaction, userId, slot) => {
 	let guildSettings, logChannel, pet_img;
@@ -71,7 +72,7 @@ exports.resetPet = async (interaction, userId, slot) => {
 	} else {
 		await interaction.reply({
 			content: `Reset your image ${slot} to the base pet image`,
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	}
 };
