@@ -24,7 +24,7 @@ exports.resetPet = async (interaction, userId, slot) => {
 			guildSettings.get("log_channel")
 		);
 
-		pet_img = guildSettings.get("default_pet_image");
+		pet_img = slot === 1 ? guildSettings.get("default_pet_image") : "";
 
 		const logMsg = `> **User**: ${target.username} (<@${target.id}>)
 		> **Slot**: ${slot}`;
@@ -44,7 +44,9 @@ exports.resetPet = async (interaction, userId, slot) => {
 		);
 	} else {
 		pet_img =
-			"https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+        slot === 1
+            ? "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true"
+            : "";
 		logger.debug(
 			`reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`
 		);
