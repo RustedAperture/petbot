@@ -71,7 +71,7 @@ module.exports = {
 				: target.globalName;
 			const targetColor = inServer
 				? hexToRGBTuple(target.displayHexColor)
-				: hexToRGBTuple(target.accentColor);
+				: target.accentColor;
 
 			const petStatsContainer = new ContainerBuilder();
 
