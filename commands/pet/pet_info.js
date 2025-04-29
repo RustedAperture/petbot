@@ -87,6 +87,7 @@ module.exports = {
 					`**Used pet**: ${pet.get("has_pet")}x`
 				].join('\n'),
 			);
+
 			const targetThumbnail = new ThumbnailBuilder().setURL(target.displayAvatarURL());
 
 			targetSection.addTextDisplayComponents(targetText);
@@ -101,7 +102,7 @@ module.exports = {
 				}
 			}]);
 
-			if (pet.get("pet_img_two") != '') {
+			if (pet.get("pet_img_two") != '' && pet.get("pet_img_two") != null) {
 				petGallery.addItems([{
 					description: "Pet Image 2",
 					media: {
@@ -110,7 +111,7 @@ module.exports = {
 				}]);
 			}
 
-			if (pet.get("pet_img_three") != '') {
+			if (pet.get("pet_img_three") != '' && pet.get("pet_img_three") != null) {
 				petGallery.addItems([{
 					description: "Pet Image 3",
 					media: {
@@ -119,7 +120,7 @@ module.exports = {
 				}]);
 			}
 
-			if (pet.get("pet_img_four") != '') {
+			if (pet.get("pet_img_four") != '' && pet.get("pet_img_four") != null) {
 				petGallery.addItems([{
 					description: "Pet Image 4",
 					media: {
