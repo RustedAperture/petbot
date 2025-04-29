@@ -1,24 +1,17 @@
 const {
 	ContextMenuCommandBuilder,
-	EmbedBuilder,
+	ApplicationCommandType,
 	ApplicationIntegrationType,
 	InteractionContextType,
-    ApplicationCommandType,
-    MessageFlags
+	MessageFlags,
+	ContainerBuilder,
+	SectionBuilder,
+	TextDisplayBuilder,
+	ThumbnailBuilder,
+	MediaGalleryBuilder,
 } = require("discord.js");
 const { petData, botData } = require("./../../utilities/db");
-
-function createEmbed(petEmbed) {
-    if (petEmbed == '') {
-        petEmbed = null;
-    }
-    return new EmbedBuilder()
-        .setURL("https://discord.js")
-        .setImage(
-            petEmbed ??
-            "https://github.com/RustedAperture/Stickers/blob/main/belly%20placeholder.png?raw=true"
-        );
-}
+const { hexToRGBTuple } = require("../../utilities/helper");
 
 module.exports = {
 	data: new ContextMenuCommandBuilder()
@@ -68,47 +61,70 @@ module.exports = {
 			const targetName = inServer
 				? target.displayName
 				: target.globalName;
-			const targetColor = inServer
-				? target.displayHexColor
-				: target.accentColor;
+				const targetColor = inServer
+				? hexToRGBTuple(target.displayHexColor)
+				: hexToRGBTuple(target.accentColor);
 
-			const petEmbed = new EmbedBuilder()
-				.setColor(targetColor)
-				.setAuthor({
-					name: targetName,
-					iconURL: target.displayAvatarURL(),
-				})
-				.addFields(
-					{
-						name: "Times pet here",
-						value: `${pet.get("has_been_pet")}x`,
-						inline: true,
-					},
-                    {
-						name: "Total times pet",
-						value: `${totalHasBeenPet}x`,
-						inline: true,
-					},
-					{
-						name: "Used pet",
-						value: `${pet.get("has_pet")}x`,
-						inline: true,
-					},
-					{
-						name: "Pet Images",
-						value: "These are the images for the specified user.",
+			const petStatsContainer = new ContainerBuilder();
+
+			petStatsContainer.setAccentColor(targetColor);
+			
+			const targetSection = new SectionBuilder();
+
+			const targetText = new TextDisplayBuilder().setContent(
+				[
+					`# ${targetName} pet stats`,
+					`**Times pet here**: ${pet.get("has_been_pet")}x`,
+					`**Total times pet**: ${totalHasBeenPet}x`,
+					`**Used pet**: ${pet.get("has_pet")}x`
+				].join('\n'),
+			);
+			const targetThumbnail = new ThumbnailBuilder().setURL(target.displayAvatarURL());
+
+			targetSection.addTextDisplayComponents(targetText);
+			targetSection.setThumbnailAccessory(targetThumbnail);
+
+			petStatsContainer.addSectionComponents(targetSection);
+
+			const petGallery = new MediaGalleryBuilder().addItems([{
+				description: "Pet Image",
+				media: {
+					url: `${pet.get("pet_img")}`
+				}
+			}]);
+
+			if (pet.get("pet_img_two") != '') {
+				petGallery.addItems([{
+					description: "Pet Image 2",
+					media: {
+						url: `${pet.get("pet_img_two")}`
 					}
-				)
-				.setURL("https://discord.js")
-				.setImage(`${pet.get("pet_img")}`);
+				}]);
+			}
 
-			let petEmbed2 = createEmbed(pet.get("pet_img_two"));
-			let petEmbed3 = createEmbed(pet.get("pet_img_three"));
-			let petEmbed4 = createEmbed(pet.get("pet_img_four"));
+			if (pet.get("pet_img_three") != '') {
+				petGallery.addItems([{
+					description: "Pet Image 3",
+					media: {
+						url: `${pet.get("pet_img_three")}`
+					}
+				}]);
+			}
+
+			if (pet.get("pet_img_four") != '') {
+				petGallery.addItems([{
+					description: "Pet Image 4",
+					media: {
+						url: `${pet.get("pet_img_four")}`
+					}
+				}]);
+			}
+
+			petStatsContainer.addMediaGalleryComponents(petGallery);
 
 			await interaction.reply({
-				embeds: [petEmbed, petEmbed2, petEmbed3, petEmbed4],
-				flags: MessageFlags.Ephemeral,
+				components: [petStatsContainer],
+				flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
 			});
 		}
 	},

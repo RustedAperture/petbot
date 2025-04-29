@@ -1,13 +1,16 @@
 const {
 	ContextMenuCommandBuilder,
-	EmbedBuilder,
 	ApplicationCommandType,
 	ApplicationIntegrationType,
 	InteractionContextType,
+	ContainerBuilder,
+	TextDisplayBuilder,
+	MediaGalleryBuilder,
+	MessageFlags,
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { petData } = require("./../../utilities/db");
-const { getPetSlot, countPetImages } = require("./../../utilities/helper");
+const { getPetSlot, countPetImages, hexToRGBTuple } = require("./../../utilities/helper");
 const logger = require("../../logger");
 
 module.exports = {
@@ -58,27 +61,35 @@ module.exports = {
 
 		const targetName = inServer ? target.displayName : target.globalName;
 		const targetColor = inServer
-			? target.displayHexColor
-			: target.accentColor;
+			? hexToRGBTuple(target.displayHexColor)
+			: hexToRGBTuple(target.accentColor);
 
-		petEmbed = new EmbedBuilder()
-			.setColor(targetColor)
-			.setTitle(`${targetName} has been pet`)
-			.setAuthor({
-				name: author.displayName,
-				iconURL: author.displayAvatarURL(),
-			})
-			.setImage(petTarget.get(petSlot))
-			.setFooter({
-				text: `${targetName} has been pet ${
+		const petContainer = new ContainerBuilder();
+
+		petContainer.setAccentColor(targetColor);
+
+		const targetText = new TextDisplayBuilder().setContent(`# <@${target.id}> has been pet!`);
+
+		petContainer.addTextDisplayComponents(targetText);
+
+		const petGallery = new MediaGalleryBuilder().addItems([{
+			description: "Pet Image",
+			media: {
+				url: petTarget.get(petSlot)
+			}
+		}])
+
+		petContainer.addMediaGalleryComponents(petGallery);
+
+		const countText = new TextDisplayBuilder().setContent(`-# ${targetName} has been pet ${
 					petTarget.get("has_been_pet") + 1
-				} times`,
-				iconURL: target.displayAvatarURL(),
-			});
+				} times | Command ran by ${author.displayName}`);
+		
+		petContainer.addTextDisplayComponents(countText);
 
 		await interaction.reply({
-			content: `<@${target.id}>`,
-			embeds: [petEmbed],
+			components: [petContainer],
+			flags: MessageFlags.IsComponentsV2,
 		});
 
 		logger.debug(
