@@ -66,7 +66,7 @@ module.exports = {
 			interaction.user,
 			null,
 			null,
-			"Red"
+			[255, 0, 0]
 		);
 
 		interaction.reply({ content: logMsg, flags: MessageFlags.Ephemeral });

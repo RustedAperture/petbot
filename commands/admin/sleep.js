@@ -44,7 +44,7 @@ module.exports = {
 			interaction.user,
 			null,
 			null,
-			"Blue"
+			[0, 0, 255]
 		);
 
 		interaction.reply({ embeds: [sleepEmbed] });

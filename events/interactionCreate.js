@@ -1,6 +1,7 @@
-const { Events, MessageFlags } = require("discord.js");
+const { Events, MessageFlags, ContainerBuilder } = require("discord.js");
 const { resetPet } = require("../utilities/reset-pet");
 const logger = require("../logger");
+const { log } = require("../utilities/log");
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -43,14 +44,13 @@ module.exports = {
 			if (interaction.customId === "reset-pet") {
 				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 				const msg = await interaction.message;
-				const msgDesc = msg.embeds[0].description;
+				const msgDesc = msg.components[0].components[1].content;
 				const mention = msgDesc.match(/<@(\d+)>/)[1];
 				// Split the string by newline characters
 				const lines = msgDesc.split("\n")[1];
 				// Extract the number after "Slot:"
 				const slotNumber = parseInt(lines.trim().split(":")[1].trim());
 				resetPet(interaction, mention, slotNumber);
-				msg.edit({ components: [] });
 				await interaction.editReply({
 					content: `<@${mention}> pet image has been reset`,
 				});

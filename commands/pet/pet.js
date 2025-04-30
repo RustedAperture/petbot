@@ -107,8 +107,6 @@ module.exports = {
 
 			const targetText = new TextDisplayBuilder().setContent(`# <@${target.id}> has been pet!`);
 
-			petContainer.addTextDisplayComponents(targetText);
-
 			const petGallery = new MediaGalleryBuilder().addItems([{
 				description: "Pet Image",
 				media: {
@@ -117,6 +115,8 @@ module.exports = {
 			}])
 
 			petContainer.addMediaGalleryComponents(petGallery);
+
+			petContainer.addTextDisplayComponents(targetText);
 
 			const countText = new TextDisplayBuilder().setContent(`-# ${targetName} has been pet ${
 						petTarget.get("has_been_pet") + 1

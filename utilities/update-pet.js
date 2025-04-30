@@ -75,7 +75,7 @@ exports.updatePet = async (
 				.setCustomId("reset-pet")
 				.setLabel("Reset Pet")
 				.setStyle(ButtonStyle.Danger);
-			row = new ActionRowBuilder().addComponents(reset);
+			row = reset
 			reason = undefined;
 		} else {
 			await interaction.reply({
@@ -96,7 +96,7 @@ exports.updatePet = async (
 			interaction.user,
 			url,
 			row,
-			"Orange"
+			[255, 165, 0]
 		);
 		loggermsg = `Updated ${target.username} image ${slot} to the new url in ${interaction.guild.name}`;
 	} else {

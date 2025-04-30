@@ -36,7 +36,7 @@ exports.resetPet = async (interaction, userId, slot) => {
 			target,
 			guildSettings.get("default_pet_image"),
 			null,
-			"Red"
+			[255, 0, 0]
 		);
 
 		logger.debug(
@@ -72,6 +72,7 @@ exports.resetPet = async (interaction, userId, slot) => {
 	}
 	if (interaction.context == 0 && inServer != null) {
 	} else {
+		logger.debug("here");
 		await interaction.reply({
 			content: `Reset your image ${slot} to the base pet image`,
 			flags: MessageFlags.Ephemeral,
