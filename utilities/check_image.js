@@ -8,9 +8,18 @@ exports.checkImage = async (url) => {
             return false;
         }
 
-        // Check if URL has a valid scheme
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            logger.error(`URL missing valid scheme (http/https): ${url}`);
+        // More strict ASCII-only validation for schemes
+        const httpRegex = /^https?:\/\//;
+        if (!httpRegex.test(url)) {
+            logger.error(`URL missing valid ASCII scheme (http/https): ${url} (original: ${url})`);
+            return false;
+        }
+
+        // Additional validation using URL constructor
+        try {
+            new URL(url);
+        } catch (urlError) {
+            logger.error(`Invalid URL format: ${url}`, urlError.message);
             return false;
         }
 

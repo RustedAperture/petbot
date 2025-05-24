@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const { checkUser } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
+const { normalizeUrl } = require("../../utilities/normalizeUrl");
 const { resetPet } = require("../../utilities/reset-pet");
 const { updatePet } = require("../../utilities/update-pet");
 const logger = require("../../logger");
@@ -90,7 +91,8 @@ module.exports = {
 		await checkUser(target, guild);
 
 		if (interaction.options.getSubcommand() === "update") {
-			const url = interaction.options.getString("url");
+			const uncleanUrl = interaction.options.getString("url");
+			const url = normalizeUrl(uncleanUrl);
 
 			// check slot 1 if trying to set a higher slot before slot 1
 			if (slot >= 2) {

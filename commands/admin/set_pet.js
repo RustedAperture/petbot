@@ -45,7 +45,8 @@ module.exports = {
 		const target = interaction.options.getMember("target");
 
 		let reason = interaction.options.getString("reason");
-		let url = interaction.options.getString("url");
+		let uncleanUrl = interaction.options.getString("url");
+		const url = normalizeUrl(uncleanUrl);
 		let slot = interaction.options.getNumber("slot");
 
 		const guild = interaction.guildId;
