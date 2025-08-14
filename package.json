@@ -1,6 +1,6 @@
 {
 	"name": "petbot",
-	"version": "4.5.0",
+	"version": "4.5.1",
 	"description": "",
 	"main": "index.js",
 	"scripts": {
@@ -10,14 +10,14 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"discord.js": "^14.19.2",
+		"discord.js": "^14.21.0",
 		"pino": "^7.11.0",
 		"pino-pretty": "^11.3.0",
 		"sequelize": "^6.37.7",
 		"sqlite3": "^5.1.7"
 	},
 	"devDependencies": {
-		"eslint": "^9.25.1",
+		"eslint": "^9.33.0",
 		"umzug": "^3.8.2"
 	}
 }
