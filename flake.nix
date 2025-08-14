@@ -2,7 +2,7 @@
   description = "Dev shell for petbot (Node + pnpm + sqlite3 build deps)";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
