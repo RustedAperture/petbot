@@ -1,14 +1,3 @@
-exports.getPetSlot = (slot) => {
-  const petSlots = {
-    1: "pet_img",
-    2: "pet_img_two",
-    3: "pet_img_three",
-    4: "pet_img_four",
-  };
-
-  return petSlots[slot] || null;
-};
-
 exports.hexToRGBTuple = (hex) => {
   // Remove the '#' character if present
   hex = hex.replace("#", "");

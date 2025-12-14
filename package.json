@@ -22,7 +22,9 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "@types/node": "^25.0.2",
     "eslint": "^9.33.0",
+    "typescript": "^5.9.3",
     "umzug": "^3.8.2"
   }
 }

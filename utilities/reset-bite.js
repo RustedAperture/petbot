@@ -1,5 +1,5 @@
 const { log } = require("./log");
-const { botData, biteData } = require("./db");
+const { botData, biteData, petData } = require("./db");
 const logger = require("../logger");
 const { MessageFlags } = require("discord.js");
 
@@ -14,6 +14,9 @@ exports.resetBite = async (interaction, userId, slot) => {
     guildSettings = await botData.findOne({
       where: {
         guild_id: guild,
+        default_bite_image: {
+          [require("sequelize").Op.ne]: null,
+        },
       },
     });
 
@@ -21,7 +24,11 @@ exports.resetBite = async (interaction, userId, slot) => {
       guildSettings.get("log_channel"),
     );
 
-    bite_img = slot === 1 ? guildSettings.get("default_bite_image") : "";
+    const baseImage = guildSettings.get("default_pet_image")
+      ? guildSettings.get("default_pet_image")
+      : "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview";
+
+    bite_img = slot === 1 ? baseImage : null;
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
 		> **Slot**: ${slot}`;
@@ -31,7 +38,7 @@ exports.resetBite = async (interaction, userId, slot) => {
       logMsg,
       logChannel,
       target,
-      guildSettings.get("default_bite_image"),
+      bite_img,
       null,
       [255, 0, 0],
     );
@@ -41,7 +48,7 @@ exports.resetBite = async (interaction, userId, slot) => {
     );
   } else {
     bite_img =
-      slot === 1 ? "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview" : "";
+      slot === 1 ? "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview" : null;
     logger.debug(
       `reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`,
     );
@@ -55,9 +62,21 @@ exports.resetBite = async (interaction, userId, slot) => {
       },
     });
 
-    const imagesArray = record.images || [];
-    imagesArray[slot - 1] = bite_img;
-    await record.update({ images: imagesArray });
+    const imagesArray = JSON.parse(JSON.stringify(record.get("images") || []));
+    if (slot > 1) {
+      imagesArray.splice(slot - 1, 1);
+    } else {
+      imagesArray[slot - 1] = bite_img;
+    }
+    const cleanedImages = imagesArray.filter((img) => img && img.trim() !== "");
+    await biteData.update(
+      { images: cleanedImages },
+      {
+        where: {
+          id: record.get("id"),
+        },
+      },
+    );
   } catch (error) {
     logger.error(
       { error: error },

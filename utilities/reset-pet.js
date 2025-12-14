@@ -14,6 +14,9 @@ exports.resetPet = async (interaction, userId, slot) => {
     guildSettings = await botData.findOne({
       where: {
         guild_id: guild,
+        default_pet_image: {
+          [require("sequelize").Op.ne]: null,
+        },
       },
     });
 
@@ -21,7 +24,11 @@ exports.resetPet = async (interaction, userId, slot) => {
       guildSettings.get("log_channel"),
     );
 
-    pet_img = slot === 1 ? guildSettings.get("default_pet_image") : "";
+    const baseImage = guildSettings.get("default_pet_image")
+      ? guildSettings.get("default_pet_image")
+      : "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+
+    pet_img = slot === 1 ? baseImage : null;
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
 		> **Slot**: ${slot}`;
@@ -31,7 +38,7 @@ exports.resetPet = async (interaction, userId, slot) => {
       logMsg,
       logChannel,
       target,
-      guildSettings.get("default_pet_image"),
+      pet_img,
       null,
       [255, 0, 0],
     );
@@ -43,13 +50,16 @@ exports.resetPet = async (interaction, userId, slot) => {
     pet_img =
       slot === 1
         ? "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true"
-        : "";
+        : null;
     logger.debug(
       `reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`,
     );
   }
 
   try {
+    logger.debug(
+      `resetting ${userId} image ${slot} to the base image for ${guild}`,
+    );
     const record = await petData.findOne({
       where: {
         user_id: userId,
@@ -57,9 +67,21 @@ exports.resetPet = async (interaction, userId, slot) => {
       },
     });
 
-    const imagesArray = record.images || [];
-    imagesArray[slot - 1] = pet_img;
-    await record.update({ images: imagesArray });
+    const imagesArray = JSON.parse(JSON.stringify(record.get("images") || []));
+    if (slot > 1) {
+      imagesArray.splice(slot - 1, 1);
+    } else {
+      imagesArray[slot - 1] = pet_img;
+    }
+    const cleanedImages = imagesArray.filter((img) => img && img.trim() !== "");
+    await petData.update(
+      { images: cleanedImages },
+      {
+        where: {
+          id: record.get("id"),
+        },
+      },
+    );
   } catch (error) {
     logger.error(
       { error: error },
