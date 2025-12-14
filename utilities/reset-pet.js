@@ -1,7 +1,6 @@
 const { log } = require("./log");
 const { botData, petData } = require("./db");
 const logger = require("../logger");
-const { MessageFlags } = require("discord.js");
 
 exports.resetPet = async (interaction, userId, slot) => {
   let guildSettings, logChannel, pet_img;
@@ -87,12 +86,5 @@ exports.resetPet = async (interaction, userId, slot) => {
       { error: error },
       "Something went wrong with reseting the user image.",
     );
-  }
-  if (interaction.context !== 0 || inServer == null) {
-    logger.debug("here");
-    await interaction.reply({
-      content: `Reset your image ${slot} to the base pet image`,
-      flags: MessageFlags.Ephemeral,
-    });
   }
 };

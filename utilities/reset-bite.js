@@ -1,7 +1,6 @@
 const { log } = require("./log");
-const { botData, biteData, petData } = require("./db");
+const { botData, biteData } = require("./db");
 const logger = require("../logger");
-const { MessageFlags } = require("discord.js");
 
 exports.resetBite = async (interaction, userId, slot) => {
   let guildSettings, logChannel, bite_img;
@@ -82,12 +81,5 @@ exports.resetBite = async (interaction, userId, slot) => {
       { error: error },
       "Something went wrong with reseting the user image.",
     );
-  }
-  if (interaction.context !== 0 || inServer == null) {
-    logger.debug("here");
-    await interaction.reply({
-      content: `Reset your image ${slot} to the base bite image`,
-      flags: MessageFlags.Ephemeral,
-    });
   }
 };
