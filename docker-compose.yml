@@ -1,14 +1,12 @@
 services:
     node:
         container_name: petbot
-        image: "node:alpine"
+        image: "node:20"
         user: "node"
         restart: always
         working_dir: /home/node/app
         volumes:
             - ./:/home/node/app
-        environment:
-            - NPM_CONFIG_PREFIX=/home/node/.npm-global
-            - PATH=$PATH:/home/node/.npm-global/bin
+        entrypoint: []
         tty: true
-        command: sh -c 'npm run dev'
+        command: sh -c 'npm run dev:tui'

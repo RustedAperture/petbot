@@ -1,19 +1,16 @@
-const js = require("@eslint/js");
+import js from "@eslint/js";
+import globals from "globals";
 
-module.exports = [
+export default [
   js.configs.recommended,
   {
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: "commonjs",
+      sourceType: "module",
       globals: {
         console: "readonly",
         process: "readonly",
-        __dirname: "readonly",
-        __filename: "readonly",
-        module: "readonly",
-        require: "readonly",
-        exports: "readonly",
+        // ESM globals below are available via import.meta and URL APIs
         Buffer: "readonly",
         setTimeout: "readonly",
         clearTimeout: "readonly",
@@ -46,6 +43,20 @@ module.exports = [
       "object-curly-spacing": ["error", "always"],
       "array-bracket-spacing": ["error", "never"],
     },
+  },
+  {
+    files: ["migrations/*.cjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+      },
+      ecmaVersion: "latest",
+      sourceType: "commonjs",
+    },
+    rules: {},
   },
   {
     ignores: ["node_modules/**", "data/**", ".idea/**", ".vscode/**"],

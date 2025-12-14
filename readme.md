@@ -16,7 +16,7 @@ A discord bot by RustedAperture 2024
 }
 ```
 
-2. Run `node deploy-commands.js` to register the global commands
+2. Run `node deploy-commands.ts` to register the global commands
 3. If wanting to run in docker use `docker build -t petbot .`
 4. Run the docker container `docker run -d --name petbot petbot`
 5. In a guild channel use the `/setup` command to set the nickname, logging channel and the default pet image.

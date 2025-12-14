@@ -1,48 +1,43 @@
 {
-  // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    "rootDir": "./",
+    "outDir": "./dist",
 
     // Environment Settings
-    // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
-    "target": "esnext",
-    "types": [],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
+    "module": "NodeNext",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "NodeNext",
 
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
-    // Recommended Options
+    // Typechecking
     "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    "noImplicitAny": false,
+
+    // JSX/TSX Support
+    "jsx": "react-jsx",
+
+    // JavaScript Support
     "allowJs": true,
-    "checkJs": false
+    "checkJs": false,
+    "resolveJsonModule": true,
+
+    // Outputs
+    "sourceMap": true,
+    "declaration": false
   },
-  "include": ["**/*.ts", "**/*.js"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "data",
+    "migrations/**",
+    "utilities/**/*.js",
+    // Exclude the legacy non-TSX dashboard source to avoid duplicate emit
+    "tui/dashboard.ts",
+    "**/tui/dashboard.ts"
+  ]
 }
