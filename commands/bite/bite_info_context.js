@@ -5,11 +5,11 @@ const {
   InteractionContextType,
   MessageFlags,
 } = require("discord.js");
-const { getPetStatsContainer } = require("../../utilities/actionHelpers");
+const { getStatsContainer } = require("../../utilities/actionHelpers");
 
 module.exports = {
   data: new ContextMenuCommandBuilder()
-    .setName("petStats")
+    .setName("biteStats")
     .setType(ApplicationCommandType.User)
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
@@ -33,7 +33,7 @@ module.exports = {
 
     await target.fetch(true);
 
-    const container = await getPetStatsContainer(target, guild, inServer);
+    const container = await getStatsContainer(target, guild, inServer);
 
     if (container.type === "noData") {
       await interaction.reply({

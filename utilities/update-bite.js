@@ -1,9 +1,9 @@
 const { ButtonStyle, ButtonBuilder, MessageFlags } = require("discord.js");
-const { botData, petData } = require("./db");
+const { botData, biteData } = require("./db");
 const { log } = require("./log");
 const logger = require("../logger");
 
-exports.updatePet = async (
+exports.updateBite = async (
   interaction,
   userId,
   url,
@@ -14,7 +14,7 @@ exports.updatePet = async (
   let guildSettings, logChannel, row;
   const inServer = interaction.guild;
   let loggermsg;
-  const petIndex = slot - 1;
+  const biteIndex = slot - 1;
   const target = interaction.user;
 
   const guild = interaction.guildId ?? interaction.channelId;
@@ -34,7 +34,7 @@ exports.updatePet = async (
 
   try {
     if (everywhere) {
-      const records = await petData.findAll({
+      const records = await biteData.findAll({
         where: {
           user_id: userId,
         },
@@ -45,9 +45,9 @@ exports.updatePet = async (
           JSON.stringify(record.get("images") || []),
         );
 
-        imagesArray[petIndex] = url;
+        imagesArray[biteIndex] = url;
 
-        await petData.update(
+        await biteData.update(
           { images: imagesArray },
           {
             where: {
@@ -57,7 +57,7 @@ exports.updatePet = async (
         );
       }
     } else {
-      const record = await petData.findOne({
+      const record = await biteData.findOne({
         where: {
           user_id: userId,
           guild_id: guild,
@@ -68,9 +68,9 @@ exports.updatePet = async (
         JSON.stringify(record.get("images") || []),
       );
 
-      imagesArray[petIndex] = url;
+      imagesArray[biteIndex] = url;
 
-      await petData.update(
+      await biteData.update(
         { images: imagesArray },
         {
           where: {
@@ -87,15 +87,15 @@ exports.updatePet = async (
   }
 
   if (interaction.context === 0 && inServer != null) {
-    if (cmd === "change-pet") {
+    if (cmd === "change-bite") {
       await interaction.reply({
         content: "Updated your image to the new url",
         flags: MessageFlags.Ephemeral,
       });
 
       row = new ButtonBuilder()
-        .setCustomId("reset-pet")
-        .setLabel("Reset Pet")
+        .setCustomId("reset-bite")
+        .setLabel("Reset Bite")
         .setStyle(ButtonStyle.Danger);
       reason = undefined;
     } else {
@@ -111,7 +111,7 @@ exports.updatePet = async (
 		> **Reason**: ${reason}`;
 
     await log(
-      "Updated Pet Image",
+      "Updated Bite Image",
       logMsg,
       logChannel,
       interaction.user,

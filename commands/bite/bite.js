@@ -5,29 +5,29 @@ const {
   MessageFlags,
 } = require("discord.js");
 const logger = require("./../../logger");
-const { performPet } = require("../../utilities/actionHelpers");
-const { checkUserPet } = require("../../utilities/check_user");
+const { performBite } = require("../../utilities/actionHelpers");
+const { checkUserBite } = require("../../utilities/check_user");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("pet")
-    .setDescription("Pets another user")
+    .setName("bite")
+    .setDescription("Bites another user")
     .addUserOption((option) =>
       option
         .setName("target1")
-        .setDescription("The user you want to pet")
+        .setDescription("The user you want to bite")
         .setRequired(true),
     )
     .addUserOption((option) =>
       option
         .setName("target2")
-        .setDescription("The user you want to pet")
+        .setDescription("The user you want to bite")
         .setRequired(false),
     )
     .addUserOption((option) =>
       option
         .setName("target3")
-        .setDescription("The user you want to pet")
+        .setDescription("The user you want to bite")
         .setRequired(false),
     )
     .setIntegrationTypes([
@@ -67,13 +67,13 @@ module.exports = {
 
     const uniqueTargets = [...targets];
 
-    await checkUserPet(author, guild);
+    await checkUserBite(author, guild);
 
     const containers = [];
 
     for (const target of uniqueTargets) {
       await target.fetch(true);
-      const container = await performPet(
+      const container = await performBite(
         target,
         author,
         guild,

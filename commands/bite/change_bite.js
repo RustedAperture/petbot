@@ -4,22 +4,22 @@ const {
   InteractionContextType,
   MessageFlags,
 } = require("discord.js");
-const { checkUserPet } = require("../../utilities/check_user");
+const { checkUserBite } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
 const { normalizeUrl } = require("../../utilities/normalizeUrl");
-const { resetPet } = require("../../utilities/reset-pet");
-const { updatePet } = require("../../utilities/update-pet");
 const logger = require("../../logger");
-const { petData, botData } = require("../../utilities/db");
+const { biteData, botData } = require("../../utilities/db");
+const { updateBite } = require("../../utilities/update-bite");
+const { resetBite } = require("../../utilities/reset-bite");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("change-pet")
-    .setDescription("Update your pet settings")
+    .setName("change-bite")
+    .setDescription("Update your bite settings")
     .addSubcommand((subcommand) =>
       subcommand
         .setName("update")
-        .setDescription("Update your users pet image.")
+        .setDescription("Update your users bite image.")
         .addStringOption((option) =>
           option
             .setName("url")
@@ -49,7 +49,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("remove")
-        .setDescription("Remove your users pet image.")
+        .setDescription("Remove your users bite image.")
         .addNumberOption((option) =>
           option
             .setName("slot")
@@ -86,7 +86,7 @@ module.exports = {
 
     const guild = interaction.guildId ?? interaction.channelId;
 
-    await checkUserPet(target, guild);
+    await checkUserBite(target, guild);
 
     if (interaction.options.getSubcommand() === "update") {
       const uncleanUrl = interaction.options.getString("url");
@@ -100,21 +100,20 @@ module.exports = {
             guild_id: guild,
           },
         });
-        const defaultBase =
-          "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+        const defaultBase = "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview";
         // check slot one for default
-        const pet = await petData.findOne({
+        const bite = await biteData.findOne({
           where: {
             user_id: target.id,
             guild_id: guild,
           },
         });
 
-        const images = pet.get("images");
+        const images = bite.get("images");
 
         if (
           images[0] === defaultBase ||
-          images[0] === guildSettings?.get("default_pet_image")
+          images[0] === guildSettings?.get("default_bite_image")
         ) {
           logger.debug("setting image while slot 1 is default");
           slot = 1;
@@ -122,7 +121,7 @@ module.exports = {
       }
 
       if (await checkImage(url)) {
-        await updatePet(interaction, target.id, url, everywhere, null, slot);
+        await updateBite(interaction, target.id, url, everywhere, null, slot);
       } else {
         await interaction.reply({
           content: "Your URL is invalid, please try again",
@@ -130,7 +129,7 @@ module.exports = {
         });
       }
     } else if (interaction.options.getSubcommand() === "remove") {
-      await resetPet(interaction, target.id, slot);
+      await resetBite(interaction, target.id, slot);
       await interaction.reply({
         content: `Your image in slot ${slot} has been reset to the base image.`,
         flags: MessageFlags.Ephemeral,

@@ -3,16 +3,16 @@ const {
   PermissionsBitField,
   MessageFlags,
 } = require("discord.js");
-const { checkUserPet } = require("../../utilities/check_user");
+const { checkUserBite } = require("../../utilities/check_user");
 const { checkImage } = require("../../utilities/check_image");
-const { updatePet } = require("../../utilities/update-pet");
 const { botData } = require("./../../utilities/db");
 const { normalizeUrl } = require("../../utilities/normalizeUrl");
+const { updateBite } = require("../../utilities/update-bite");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("set-pet")
-    .setDescription("Sets a pet for a specific user")
+    .setName("set-bite")
+    .setDescription("Sets a bite for a specific user")
     .addUserOption((option) =>
       option
         .setName("target")
@@ -67,13 +67,13 @@ module.exports = {
     }
 
     if (url === "default") {
-      url = guildSettings.get("default_pet_image");
+      url = guildSettings.get("default_bite_image");
     }
 
-    await checkUserPet(target, guild);
+    await checkUserBite(target, guild);
 
     if (await checkImage(url)) {
-      await updatePet(interaction, target.id, url, false, reason, slot);
+      await updateBite(interaction, target.id, url, false, reason, slot);
     } else {
       await interaction.reply({
         content: "Invalid url please try again.",

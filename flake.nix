@@ -16,6 +16,8 @@
         pkgs = import nixpkgs {inherit system;};
       in {
         devShells.default = pkgs.mkShell {
+          name = "petbot-dev-shell";
+
           # Tools needed to develop and build node modules (e.g., sqlite3)
           packages = with pkgs; [
             nodejs_20 # LTS Node.js compatible with discord.js v14
@@ -35,6 +37,7 @@
             export npm_config_update_notifier=false
             export PUPPETEER_SKIP_DOWNLOAD=true
             echo "petbot dev shell ready: node $(node -v), pnpm $(pnpm -v)"
+            zsh
           '';
         };
       }

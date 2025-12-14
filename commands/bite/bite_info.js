@@ -1,16 +1,21 @@
 const {
-  ContextMenuCommandBuilder,
-  ApplicationCommandType,
+  SlashCommandBuilder,
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
 } = require("discord.js");
-const { getPetStatsContainer } = require("../../utilities/actionHelpers");
+const { getStatsContainer } = require("../../utilities/actionHelpers");
 
 module.exports = {
-  data: new ContextMenuCommandBuilder()
-    .setName("petStats")
-    .setType(ApplicationCommandType.User)
+  data: new SlashCommandBuilder()
+    .setName("bite-stats")
+    .setDescription("Get the stats for a user")
+    .addUserOption((option) =>
+      option
+        .setName("target")
+        .setDescription("The user you want to get bite stats for")
+        .setRequired(false),
+    )
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
       ApplicationIntegrationType.UserInstall,
@@ -26,14 +31,17 @@ module.exports = {
     const guild = interaction.guildId ?? interaction.channelId;
 
     if (interaction.context === 0 && inServer != null) {
-      target = interaction.targetMember;
+      target = interaction.options.getMember("target");
+      if (!target) {
+        target = interaction.member;
+      }
     } else {
-      target = interaction.targetUser;
+      target = interaction.options.getUser("target");
     }
 
     await target.fetch(true);
 
-    const container = await getPetStatsContainer(target, guild, inServer);
+    const container = await getStatsContainer(target, guild, inServer);
 
     if (container.type === "noData") {
       await interaction.reply({

@@ -5,11 +5,12 @@ const {
   InteractionContextType,
   MessageFlags,
 } = require("discord.js");
-const { getPetStatsContainer } = require("../../utilities/actionHelpers");
+const logger = require("../../logger");
+const { performBite } = require("../../utilities/actionHelpers");
 
 module.exports = {
   data: new ContextMenuCommandBuilder()
-    .setName("petStats")
+    .setName("bite-user")
     .setType(ApplicationCommandType.User)
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
@@ -21,31 +22,32 @@ module.exports = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
-    let target;
+    let target, author;
     const inServer = interaction.guild;
-    const guild = interaction.guildId ?? interaction.channelId;
 
     if (interaction.context === 0 && inServer != null) {
       target = interaction.targetMember;
+      author = interaction.member;
     } else {
       target = interaction.targetUser;
+      author = interaction.user;
     }
+
+    const guild = interaction.guildId ?? interaction.channelId;
 
     await target.fetch(true);
 
-    const container = await getPetStatsContainer(target, guild, inServer);
-
-    if (container.type === "noData") {
-      await interaction.reply({
-        content: container.content,
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
+    const container = await performBite(
+      target,
+      author,
+      guild,
+      inServer,
+      logger,
+    );
 
     await interaction.reply({
       components: [container],
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
+      flags: MessageFlags.IsComponentsV2,
     });
   },
 };

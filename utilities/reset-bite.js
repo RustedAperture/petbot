@@ -1,10 +1,10 @@
 const { log } = require("./log");
-const { botData, petData } = require("./db");
+const { botData, biteData } = require("./db");
 const logger = require("../logger");
 const { MessageFlags } = require("discord.js");
 
-exports.resetPet = async (interaction, userId, slot) => {
-  let guildSettings, logChannel, pet_img;
+exports.resetBite = async (interaction, userId, slot) => {
+  let guildSettings, logChannel, bite_img;
   const inServer = interaction.guild;
   const target = interaction.user;
 
@@ -21,17 +21,17 @@ exports.resetPet = async (interaction, userId, slot) => {
       guildSettings.get("log_channel"),
     );
 
-    pet_img = slot === 1 ? guildSettings.get("default_pet_image") : "";
+    bite_img = slot === 1 ? guildSettings.get("default_bite_image") : "";
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
 		> **Slot**: ${slot}`;
 
     await log(
-      "Reset Pet Image",
+      "Reset Bite Image",
       logMsg,
       logChannel,
       target,
-      guildSettings.get("default_pet_image"),
+      guildSettings.get("default_bite_image"),
       null,
       [255, 0, 0],
     );
@@ -40,17 +40,15 @@ exports.resetPet = async (interaction, userId, slot) => {
       `Reset ${target.displayName} image ${slot} to the base image in ${interaction.guild.name}`,
     );
   } else {
-    pet_img =
-      slot === 1
-        ? "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true"
-        : "";
+    bite_img =
+      slot === 1 ? "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview" : "";
     logger.debug(
       `reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`,
     );
   }
 
   try {
-    const record = await petData.findOne({
+    const record = await biteData.findOne({
       where: {
         user_id: userId,
         guild_id: guild,
@@ -58,7 +56,7 @@ exports.resetPet = async (interaction, userId, slot) => {
     });
 
     const imagesArray = record.images || [];
-    imagesArray[slot - 1] = pet_img;
+    imagesArray[slot - 1] = bite_img;
     await record.update({ images: imagesArray });
   } catch (error) {
     logger.error(
@@ -69,7 +67,7 @@ exports.resetPet = async (interaction, userId, slot) => {
   if (interaction.context !== 0 || inServer == null) {
     logger.debug("here");
     await interaction.reply({
-      content: `Reset your image ${slot} to the base pet image`,
+      content: `Reset your image ${slot} to the base bite image`,
       flags: MessageFlags.Ephemeral,
     });
   }
