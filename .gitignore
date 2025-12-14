@@ -7,3 +7,4 @@ data/database.sqlite
 dist/
 *.d.ts
 *.d.ts.map
+app.json.log
