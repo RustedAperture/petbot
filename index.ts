@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 
 const config = JSON.parse(
-  fs.readFileSync(new URL("./config.json", import.meta.url), "utf8"),
+  fs.readFileSync(new URL("../config.json", import.meta.url), "utf8"),
 );
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
@@ -14,10 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { token } = config as { token: string };
 
-
 if (process.env.TUI === "1") {
   import("./tui/dashboard.js").catch((err) => {
-    
     console.error("Failed to start TUI:", err);
   });
 }
@@ -37,7 +35,7 @@ const sequelize = new Sequelize({
 const umzug = new Umzug({
   migrations: {
     glob: "migrations/*.cjs",
-    
+
     resolve: ({ name, path: mPath, context }) => {
       return {
         name: name.replace(/\.cjs$/, ".js"),
@@ -78,13 +76,12 @@ for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs
     .readdirSync(commandsPath)
-    .filter((file) => file.endsWith(".js")); 
+    .filter((file) => file.endsWith(".js"));
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const loaded = await import(pathToFileURL(filePath).href);
-    const command = (loaded as any).default || loaded; 
+    const command = (loaded as any).default || loaded;
     if ("data" in command && "execute" in command) {
-      
       const isContext =
         command.data.constructor.name === "ContextMenuCommandBuilder";
       if (isContext) {

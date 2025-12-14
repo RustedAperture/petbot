@@ -5,7 +5,7 @@ import {
   ApplicationCommandType,
 } from "discord.js";
 const config = JSON.parse(
-  fs.readFileSync(new URL("./config.json", import.meta.url), "utf8"),
+  fs.readFileSync(new URL("../config.json", import.meta.url), "utf8"),
 );
 import fs from "node:fs";
 import path from "node:path";
@@ -52,22 +52,18 @@ for (const folder of commandFolders) {
   }
 }
 
-
 const commands: ApplicationCommandData[] = [
   ...slashCommands,
   ...contextCommands,
 ];
 
-
 const rest = new REST().setToken(token);
-
 
 (async () => {
   try {
     console.log(
       `Started refreshing ${commands.length} application (/) commands.`,
     );
-
 
     const data = (await rest.put(Routes.applicationCommands(clientId), {
       body: commands,
@@ -77,7 +73,6 @@ const rest = new REST().setToken(token);
       `Successfully reloaded ${data.length} application (/) commands.`,
     );
   } catch (error) {
-
     console.error(error);
   }
 })();
