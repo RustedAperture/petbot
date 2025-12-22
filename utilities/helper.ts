@@ -16,13 +16,17 @@ export function randomImage(target: PetUser | BiteUser) {
 }
 
 export function getName(user: User | GuildMember) {
-  return typeof user === "object" && "username" in user
-    ? user.username
-    : user.displayName;
+  return user instanceof User ? user.username : user.displayName;
 }
 
-export function getAccentColor(user: User | GuildMember): number | RGBTuple {
-  return typeof user === "object" && "displayHexColor" in user
-    ? hexToRGBTuple(user.displayHexColor)
-    : user.accentColor!;
+export function getAccentColor(user: User | GuildMember) {
+  let accentColor =
+    user instanceof GuildMember
+      ? hexToRGBTuple(user.displayHexColor)
+      : user.accentColor;
+
+  if (accentColor === null || accentColor === undefined)
+    accentColor = hexToRGBTuple("#000000");
+
+  return accentColor;
 }
