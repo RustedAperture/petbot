@@ -1,28 +1,21 @@
-import type { User, GuildMember } from "discord.js";
+import type { GuildMember, User } from "discord.js";
 import {
   ContainerBuilder,
-  TextDisplayBuilder,
   MediaGalleryBuilder,
-  ThumbnailBuilder,
   SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
 } from "discord.js";
-import { checkUserBite } from "./check_user.js";
-import { checkUserPet } from "./check_user.js";
+import { checkUserBite, checkUserPet } from "./check_user.js";
 import { BiteData, PetData } from "./db.js";
 import { hexToRGBTuple, randomImage } from "./helper.js";
-import { Logger } from "pino";
 import { BiteUser, PetUser } from "../types/user.js";
-
-type PinoLogger = Logger<never, boolean>;
-
-
+import { buildActionReply } from "../components/buildActionReply.js";
 
 async function performBite(
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
-  inServer: boolean,
-  logger: PinoLogger,
 ): Promise<ContainerBuilder> {
   await checkUserBite(target, guild);
   await checkUserBite(author, guild);
@@ -39,56 +32,20 @@ async function performBite(
   await biteTarget!.increment("has_been_bitten");
   await biteAuthor!.increment("has_bitten");
 
-  const targetName = inServer
-    ? (target as GuildMember).displayName
-    : (target as User).globalName;
-  const targetColor = inServer
-    ? hexToRGBTuple((target as GuildMember).displayHexColor)
-    : (target as User).accentColor;
-
-  const biteContainer = new ContainerBuilder().setAccentColor(targetColor!);
-
-  const targetText = new TextDisplayBuilder().setContent(
-    `# <@${target.id}> has been bitten!`,
+  return buildActionReply(
+    target,
+    author,
+    guild,
+    "bitten",
+    image,
+    biteTarget!.get("has_been_bitten"),
   );
-
-  const biteGallery = new MediaGalleryBuilder().addItems([
-    {
-      description: "Bite Image",
-      media: { url: image },
-    },
-  ]);
-
-  biteContainer.addMediaGalleryComponents(biteGallery);
-  biteContainer.addTextDisplayComponents(targetText);
-
-  const countText = new TextDisplayBuilder().setContent(
-    `-# ${targetName} has been bitten ${biteTarget!.get("has_been_bitten")} times | Command ran by ${(author as GuildMember).displayName}`,
-  );
-
-  biteContainer.addTextDisplayComponents(countText);
-
-
-  logger.debug(
-    {
-      Context: `${guild}`, // Simplified; expand if needed
-      Trigger: (author as GuildMember).displayName,
-      Target: targetName,
-    },
-    "A user has been bitten",
-  );
-
-  return biteContainer;
 }
-
-
 
 async function performPet(
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
-  inServer: boolean,
-  logger: PinoLogger,
 ): Promise<ContainerBuilder> {
   await checkUserPet(target, guild);
   await checkUserPet(author, guild);
@@ -105,49 +62,15 @@ async function performPet(
   await petTarget!.increment("has_been_pet");
   await petAuthor!.increment("has_pet");
 
-  const targetName = inServer
-    ? (target as GuildMember).displayName
-    : (target as User).globalName;
-  const targetColor = inServer
-    ? hexToRGBTuple((target as GuildMember).displayHexColor)
-    : (target as User).accentColor;
-
-  const petContainer = new ContainerBuilder().setAccentColor(targetColor!);
-
-  const targetText = new TextDisplayBuilder().setContent(
-    `# <@${target.id}> has been pet!`,
+  return buildActionReply(
+    target,
+    author,
+    guild,
+    "pet",
+    image,
+    petTarget!.get("has_been_pet"),
   );
-
-  const petGallery = new MediaGalleryBuilder().addItems([
-    {
-      description: "Pet Image",
-      media: { url: image },
-    },
-  ]);
-
-  petContainer.addMediaGalleryComponents(petGallery);
-  petContainer.addTextDisplayComponents(targetText);
-
-  const countText = new TextDisplayBuilder().setContent(
-    `-# ${targetName} has been pet ${petTarget!.get("has_been_pet")} times | Command ran by ${(author as GuildMember).displayName}`,
-  );
-
-  petContainer.addTextDisplayComponents(countText);
-
-
-  logger.debug(
-    {
-      Context: `${guild}`,
-      Trigger: (author as GuildMember).displayName,
-      Target: targetName,
-    },
-    "A user has been pet",
-  );
-
-  return petContainer;
 }
-
-
 
 async function getStatsContainer(
   target: User | GuildMember,
@@ -213,8 +136,6 @@ async function getStatsContainer(
 
   return biteStatsContainer;
 }
-
-
 
 async function getPetStatsContainer(
   target: User | GuildMember,

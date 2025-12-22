@@ -6,11 +6,8 @@ import {
   type Client,
   type Message,
 } from "discord.js";
-import { resetPet } from "../utilities/reset-pet.js";
-import { resetBite } from "../utilities/reset-bite.js";
-
-type ResetPet = typeof resetPet;
-type ResetBite = typeof resetBite;
+import resetPet from "../utilities/reset-pet.js";
+import resetBite from "../utilities/reset-bite.js";
 
 interface Executable {
   name: string;
@@ -50,16 +47,23 @@ const interactionCreate = {
         await command.execute(interaction);
       } catch (error) {
         console.error(error);
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({
-            content: "There was an error while executing this command!",
-            ephemeral: true,
-          });
-        } else {
-          await interaction.reply({
-            content: "There was an error while executing this command!",
-            ephemeral: true,
-          });
+        if (!interaction.replied && !interaction.deferred) {
+          try {
+            await interaction.reply({
+              content: "There was an error while executing this command!",
+              flags: MessageFlags.Ephemeral,
+            });
+          } catch (replyError) {
+            console.error("Failed to send error reply:", replyError);
+          }
+        } else if (interaction.deferred) {
+          try {
+            await interaction.editReply({
+              content: "There was an error while executing this command!",
+            });
+          } catch (editError) {
+            console.error("Failed to edit error reply:", editError);
+          }
         }
       }
     } else if (interaction.isButton()) {
@@ -113,7 +117,6 @@ const interactionCreate = {
         }
       }
     } else if (interaction.isStringSelectMenu()) {
-
     }
   },
 };

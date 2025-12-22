@@ -10,7 +10,7 @@ import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import logger from "../../logger.js";
 import { BiteData, BotData } from "../../utilities/db.js";
 import { updateBite } from "../../utilities/update-bite.js";
-import { resetBite } from "../../utilities/reset-bite.js";
+import resetBite from "../../utilities/reset-bite.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -82,6 +82,7 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("change-bite");
+    await interaction.deferReply();
     const target = interaction.user;
     const everywhere = interaction.options.getBoolean("everywhere");
     let slot = interaction.options.getNumber("slot");
@@ -122,14 +123,14 @@ export const command = {
       if (await checkImage(url)) {
         await updateBite(interaction, target.id, url, everywhere, null, slot);
       } else {
-        await interaction.reply({
+        await interaction.editReply({
           content: "Your URL is invalid, please try again",
           flags: MessageFlags.Ephemeral,
         });
       }
     } else if (interaction.options.getSubcommand() === "remove") {
       await resetBite(interaction, target.id, slot);
-      await interaction.reply({
+      await interaction.editReply({
         content: `Your image in slot ${slot} has been reset to the base image.`,
         flags: MessageFlags.Ephemeral,
       });

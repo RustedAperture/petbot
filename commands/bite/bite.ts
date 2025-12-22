@@ -5,7 +5,6 @@ import {
   MessageFlags,
   ContainerBuilder,
 } from "discord.js";
-import logger from "../../logger.js";
 import { performBite } from "../../utilities/actionHelpers.js";
 import { checkUserBite } from "../../utilities/check_user.js";
 import { emitCommand } from "../../utilities/metrics.js";
@@ -43,6 +42,8 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("bite");
+    await interaction.deferReply();
+
     let target1, target2, target3, author;
     const inServer = interaction.guild;
 
@@ -76,13 +77,7 @@ export const command = {
 
     for (const target of uniqueTargets) {
       await target.fetch(true);
-      const container = await performBite(
-        target,
-        author,
-        guild,
-        inServer,
-        logger,
-      );
+      const container = await performBite(target, author, guild);
       containers.push(container);
     }
 
@@ -92,7 +87,7 @@ export const command = {
         flags: MessageFlags.IsComponentsV2,
       };
       if (i === 0) {
-        await interaction.reply(options);
+        await interaction.editReply(options);
       } else {
         await interaction.followUp(options);
       }

@@ -7,7 +7,7 @@ import {
 import { checkUserPet } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import { resetPet } from "../../utilities/reset-pet.js";
+import resetPet from "../../utilities/reset-pet.js";
 import { updatePet } from "../../utilities/update-pet.js";
 import logger from "../../logger.js";
 import { PetData, BotData } from "../../utilities/db.js";
@@ -82,6 +82,7 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("change-pet");
+    await interaction.deferReply();
     const target = interaction.user;
     const everywhere = interaction.options.getBoolean("everywhere");
     let slot = interaction.options.getNumber("slot");
@@ -130,14 +131,14 @@ export const command = {
           slot,
         );
       } else {
-        await interaction.reply({
+        await interaction.editReply({
           content: "Your URL is invalid, please try again",
           flags: MessageFlags.Ephemeral,
         });
       }
     } else if (interaction.options.getSubcommand() === "remove") {
       await resetPet(interaction, target.id, slot);
-      await interaction.reply({
+      await interaction.editReply({
         content: `Your image in slot ${slot} has been reset to the base image.`,
         flags: MessageFlags.Ephemeral,
       });
