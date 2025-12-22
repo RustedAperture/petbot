@@ -7,7 +7,6 @@ import {
   GuildMember,
   User,
 } from "discord.js";
-import logger from "../../logger.js";
 import { performPet } from "../../utilities/actionHelpers.js";
 import { checkUserPet } from "../../utilities/check_user.js";
 import { emitCommand } from "../../utilities/metrics.js";
@@ -45,6 +44,8 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("pet");
+    await interaction.deferReply();
+
     let target1: GuildMember | User | null;
     let target2: GuildMember | User | null;
     let target3: GuildMember | User | null;
@@ -91,13 +92,7 @@ export const command = {
     for (const { user, member } of uniqueTargets) {
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performPet(
-        target,
-        author,
-        guild,
-        inServer,
-        logger,
-      );
+      const container = await performPet(target, author, guild);
       containers.push(container);
     }
 
@@ -107,7 +102,7 @@ export const command = {
         flags: MessageFlags.IsComponentsV2,
       };
       if (i === 0) {
-        await interaction.reply(options);
+        await interaction.editReply(options);
       } else {
         await interaction.followUp(options);
       }

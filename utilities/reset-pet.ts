@@ -96,4 +96,4 @@ export const resetPet = async (
   }
 };
 
-export default { resetPet };
+export default resetPet;

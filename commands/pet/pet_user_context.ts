@@ -7,7 +7,6 @@ import {
   GuildMember,
   User,
 } from "discord.js";
-import logger from "../../logger.js";
 import { performPet } from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
@@ -26,6 +25,8 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("pet-user");
+    await interaction.deferReply();
+
     let target: GuildMember | User;
     let author: GuildMember | User;
     const inServer = interaction.guild;
@@ -42,9 +43,9 @@ export const command = {
 
     await target.fetch(true);
 
-    const container = await performPet(target, author, guild, inServer, logger);
+    const container = await performPet(target, author, guild);
 
-    await interaction.reply({
+    await interaction.editReply({
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     });

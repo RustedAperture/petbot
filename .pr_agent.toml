@@ -1,0 +1,9 @@
+[github_app]
+handle_pr_actions = ['opened', 'reopened', 'ready_for_review']
+pr_commands = [
+    "/review",
+]
+handle_push_trigger = true
+push_commands = [
+    "/review",
+]

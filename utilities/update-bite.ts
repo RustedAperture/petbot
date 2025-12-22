@@ -88,7 +88,7 @@ export const updateBite = async (
 
   if (interaction.context === 0 && inServer != null) {
     if (cmd === "change-bite") {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Updated your image to the new url",
         flags: MessageFlags.Ephemeral,
       });
@@ -99,7 +99,7 @@ export const updateBite = async (
         .setStyle(ButtonStyle.Danger);
       reason = undefined as any;
     } else {
-      await interaction.reply({
+      await interaction.editReply({
         content: `Updated ${target.username} image to the new url`,
         flags: MessageFlags.Ephemeral,
       });
@@ -121,7 +121,7 @@ export const updateBite = async (
     );
     loggermsg = `Updated ${target.username} image ${slot} to the new url in ${interaction.guild.name}`;
   } else {
-    await interaction.reply({
+    await interaction.editReply({
       content: "Updated your image to the new url",
       flags: MessageFlags.Ephemeral,
     });

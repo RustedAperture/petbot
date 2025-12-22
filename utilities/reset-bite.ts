@@ -87,4 +87,4 @@ export const resetBite = async (
   }
 };
 
-export default { resetBite };
+export default resetBite;

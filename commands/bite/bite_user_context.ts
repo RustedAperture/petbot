@@ -5,7 +5,6 @@ import {
   InteractionContextType,
   MessageFlags,
 } from "discord.js";
-import logger from "../../logger.js";
 import { performBite } from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
@@ -24,6 +23,8 @@ export const command = {
     ]),
   async execute(interaction) {
     emitCommand("bite-user");
+    await interaction.deferReply();
+
     let target, author;
     const inServer = interaction.guild;
 
@@ -39,15 +40,9 @@ export const command = {
 
     await target.fetch(true);
 
-    const container = await performBite(
-      target,
-      author,
-      guild,
-      inServer,
-      logger,
-    );
+    const container = await performBite(target, author, guild);
 
-    await interaction.reply({
+    await interaction.editReply({
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     });
