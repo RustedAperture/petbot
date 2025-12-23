@@ -1,5 +1,7 @@
 import { BiteUser, PetUser } from "../types/user.js";
 import { GuildMember, RGBTuple, User } from "discord.js";
+import { PetData, BiteData, BotData } from "./db.js";
+import { Op } from "sequelize";
 
 export function hexToRGBTuple(hex: string) {
   hex = hex.replace("#", "");
@@ -29,4 +31,47 @@ export function getAccentColor(user: User | GuildMember) {
     accentColor = hexToRGBTuple("#000000");
 
   return accentColor;
+}
+
+export async function fetchGlobalStats() {
+  try {
+    const results = await Promise.all([
+      (PetData.sum as any)("has_pet"),
+      (BiteData.sum as any)("has_bitten"),
+      BotData.count(),
+      PetData.count({ distinct: true, col: "user_id" }),
+      PetData.count({ distinct: true, col: "guild_id" }),
+      PetData.count({
+        distinct: true,
+        col: "user_id",
+        where: { has_pet: { [Op.gt]: 0 } },
+      }),
+      BiteData.count({
+        distinct: true,
+        col: "user_id",
+        where: { has_bitten: { [Op.gt]: 0 } },
+      }),
+    ]);
+
+    return {
+      totalHasPet: Number(results[0]) || 0,
+      totalHasBitten: Number(results[1]) || 0,
+      totalGuilds: Number(results[2]) || 0,
+      totalUsers: Number(results[3]) || 0,
+      totalLocations: Number(results[4]) || 0,
+      totalPetUsers: Number(results[5]) || 0,
+      totalBiteUsers: Number(results[6]) || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching global stats:", error);
+    return {
+      totalHasPet: 0,
+      totalHasBitten: 0,
+      totalGuilds: 0,
+      totalUsers: 0,
+      totalLocations: 0,
+      totalPetUsers: 0,
+      totalBiteUsers: 0,
+    };
+  }
 }

@@ -6,7 +6,6 @@ import { metrics } from "./bus.js";
 import { PetData, BiteData, BotData } from "../utilities/db.js";
 import { Op } from "sequelize";
 
-
 function fmtTime(t: number | string): string {
   const d = new Date(typeof t === "string" ? Number(t) : t);
   const pad = (n: number, w = 2) => String(n).padStart(w, "0");
@@ -63,12 +62,9 @@ function useLogs() {
     );
 
   useEffect(() => {
-
     const normalizeTextLine = (line: string): string => {
-
       return line.replace(/^(\d{2}:\d{2}:\d{2}\.\d{3})\s+/, "[$1] ");
     };
-
 
     const extractMeta = (obj: Record<string, unknown>) => {
       const omit = new Set([
@@ -115,9 +111,7 @@ function useLogs() {
               append(formatted);
               return;
             }
-          } catch {
-
-          }
+          } catch {}
 
           append({
             time: undefined,
@@ -144,7 +138,6 @@ function useLogs() {
     };
     metrics.on("log", onLog);
 
-
     let tailStream: fs.ReadStream | undefined;
     if (process.env.TUI_TAIL_FILE === "1") {
       const logPath = process.env.LOG_FILE || "app.json.log";
@@ -168,7 +161,6 @@ function useLogs() {
                 formatted ?? { time: undefined, level: undefined, msg: line },
               );
             } catch {
-
               append({
                 time: undefined,
                 level: undefined,
@@ -227,9 +219,7 @@ function useDbStats() {
         setTotalLocations(Number(results[4]) || 0);
         setTotalPetUsers(Number(results[5]) || 0);
         setTotalBiteUsers(Number(results[6]) || 0);
-      } catch {
-
-      }
+      } catch {}
     };
     fetchStats();
     const t = setInterval(fetchStats, 5000);
@@ -295,16 +285,12 @@ const Dashboard: React.FC = () => {
     } else if (key.leftArrow) {
       setHScrollOffset((o) => Math.max(0, o - 2));
     } else if (input?.toLowerCase() === "h") {
-
       setHScrollOffset((o) => o + 2);
     } else if (input?.toLowerCase() === "l") {
-
       setHScrollOffset((o) => Math.max(0, o - 2));
     } else if (input === "g" && key.shift) {
-
       setScrollOffset(0);
     } else if (input === "g") {
-
       setScrollOffset(Math.max(0, entries.length - windowEntries));
     }
   });
@@ -328,11 +314,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-
   const termCols = (process.stdout && process.stdout.columns) || 80;
 
   const logInnerWidth = Math.max(10, termCols - 6);
-
 
   type Seg = { text: string; props?: Parameters<typeof Text>[0] };
   function sliceSegments(segments: Seg[], start: number, width: number): Seg[] {
@@ -354,7 +338,6 @@ const Dashboard: React.FC = () => {
       remainingSkip = 0;
     }
     if (out.length === 0) {
-
       out.push({ text: "" });
     }
     return out;
@@ -391,19 +374,14 @@ const Dashboard: React.FC = () => {
         : undefined);
     const timeStr = e.time != null ? fmtTime(e.time) : undefined;
 
-
     const timestampText = timeStr ? `[${timeStr}]` : "";
     const lvlText = (lvlLabel ?? "LOG").toString();
-
-
 
     const badgeVisualWidth = (lvlText ? lvlText.length : 3) + 4; // heuristic padding for Badge
     const prefixLen =
       (timestampText ? timestampText.length : 0) + 1 + badgeVisualWidth + 1;
 
-
     const msgWidth = Math.max(0, logInnerWidth - prefixLen);
-
 
     const msgSegments: Seg[] = [{ text: e.msg } as any];
     const slicedMsg = sliceSegments(msgSegments, hScrollOffset, msgWidth);
@@ -547,6 +525,5 @@ const Dashboard: React.FC = () => {
     </Box>
   );
 };
-
 
 render(<Dashboard />);

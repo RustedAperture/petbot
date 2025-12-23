@@ -7,15 +7,17 @@ import {
 } from "discord.js";
 import { getAccentColor, getName } from "../utilities/helper.js";
 import logger from "../logger.js";
+import { ACTIONS, ActionType } from "../types/constants.js";
 
 export function buildActionReply(
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
-  action: string,
+  action: ActionType,
   image: string,
   count: number,
 ) {
+  const actionObj = ACTIONS[action];
   const targetId = target.id;
   const container = new ContainerBuilder();
   const targetText = new TextDisplayBuilder();
@@ -26,15 +28,15 @@ export function buildActionReply(
   const authorName = getName(author);
   const accentColour = getAccentColor(target);
 
-  targetText.setContent(`# <@${targetId}> has been ${action}!`);
+  targetText.setContent(`# <@${targetId}> has been ${actionObj.past}!`);
 
   countText.setContent(
-    `-# ${targetName} has been ${action} ${count} times | Command ran by ${authorName}`,
+    `-# ${targetName} has been ${actionObj.past} ${count} times | Command ran by ${authorName}`,
   );
 
   gallery.addItems([
     {
-      description: `${targetName} being ${action}`,
+      description: `${targetName} being ${actionObj.past}`,
       media: { url: image },
     },
   ]);
@@ -50,7 +52,7 @@ export function buildActionReply(
       Trigger: authorName,
       Target: targetName,
     },
-    `A user has been ${action}`,
+    `A user has been ${actionObj.past}`,
   );
 
   return container;

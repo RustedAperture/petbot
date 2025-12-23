@@ -4,13 +4,18 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
+  ContainerBuilder,
+  UserContextMenuCommandInteraction,
 } from "discord.js";
-import { getStatsContainer } from "../../utilities/actionHelpers.js";
+import {
+  getBiteStatsContainer,
+  getPetStatsContainer,
+} from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
-    .setName("biteStats")
+    .setName("stats")
     .setType(ApplicationCommandType.User)
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
@@ -21,8 +26,13 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
-  async execute(interaction) {
-    emitCommand("biteStats");
+  async execute(interaction: UserContextMenuCommandInteraction) {
+    emitCommand("stats");
+
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+    });
+
     let target;
     const inServer = interaction.guild;
     const guild = interaction.guildId ?? interaction.channelId;
@@ -35,20 +45,24 @@ export const command = {
 
     await target.fetch(true);
 
-    const container = await getStatsContainer(target, guild, inServer);
+    let containers: ContainerBuilder[] = [];
 
-    if (typeof container === "object" && "type" in container) {
-      await interaction.reply({
-        content: container.content,
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
+    const biteStats = await getBiteStatsContainer(target, guild);
+    const petStats = await getPetStatsContainer(target, guild);
+
+    containers.push(petStats, biteStats);
+
+    for (let i = 0; i < containers.length; i++) {
+      const options = {
+        components: [containers[i]],
+        flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+      };
+      if (i === 0) {
+        await interaction.editReply(options);
+      } else {
+        await interaction.followUp(options);
+      }
     }
-
-    await interaction.reply({
-      components: [container],
-      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
-    });
   },
 };
 

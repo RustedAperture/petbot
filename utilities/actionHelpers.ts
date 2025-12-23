@@ -1,16 +1,11 @@
 import type { GuildMember, User } from "discord.js";
-import {
-  ContainerBuilder,
-  MediaGalleryBuilder,
-  SectionBuilder,
-  TextDisplayBuilder,
-  ThumbnailBuilder,
-} from "discord.js";
+import { ContainerBuilder } from "discord.js";
 import { checkUserBite, checkUserPet } from "./check_user.js";
 import { BiteData, PetData } from "./db.js";
-import { hexToRGBTuple, randomImage } from "./helper.js";
 import { BiteUser, PetUser } from "../types/user.js";
 import { buildActionReply } from "../components/buildActionReply.js";
+import { buildStatsReply } from "../components/buildStatsReply.js";
+import { randomImage } from "./helper.js";
 
 async function performBite(
   target: User | GuildMember,
@@ -36,7 +31,7 @@ async function performBite(
     target,
     author,
     guild,
-    "bitten",
+    "bite",
     image,
     biteTarget!.get("has_been_bitten"),
   );
@@ -72,11 +67,10 @@ async function performPet(
   );
 }
 
-async function getStatsContainer(
+async function getBiteStatsContainer(
   target: User | GuildMember,
   guild: string,
-  inServer: boolean,
-): Promise<ContainerBuilder | { type: string; content: string }> {
+): Promise<ContainerBuilder> {
   const bite = await BiteData.findOne({
     where: { user_id: target.id, guild_id: guild },
   });
@@ -85,119 +79,26 @@ async function getStatsContainer(
     where: { user_id: target.id },
   });
 
-  const targetName = inServer
-    ? (target as GuildMember).displayName
-    : (target as User).globalName;
-  const targetColor = inServer
-    ? hexToRGBTuple((target as GuildMember).displayHexColor)
-    : (target as User).accentColor;
+  const images = bite!.get("images");
 
-  const biteStatsContainer = new ContainerBuilder().setAccentColor(
-    targetColor!,
-  );
-
-  if (!bite) {
-    return { type: "noData", content: "The user has no bite data" };
-  }
-
-  const targetSection = new SectionBuilder();
-
-  const targetText = new TextDisplayBuilder().setContent(
-    [
-      `# ${targetName} bite stats`,
-      `**Times bitten here**: ${bite.get("has_been_bitten")}x`,
-      `**Total times bitten**: ${totalHasBeenBitten}x`,
-      `**Used bite**: ${bite.get("has_bitten")}x`,
-    ].join("\n"),
-  );
-
-  const targetThumbnail = new ThumbnailBuilder().setURL(
-    target.displayAvatarURL(),
-  );
-
-  targetSection.addTextDisplayComponents(targetText);
-  targetSection.setThumbnailAccessory(targetThumbnail);
-
-  biteStatsContainer.addSectionComponents(targetSection);
-
-  const biteImages = bite.get("images");
-  const biteGallery = new MediaGalleryBuilder();
-
-  for (let i = 0; i < biteImages.length; i++) {
-    biteGallery.addItems([
-      {
-        description: `Bite Image ${i + 1}`,
-        media: { url: biteImages[i] },
-      },
-    ]);
-  }
-
-  biteStatsContainer.addMediaGalleryComponents(biteGallery);
-
-  return biteStatsContainer;
+  return buildStatsReply(bite, images, target, "bite", totalHasBeenBitten);
 }
 
 async function getPetStatsContainer(
   target: User | GuildMember,
   guild: string,
-  inServer: boolean,
-): Promise<ContainerBuilder | { type: string; content: string }> {
+): Promise<ContainerBuilder> {
   const pet = await PetData.findOne({
     where: { user_id: target.id, guild_id: guild },
   });
+
+  const images = pet!.get("images");
 
   const totalHasBeenPet = await PetData.sum("has_been_pet", {
     where: { user_id: target.id },
   });
 
-  const targetName = inServer
-    ? (target as GuildMember).displayName
-    : (target as User).globalName;
-  const targetColor = inServer
-    ? hexToRGBTuple((target as GuildMember).displayHexColor)
-    : (target as User).accentColor;
-
-  const petStatsContainer = new ContainerBuilder().setAccentColor(targetColor!);
-
-  if (!pet) {
-    return { type: "noData", content: "The user has no pet data" };
-  }
-
-  const targetSection = new SectionBuilder();
-
-  const targetText = new TextDisplayBuilder().setContent(
-    [
-      `# ${targetName} pet stats`,
-      `**Times pet here**: ${pet.get("has_been_pet")}x`,
-      `**Total times pet**: ${totalHasBeenPet}x`,
-      `**Used pet**: ${pet.get("has_pet")}x`,
-    ].join("\n"),
-  );
-
-  const targetThumbnail = new ThumbnailBuilder().setURL(
-    target.displayAvatarURL(),
-  );
-
-  targetSection.addTextDisplayComponents(targetText);
-  targetSection.setThumbnailAccessory(targetThumbnail);
-
-  petStatsContainer.addSectionComponents(targetSection);
-
-  const petImages = pet.get("images");
-  const petGallery = new MediaGalleryBuilder();
-
-  for (let i = 0; i < petImages.length; i++) {
-    petGallery.addItems([
-      {
-        description: `Pet Image ${i + 1}`,
-        media: { url: petImages[i] },
-      },
-    ]);
-  }
-
-  petStatsContainer.addMediaGalleryComponents(petGallery);
-
-  return petStatsContainer;
+  return buildStatsReply(pet, images, target, "pet", totalHasBeenPet);
 }
 
-export { performBite, performPet, getStatsContainer, getPetStatsContainer };
+export { performBite, performPet, getBiteStatsContainer, getPetStatsContainer };
