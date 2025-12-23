@@ -23,6 +23,7 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  aliases: ["pet-user"],
   async execute(interaction) {
     emitCommand("pet-user");
     await interaction.deferReply();

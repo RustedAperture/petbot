@@ -3,10 +3,8 @@ import { ContainerBuilder, TextDisplayBuilder } from "discord.js";
 export function buildGlobalStatsContainer(stats: {
   totalHasPet: number;
   totalHasBitten: number;
-  totalGuilds: number;
   totalPetUsers: number;
   totalBiteUsers: number;
-  totalUsers: number;
   totalLocations: number;
 }) {
   const container = new ContainerBuilder();

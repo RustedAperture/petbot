@@ -1,4 +1,4 @@
-import type { GuildMember, User } from "discord.js";
+import { GuildMember, TextDisplayBuilder, User } from "discord.js";
 import { ContainerBuilder } from "discord.js";
 import { checkUserBite, checkUserPet } from "./check_user.js";
 import { BiteData, PetData } from "./db.js";
@@ -75,11 +75,18 @@ async function getBiteStatsContainer(
     where: { user_id: target.id, guild_id: guild },
   });
 
+  if (!bite) {
+    const targetText = new TextDisplayBuilder().setContent(
+      [`The user has no bite data`].join("\n"),
+    );
+    return new ContainerBuilder().addTextDisplayComponents(targetText);
+  }
+
   const totalHasBeenBitten = await BiteData.sum("has_been_bitten", {
     where: { user_id: target.id },
   });
 
-  const images = bite!.get("images");
+  const images = bite.get("images");
 
   return buildStatsReply(bite, images, target, "bite", totalHasBeenBitten);
 }
@@ -92,7 +99,14 @@ async function getPetStatsContainer(
     where: { user_id: target.id, guild_id: guild },
   });
 
-  const images = pet!.get("images");
+  if (!pet) {
+    const targetText = new TextDisplayBuilder().setContent(
+      [`The user has no pet data`].join("\n"),
+    );
+    return new ContainerBuilder().addTextDisplayComponents(targetText);
+  }
+
+  const images = pet.get("images");
 
   const totalHasBeenPet = await PetData.sum("has_been_pet", {
     where: { user_id: target.id },

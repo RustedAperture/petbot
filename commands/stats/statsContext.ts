@@ -26,6 +26,7 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  aliases: ["petStats", "biteStats"],
   async execute(interaction: UserContextMenuCommandInteraction) {
     emitCommand("stats");
 

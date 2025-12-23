@@ -28,33 +28,27 @@ export function buildStatsReply(
   const targetSection = new SectionBuilder();
   const targetText = new TextDisplayBuilder();
 
-  if (!data) {
-    targetText.setContent(
-      [`The user has no ${actionObj.noun} data`].join("\n"),
-    );
-  } else {
-    targetText.setContent(
-      [
-        `# ${targetName} ${actionObj.noun} stats`,
-        `**Times ${actionObj.past} here**: ${data.get(`has_been_${actionObj.past}`)}x`,
-        `**Total times ${actionObj.past}**: ${totalCount}x`,
-        `**Used ${actionObj.noun}**: ${data.get(`has_${actionObj.past}`)}x`,
-      ].join("\n"),
-    );
+  targetText.setContent(
+    [
+      `# ${targetName} ${actionObj.noun} stats`,
+      `**Times ${actionObj.past} here**: ${data.get(`has_been_${actionObj.past}`)}x`,
+      `**Total times ${actionObj.past}**: ${totalCount}x`,
+      `**Used ${actionObj.noun}**: ${data.get(`has_${actionObj.past}`)}x`,
+    ].join("\n"),
+  );
 
-    const gallery = new MediaGalleryBuilder();
+  const gallery = new MediaGalleryBuilder();
 
-    for (let i = 0; i < images.length; i++) {
-      gallery.addItems([
-        {
-          description: `${actionObj.noun} Image ${i + 1}`,
-          media: { url: images[i] },
-        },
-      ]);
-    }
-
-    statsContainer.addMediaGalleryComponents(gallery);
+  for (let i = 0; i < images.length; i++) {
+    gallery.addItems([
+      {
+        description: `${actionObj.noun} Image ${i + 1}`,
+        media: { url: images[i] },
+      },
+    ]);
   }
+
+  statsContainer.addMediaGalleryComponents(gallery);
 
   const targetThumbnail = new ThumbnailBuilder().setURL(
     target.displayAvatarURL(),

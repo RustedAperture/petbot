@@ -21,6 +21,7 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  aliases: ["bite-user"],
   async execute(interaction) {
     emitCommand("bite-user");
     await interaction.deferReply();

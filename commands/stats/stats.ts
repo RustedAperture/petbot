@@ -43,6 +43,7 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  aliases: ["bite-stats", "pet-stats"],
   async execute(interaction: ChatInputCommandInteraction) {
     emitCommand("stats");
 
