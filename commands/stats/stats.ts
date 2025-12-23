@@ -51,9 +51,11 @@ export const command = {
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });
 
-    const target = interaction.options.getMember("target");
-    const action = interaction.options.getString("action");
     const inServer = interaction.guild;
+    const target = inServer
+      ? interaction.options.getMember("target")
+      : interaction.options.getUser("target");
+    const action = interaction.options.getString("action");
     const guild = interaction.guildId ?? interaction.channelId;
 
     let targetUser: GuildMember | User;

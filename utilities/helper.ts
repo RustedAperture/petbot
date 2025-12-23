@@ -1,7 +1,7 @@
 import { BiteUser, PetUser } from "../types/user.js";
 import { GuildMember, RGBTuple, User } from "discord.js";
-import { PetData, BiteData } from "./db.js";
-import { Op } from "sequelize";
+import { PetData, BiteData, sequelize } from "./db.js";
+import { Op, QueryTypes } from "sequelize";
 
 export function hexToRGBTuple(hex: string) {
   hex = hex.replace("#", "");
@@ -38,7 +38,16 @@ export async function fetchGlobalStats() {
     const results = await Promise.all([
       (PetData.sum as any)("has_pet"),
       (BiteData.sum as any)("has_bitten"),
-      PetData.count({ distinct: true, col: "guild_id" }),
+      sequelize
+        .query(
+          `SELECT COUNT(DISTINCT guild_id) as uniqueGuilds FROM (
+            SELECT guild_id FROM PetData
+            UNION
+            SELECT guild_id FROM BiteData
+          ) as uniqueGuilds`,
+          { type: QueryTypes.SELECT },
+        )
+        .then((result: any) => result[0].uniqueGuilds),
       PetData.count({
         distinct: true,
         col: "user_id",
