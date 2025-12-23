@@ -4,15 +4,13 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
-  GuildMember,
-  User,
 } from "discord.js";
-import { performPet } from "../../utilities/actionHelpers.js";
+import { performBite } from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
-    .setName("pet-user")
+    .setName("bite")
     .setType(ApplicationCommandType.User)
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
@@ -23,27 +21,27 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  aliases: ["bite-user"],
   async execute(interaction) {
-    emitCommand("pet-user");
+    emitCommand("bite-user");
     await interaction.deferReply();
 
-    let target: GuildMember | User;
-    let author: GuildMember | User;
+    let target, author;
     const inServer = interaction.guild;
 
     if (interaction.context === 0 && inServer != null) {
-      target = interaction.targetMember!;
-      author = interaction.member as GuildMember;
+      target = interaction.targetMember;
+      author = interaction.member;
     } else {
-      target = interaction.targetUser!;
+      target = interaction.targetUser;
       author = interaction.user;
     }
 
-    const guild = interaction.guildId ?? interaction.channelId!;
+    const guild = interaction.guildId ?? interaction.channelId;
 
     await target.fetch(true);
 
-    const container = await performPet(target, author, guild);
+    const container = await performBite(target, author, guild);
 
     await interaction.editReply({
       components: [container],

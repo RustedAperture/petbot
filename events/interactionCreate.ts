@@ -12,12 +12,27 @@ import resetBite from "../utilities/reset-bite.js";
 interface Executable {
   name: string;
   execute: (interaction: Interaction) => Promise<void>;
+  aliases?: string[];
 }
 
 type ClientWithCommands = Client & {
   slashCommands?: Map<string, Executable>;
   contextCommands?: Map<string, Executable>;
 };
+
+function findCommandByAlias(
+  commands: Map<string, Executable> | undefined,
+  alias: string,
+): Executable | undefined {
+  if (!commands) return undefined;
+
+  for (const command of commands.values()) {
+    if (command.aliases && command.aliases.includes(alias)) {
+      return command;
+    }
+  }
+  return undefined;
+}
 
 const interactionCreate = {
   name: Events.InteractionCreate,
@@ -32,8 +47,22 @@ const interactionCreate = {
 
       if (interaction.isChatInputCommand()) {
         command = client.slashCommands?.get(interaction.commandName);
+
+        if (!command) {
+          command = findCommandByAlias(
+            client.slashCommands,
+            interaction.commandName,
+          );
+        }
       } else if (interaction.isUserContextMenuCommand()) {
         command = client.contextCommands?.get(interaction.commandName);
+
+        if (!command) {
+          command = findCommandByAlias(
+            client.contextCommands,
+            interaction.commandName,
+          );
+        }
       }
 
       if (!command) {
