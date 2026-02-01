@@ -1,9 +1,13 @@
 import { ButtonStyle, ButtonBuilder, MessageFlags } from "discord.js";
-import { BotData, BiteData } from "./db.js";
+import { BotData, ActionData } from "./db.js";
 import { log } from "./log.js";
 import logger from "../logger.js";
+import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
 
-export const updateBite = async (
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+export const updateAction = async (
+  actionKind: ActionKind,
   interaction: any,
   userId: string,
   url: string,
@@ -11,72 +15,54 @@ export const updateBite = async (
   reason: string | null = null,
   slot: number,
 ) => {
+  const config = ACTIONS[actionKind];
   let guildSettings: any, logChannel: any, row: any;
   const inServer = interaction.guild;
   let loggermsg: string;
-  const biteIndex = slot - 1;
+  const imageIndex = slot - 1;
   const target = interaction.user;
-
   const guild = interaction.guildId ?? interaction.channelId;
 
   if (interaction.context === 0 && inServer != null) {
     guildSettings = await BotData.findOne({
-      where: {
-        guild_id: guild,
-      },
+      where: { guild_id: guild },
     });
-    logChannel = await interaction.guild.channels.fetch(
-      guildSettings!.get("log_channel"),
-    );
+    if (guildSettings) {
+      logChannel = await interaction.guild.channels.fetch(
+        guildSettings.get("log_channel"),
+      );
+    }
   }
 
   const cmd = interaction.commandName;
 
   try {
     if (everywhere) {
-      const records = await BiteData.findAll({
-        where: {
-          user_id: userId,
-        },
+      const records = await ActionData.findAll({
+        where: { user_id: userId, action_type: actionKind },
       });
 
       for (const record of records as any[]) {
         const imagesArray = JSON.parse(
           JSON.stringify((record as any).get("images") || []),
         );
-
-        imagesArray[biteIndex] = url;
-
-        await BiteData.update(
+        imagesArray[imageIndex] = url;
+        await ActionData.update(
           { images: imagesArray },
-          {
-            where: {
-              id: (record as any).get("id"),
-            },
-          },
+          { where: { id: (record as any).get("id") } },
         );
       }
     } else {
-      const record: any = await BiteData.findOne({
-        where: {
-          user_id: userId,
-          guild_id: guild,
-        },
+      const record: any = await ActionData.findOne({
+        where: { user_id: userId, location_id: guild, action_type: actionKind },
       });
-
       const imagesArray = JSON.parse(
         JSON.stringify(record.get("images") || []),
       );
-
-      imagesArray[biteIndex] = url;
-
-      await BiteData.update(
+      imagesArray[imageIndex] = url;
+      await ActionData.update(
         { images: imagesArray },
-        {
-          where: {
-            id: record.get("id"),
-          },
-        },
+        { where: { id: record.get("id") } },
       );
     }
   } catch (error: any) {
@@ -87,15 +73,14 @@ export const updateBite = async (
   }
 
   if (interaction.context === 0 && inServer != null) {
-    if (cmd === "change-bite") {
+    if (cmd === `change-${actionKind}`) {
       await interaction.editReply({
         content: "Updated your image to the new url",
         flags: MessageFlags.Ephemeral,
       });
-
       row = new ButtonBuilder()
-        .setCustomId("reset-bite")
-        .setLabel("Reset Bite")
+        .setCustomId(`reset-${actionKind}`)
+        .setLabel(`Reset ${capitalize(config.noun)}`)
         .setStyle(ButtonStyle.Danger);
       reason = undefined as any;
     } else {
@@ -107,11 +92,11 @@ export const updateBite = async (
     }
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
-		> **Slot**: ${slot}
-		> **Reason**: ${reason}`;
+    > **Slot**: ${slot}
+    > **Reason**: ${reason}`;
 
     await log(
-      "Updated Bite Image",
+      `Updated ${capitalize(config.noun)} Image`,
       logMsg,
       logChannel,
       interaction.user,
@@ -127,10 +112,11 @@ export const updateBite = async (
     });
     loggermsg = `Updated ${target.username} image ${slot} to the new url in ${guild}`;
   }
+
   if (everywhere) {
     loggermsg = `Updated ${target.username} image ${slot} to the new url everywhere`;
   }
   logger.debug(loggermsg);
 };
 
-export default { updateBite };
+export default { updateAction };

@@ -3,7 +3,7 @@ import { render, Box, Text, useApp, useInput } from "ink";
 import { Badge } from "@inkjs/ui";
 import fs from "node:fs";
 import { metrics } from "./bus.js";
-import { PetData, BiteData, BotData } from "../utilities/db.js";
+import { ActionData, BotData } from "../utilities/db.js";
 import { Op } from "sequelize";
 
 function fmtTime(t: number | string): string {
@@ -195,20 +195,34 @@ function useDbStats() {
     const fetchStats = async () => {
       try {
         const results = await Promise.all([
-          (PetData.sum as any)("has_pet"),
-          (BiteData.sum as any)("has_bitten"),
+          ActionData.sum("has_performed", { where: { action_type: "pet" } }),
+          ActionData.sum("has_performed", { where: { action_type: "bite" } }),
           BotData.count(),
-          PetData.count({ distinct: true, col: "user_id" }),
-          PetData.count({ distinct: true, col: "guild_id" }),
-          PetData.count({
+          ActionData.count({
             distinct: true,
             col: "user_id",
-            where: { has_pet: { [Op.gt]: 0 } },
+            where: { action_type: "pet" },
           }),
-          BiteData.count({
+          ActionData.count({
+            distinct: true,
+            col: "location_id",
+            where: { action_type: "pet" },
+          }),
+          ActionData.count({
             distinct: true,
             col: "user_id",
-            where: { has_bitten: { [Op.gt]: 0 } },
+            where: {
+              action_type: "pet",
+              has_performed: { [Op.gt]: 0 },
+            },
+          }),
+          ActionData.count({
+            distinct: true,
+            col: "user_id",
+            where: {
+              action_type: "bite",
+              has_performed: { [Op.gt]: 0 },
+            },
           }),
         ]);
         if (!mounted) return;

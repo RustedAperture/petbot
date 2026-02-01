@@ -4,13 +4,13 @@ import {
   InteractionContextType,
   MessageFlags,
 } from "discord.js";
-import { checkUserPet } from "../../utilities/check_user.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import resetPet from "../../utilities/reset-pet.js";
-import { updatePet } from "../../utilities/update-pet.js";
+import { resetAction } from "../../utilities/resetAction.js";
+import { updateAction } from "../../utilities/updateAction.js";
 import logger from "../../logger.js";
-import { PetData, BotData } from "../../utilities/db.js";
+import { ActionData, BotData } from "../../utilities/db.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -89,7 +89,7 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId;
 
-    await checkUserPet(target, guild);
+    await checkUser("pet", target, guild);
 
     if (interaction.options.getSubcommand() === "update") {
       const uncleanUrl = interaction.options.getString("url");
@@ -103,10 +103,11 @@ export const command = {
         });
         const defaultBase =
           "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
-        const pet = await PetData.findOne({
+        const pet = await ActionData.findOne({
           where: {
             user_id: target.id,
-            guild_id: guild,
+            location_id: guild,
+            action_type: "pet",
           },
         });
 
@@ -122,7 +123,8 @@ export const command = {
       }
 
       if (await checkImage(url)) {
-        await updatePet(
+        await updateAction(
+          "pet",
           interaction,
           target.id,
           url,
@@ -137,7 +139,7 @@ export const command = {
         });
       }
     } else if (interaction.options.getSubcommand() === "remove") {
-      await resetPet(interaction, target.id, slot);
+      await resetAction("pet", interaction, target.id, slot);
       await interaction.editReply({
         content: `Your image in slot ${slot} has been reset to the base image.`,
         flags: MessageFlags.Ephemeral,

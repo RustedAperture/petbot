@@ -1,6 +1,6 @@
-import { BiteUser, PetUser } from "../types/user.js";
+import { ActionUser } from "../types/user.js";
 import { GuildMember, RGBTuple, User } from "discord.js";
-import { PetData, BiteData, sequelize } from "./db.js";
+import { sequelize, ActionData } from "./db.js";
 import { Op, QueryTypes } from "sequelize";
 
 export function hexToRGBTuple(hex: string) {
@@ -13,7 +13,7 @@ export function hexToRGBTuple(hex: string) {
   return [r, g, b] as RGBTuple;
 }
 
-export function randomImage(target: PetUser | BiteUser) {
+export function randomImage(target: ActionUser) {
   return target.images[Math.floor(Math.random() * target.images.length)];
 }
 
@@ -36,27 +36,29 @@ export function getAccentColor(user: User | GuildMember) {
 export async function fetchGlobalStats() {
   try {
     const results = await Promise.all([
-      (PetData.sum as any)("has_pet"),
-      (BiteData.sum as any)("has_bitten"),
+      ActionData.sum("has_performed", { where: { action_type: "pet" } }),
+      ActionData.sum("has_performed", { where: { action_type: "bite" } }),
       sequelize
         .query(
-          `SELECT COUNT(DISTINCT guild_id) as uniqueGuilds FROM (
-            SELECT guild_id FROM PetData
-            UNION
-            SELECT guild_id FROM BiteData
-          ) as uniqueGuilds`,
+          `SELECT COUNT(DISTINCT location_id) as uniqueGuilds FROM actionData`,
           { type: QueryTypes.SELECT },
         )
         .then((result: any) => result[0].uniqueGuilds),
-      PetData.count({
+      ActionData.count({
         distinct: true,
         col: "user_id",
-        where: { has_pet: { [Op.gt]: 0 } },
+        where: {
+          action_type: "pet",
+          has_performed: { [Op.gt]: 0 },
+        },
       }),
-      BiteData.count({
+      ActionData.count({
         distinct: true,
         col: "user_id",
-        where: { has_bitten: { [Op.gt]: 0 } },
+        where: {
+          action_type: "bite",
+          has_performed: { [Op.gt]: 0 },
+        },
       }),
     ]);
 
