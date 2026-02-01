@@ -3,11 +3,11 @@ import {
   PermissionsBitField,
   MessageFlags,
 } from "discord.js";
-import { checkUserBite } from "../../utilities/check_user.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { BotData } from "../../utilities/db.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import { updateBite } from "../../utilities/update-bite.js";
+import { updateAction } from "../../utilities/updateAction.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -72,10 +72,18 @@ export const command = {
       url = guildSettings!.get("default_bite_image") as string;
     }
 
-    await checkUserBite(target, guild);
+    await checkUser("bite", target, guild);
 
     if (await checkImage(url)) {
-      await updateBite(interaction, target.id, url, false, reason, slot);
+      await updateAction(
+        "bite",
+        interaction,
+        target.id,
+        url,
+        false,
+        reason,
+        slot,
+      );
     } else {
       await interaction.reply({
         content: "Invalid url please try again.",

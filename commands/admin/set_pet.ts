@@ -3,9 +3,9 @@ import {
   PermissionsBitField,
   MessageFlags,
 } from "discord.js";
-import { checkUserPet } from "../../utilities/check_user.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
-import { updatePet } from "../../utilities/update-pet.js";
+import { updateAction } from "../../utilities/updateAction.js";
 import { BotData } from "../../utilities/db.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import { emitCommand } from "../../utilities/metrics.js";
@@ -72,10 +72,18 @@ export const command = {
       url = guildSettings!.get("default_pet_image") as string;
     }
 
-    await checkUserPet(target, guild);
+    await checkUser("pet", target, guild);
 
     if (await checkImage(url)) {
-      await updatePet(interaction, target.id, url, false, reason, slot);
+      await updateAction(
+        "pet",
+        interaction,
+        target.id,
+        url,
+        false,
+        reason,
+        slot,
+      );
     } else {
       await interaction.reply({
         content: "Invalid url please try again.",

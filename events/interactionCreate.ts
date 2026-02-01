@@ -6,8 +6,7 @@ import {
   type Client,
   type Message,
 } from "discord.js";
-import resetPet from "../utilities/reset-pet.js";
-import resetBite from "../utilities/reset-bite.js";
+import { resetAction } from "../utilities/resetAction.js";
 
 interface Executable {
   name: string;
@@ -110,7 +109,7 @@ const interactionCreate = {
         const slotNumber = slotStr ? parseInt(slotStr) : NaN;
 
         if (mention && !isNaN(slotNumber)) {
-          await resetPet(buttonInteraction, mention, slotNumber);
+          await resetAction("pet", buttonInteraction, mention, slotNumber);
           await buttonInteraction.editReply({
             content: `<@${mention}> pet image has been reset`,
           });
@@ -135,7 +134,7 @@ const interactionCreate = {
         const slotNumber = slotStr ? parseInt(slotStr) : NaN;
 
         if (mention && !isNaN(slotNumber)) {
-          await resetBite(buttonInteraction, mention, slotNumber);
+          await resetAction("bite", buttonInteraction, mention, slotNumber);
           await buttonInteraction.editReply({
             content: `<@${mention}> bite image has been reset`,
           });

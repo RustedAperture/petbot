@@ -7,10 +7,7 @@ import {
   ContainerBuilder,
   UserContextMenuCommandInteraction,
 } from "discord.js";
-import {
-  getBiteStatsContainer,
-  getPetStatsContainer,
-} from "../../utilities/actionHelpers.js";
+import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -48,8 +45,8 @@ export const command = {
 
     let containers: ContainerBuilder[] = [];
 
-    const biteStats = await getBiteStatsContainer(target, guild);
-    const petStats = await getPetStatsContainer(target, guild);
+    const biteStats = await getActionStatsContainer("bite", target, guild);
+    const petStats = await getActionStatsContainer("pet", target, guild);
 
     containers.push(petStats, biteStats);
 

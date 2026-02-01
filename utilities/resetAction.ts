@@ -1,16 +1,20 @@
 import { log } from "./log.js";
-import { BotData, BiteData } from "./db.js";
+import { BotData, ActionData } from "./db.js";
 import logger from "../logger.js";
+import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
 
-export const resetBite = async (
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+export const resetAction = async (
+  actionKind: ActionKind,
   interaction: any,
   userId: string,
   slot: number,
 ) => {
-  let guildSettings: any, logChannel: any, bite_img: string | null | undefined;
+  const config = ACTIONS[actionKind];
+  let guildSettings: any, logChannel: any, img: string | null | undefined;
   const inServer = interaction.guild;
   const target = interaction.user;
-
   const guild = interaction.guildId ?? interaction.channelId;
 
   if (interaction.context === 0 && inServer != null) {
@@ -20,25 +24,25 @@ export const resetBite = async (
       },
     });
 
-    logChannel = await interaction.guild.channels.fetch(
-      guildSettings!.get("log_channel"),
-    );
+    if (guildSettings) {
+      logChannel = await interaction.guild.channels.fetch(
+        guildSettings.get("log_channel"),
+      );
+    }
 
-    const baseImage = guildSettings.get("default_pet_image")
-      ? guildSettings.get("default_pet_image")
-      : "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview";
-
-    bite_img = slot === 1 ? baseImage : null;
+    const baseImage =
+      guildSettings?.get(config.guildSettingField) ?? config.defaultImage;
+    img = slot === 1 ? baseImage : null;
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
-		> **Slot**: ${slot}`;
+    > **Slot**: ${slot}`;
 
     await log(
-      "Reset Bite Image",
+      `Reset ${capitalize(config.noun)} Image`,
       logMsg,
       logChannel,
       target,
-      bite_img ?? null,
+      img ?? null,
       null,
       [255, 0, 0] as any,
     );
@@ -47,31 +51,41 @@ export const resetBite = async (
       `Reset ${target.displayName} image ${slot} to the base image in ${interaction.guild.name}`,
     );
   } else {
-    bite_img =
-      slot === 1 ? "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview" : null;
+    img = slot === 1 ? config.defaultImage : null;
     logger.debug(
       `reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`,
     );
   }
 
   try {
-    const record: any = await BiteData.findOne({
+    logger.debug(
+      `resetting ${userId} image ${slot} to the base image for ${guild}`,
+    );
+    const record: any = await ActionData.findOne({
       where: {
         user_id: userId,
-        guild_id: guild,
+        location_id: guild,
+        action_type: actionKind,
       },
     });
+
+    if (!record) {
+      logger.error(
+        `No ${actionKind} record found for user ${userId} in ${guild}`,
+      );
+      return;
+    }
 
     const imagesArray = JSON.parse(JSON.stringify(record.get("images") || []));
     if (slot > 1) {
       imagesArray.splice(slot - 1, 1);
     } else {
-      imagesArray[slot - 1] = bite_img;
+      imagesArray[slot - 1] = img;
     }
     const cleanedImages = imagesArray.filter(
-      (img: string) => img && img.trim() !== "",
+      (image: string) => image && image.trim() !== "",
     );
-    await BiteData.update(
+    await ActionData.update(
       { images: cleanedImages },
       {
         where: {
@@ -87,4 +101,4 @@ export const resetBite = async (
   }
 };
 
-export default resetBite;
+export default { resetAction };

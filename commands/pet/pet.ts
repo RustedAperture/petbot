@@ -7,8 +7,8 @@ import {
   GuildMember,
   User,
 } from "discord.js";
-import { performPet } from "../../utilities/actionHelpers.js";
-import { checkUserPet } from "../../utilities/check_user.js";
+import { performAction } from "../../utilities/actionHelpers.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -85,14 +85,14 @@ export const command = {
 
     const uniqueTargets = Array.from(targets);
 
-    await checkUserPet(author, guild);
+    await checkUser("pet", author, guild);
 
     const containers: ContainerBuilder[] = [];
 
     for (const { user, member } of uniqueTargets) {
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performPet(target, author, guild);
+      const container = await performAction("pet", target, author, guild);
       containers.push(container);
     }
 

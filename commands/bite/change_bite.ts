@@ -4,13 +4,13 @@ import {
   InteractionContextType,
   MessageFlags,
 } from "discord.js";
-import { checkUserBite } from "../../utilities/check_user.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import logger from "../../logger.js";
-import { BiteData, BotData } from "../../utilities/db.js";
-import { updateBite } from "../../utilities/update-bite.js";
-import resetBite from "../../utilities/reset-bite.js";
+import { ActionData, BotData } from "../../utilities/db.js";
+import { updateAction } from "../../utilities/updateAction.js";
+import { resetAction } from "../../utilities/resetAction.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -89,7 +89,7 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId;
 
-    await checkUserBite(target, guild);
+    await checkUser("bite", target, guild);
 
     if (interaction.options.getSubcommand() === "update") {
       const uncleanUrl = interaction.options.getString("url");
@@ -102,10 +102,11 @@ export const command = {
           },
         });
         const defaultBase = "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview";
-        const bite = await BiteData.findOne({
+        const bite = await ActionData.findOne({
           where: {
             user_id: target.id,
-            guild_id: guild,
+            location_id: guild,
+            action_type: "bite",
           },
         });
 
@@ -121,7 +122,15 @@ export const command = {
       }
 
       if (await checkImage(url)) {
-        await updateBite(interaction, target.id, url, everywhere, null, slot);
+        await updateAction(
+          "bite",
+          interaction,
+          target.id,
+          url,
+          everywhere,
+          null,
+          slot,
+        );
       } else {
         await interaction.editReply({
           content: "Your URL is invalid, please try again",
@@ -129,7 +138,7 @@ export const command = {
         });
       }
     } else if (interaction.options.getSubcommand() === "remove") {
-      await resetBite(interaction, target.id, slot);
+      await resetAction("bite", interaction, target.id, slot);
       await interaction.editReply({
         content: `Your image in slot ${slot} has been reset to the base image.`,
         flags: MessageFlags.Ephemeral,

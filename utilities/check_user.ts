@@ -1,75 +1,84 @@
-import { PetData, BotData, BiteData } from "./db.js";
+import { ActionData, BotData } from "./db.js";
 import logger from "../logger.js";
 import { Op } from "sequelize";
+import { ACTIONS, ActionType } from "../types/constants.js";
 
-export const checkUserPet = async (user: any, guild: string) => {
-  let petWithHighestHasPet: any;
+export const checkUser = async (
+  actionType: ActionType,
+  user: any,
+  guild: string,
+) => {
+  const config = ACTIONS[actionType];
+  let recordWithHighestPerformed: any;
 
-  const highestHasPetValue = await PetData.max("has_pet", {
+  const highestValue = await ActionData.max("has_performed", {
     where: {
       user_id: user.id,
+      action_type: actionType,
     },
   });
 
-  if (highestHasPetValue !== null) {
-    petWithHighestHasPet = await PetData.findOne({
+  if (highestValue !== null) {
+    recordWithHighestPerformed = await ActionData.findOne({
       where: {
         user_id: user.id,
-        has_pet: highestHasPetValue as number,
+        has_performed: highestValue as number,
+        action_type: actionType,
       },
     });
   }
 
-  const petDataForNewEntry: any = {
+  const dataForNewEntry: any = {
     user_id: user.id,
-    guild_id: guild,
-    has_pet: 0,
-    has_been_pet: 0,
+    location_id: guild,
+    has_performed: 0,
+    has_received: 0,
+    action_type: actionType,
     images: [],
   };
 
-  const pet = await PetData.findOne({
+  const existingRecord = await ActionData.findOne({
     where: {
       user_id: user.id,
-      guild_id: guild,
+      location_id: guild,
+      action_type: actionType,
     },
   });
 
   const guildSettings = await (BotData.findOne as any)({
     where: {
       guild_id: guild,
-      default_pet_image: {
+      [config.guildSettingField]: {
         [Op.ne]: null,
       },
     },
   });
 
-  if (!pet) {
+  if (!existingRecord) {
     try {
       logger.debug(
-        `No pet data found for user: ${user.displayName}. Creating pet data.`,
+        `No ${actionType} data found for user: ${user.displayName} in ${guild}. Creating ${actionType} data.`,
       );
 
-      if (!petWithHighestHasPet) {
+      if (!recordWithHighestPerformed) {
         if (!guildSettings) {
           logger.debug(
-            "No guild settings found or in a DM, using defult pet image",
+            `No guild settings found or in a DM, using default ${actionType} image`,
           );
-          petDataForNewEntry.images[0] =
-            "https://github.com/RustedAperture/Stickers/blob/main/Belly%20Rub%202.0/belly%20rub-base.png?raw=true";
+          dataForNewEntry.images[0] = config.defaultImage;
         } else {
           logger.debug("Guild settings found, using guild default image");
-          petDataForNewEntry.images[0] = guildSettings.get(
-            "default_pet_image",
+          dataForNewEntry.images[0] = guildSettings.get(
+            config.guildSettingField,
           ) as string;
         }
-        logger.debug("Using the default pet image.");
+        logger.debug(`Using the default ${actionType} image.`);
       } else {
         logger.debug("Found an existing image. Updating to use found image.");
-        petDataForNewEntry.images = (petWithHighestHasPet as any).images;
+        dataForNewEntry.images = (recordWithHighestPerformed as any).images;
       }
 
-      await PetData.create(petDataForNewEntry);
+      await ActionData.create(dataForNewEntry);
 
       logger.debug(`User: ${user.displayName} has been added.`);
     } catch (error: any) {
@@ -81,83 +90,4 @@ export const checkUserPet = async (user: any, guild: string) => {
   }
 };
 
-export const checkUserBite = async (user: any, guild: string) => {
-  let biteWithHighestHasBitten: any;
-
-  const highestHasBittenValue = await BiteData.max("has_bitten", {
-    where: {
-      user_id: user.id,
-    },
-  });
-
-  if (highestHasBittenValue !== null) {
-    biteWithHighestHasBitten = await BiteData.findOne({
-      where: {
-        user_id: user.id,
-        has_bitten: highestHasBittenValue as number,
-      },
-    });
-  }
-
-  const biteDataForNewEntry: any = {
-    user_id: user.id,
-    guild_id: guild,
-    has_bitten: 0,
-    has_been_bitten: 0,
-    images: [],
-  };
-
-  const bite = await BiteData.findOne({
-    where: {
-      user_id: user.id,
-      guild_id: guild,
-    },
-  });
-
-  const guildSettings = await (BotData.findOne as any)({
-    where: {
-      guild_id: guild,
-      default_bite_image: {
-        [Op.ne]: null,
-      },
-    },
-  });
-
-  if (!bite) {
-    try {
-      logger.debug(
-        `No bite data found for user: ${user.displayName}. Creating bite data.`,
-      );
-
-      if (!biteWithHighestHasBitten) {
-        if (!guildSettings) {
-          logger.debug(
-            "No guild settings found or in a DM, using default bite image",
-          );
-          biteDataForNewEntry.images[0] =
-            "https://cloud.wfox.app/s/E9sXZLSAGw28M3K/preview";
-        } else {
-          logger.debug("Guild settings found, using guild default image");
-          biteDataForNewEntry.images[0] = guildSettings.get(
-            "default_bite_image",
-          ) as string;
-        }
-        logger.debug("Using the default bite image.");
-      } else {
-        logger.debug("Found an existing image. Updating to use found image.");
-        biteDataForNewEntry.images = (biteWithHighestHasBitten as any).images;
-      }
-
-      await BiteData.create(biteDataForNewEntry);
-
-      logger.debug(`User: ${user.displayName} has been added.`);
-    } catch (error: any) {
-      logger.error(
-        { error: error },
-        "Something went wrong with adding the user.",
-      );
-    }
-  }
-};
-
-export default { checkUserPet, checkUserBite };
+export default { checkUser };

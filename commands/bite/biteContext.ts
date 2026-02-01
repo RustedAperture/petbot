@@ -5,7 +5,7 @@ import {
   InteractionContextType,
   MessageFlags,
 } from "discord.js";
-import { performBite } from "../../utilities/actionHelpers.js";
+import { performAction } from "../../utilities/actionHelpers.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -41,7 +41,7 @@ export const command = {
 
     await target.fetch(true);
 
-    const container = await performBite(target, author, guild);
+    const container = await performAction("bite", target, author, guild);
 
     await interaction.editReply({
       components: [container],

@@ -9,10 +9,7 @@ import {
   User,
 } from "discord.js";
 import { emitCommand } from "../../utilities/metrics.js";
-import {
-  getBiteStatsContainer,
-  getPetStatsContainer,
-} from "../../utilities/actionHelpers.js";
+import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -91,12 +88,16 @@ export const command = {
     let containers: ContainerBuilder[] = [];
 
     if (action === "pet" || action === null) {
-      const petStats = await getPetStatsContainer(targetUser, guild);
+      const petStats = await getActionStatsContainer("pet", targetUser, guild);
       containers.push(petStats);
     }
 
     if (action === "bite" || action === null) {
-      const biteStats = await getBiteStatsContainer(targetUser, guild);
+      const biteStats = await getActionStatsContainer(
+        "bite",
+        targetUser,
+        guild,
+      );
       containers.push(biteStats);
     }
 

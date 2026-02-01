@@ -5,8 +5,8 @@ import {
   MessageFlags,
   ContainerBuilder,
 } from "discord.js";
-import { performBite } from "../../utilities/actionHelpers.js";
-import { checkUserBite } from "../../utilities/check_user.js";
+import { performAction } from "../../utilities/actionHelpers.js";
+import { checkUser } from "../../utilities/check_user.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -71,13 +71,13 @@ export const command = {
 
     const uniqueTargets = [...targets];
 
-    await checkUserBite(author, guild);
+    await checkUser("bite", author, guild);
 
     const containers: ContainerBuilder[] = [];
 
     for (const target of uniqueTargets) {
       await target.fetch(true);
-      const container = await performBite(target, author, guild);
+      const container = await performAction("bite", target, author, guild);
       containers.push(container);
     }
 

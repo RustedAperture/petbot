@@ -42,12 +42,12 @@ const umzug = new Umzug({
         up: async () => {
           const mod = await import(pathToFileURL(mPath!).href);
           const fn = (mod as any).up || (mod as any).default?.up;
-          return fn?.(context);
+          return fn?.({ context });
         },
         down: async () => {
           const mod = await import(pathToFileURL(mPath!).href);
           const fn = (mod as any).down || (mod as any).default?.down;
-          return fn?.(context);
+          return fn?.({ context });
         },
       };
     },

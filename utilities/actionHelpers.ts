@@ -1,118 +1,68 @@
 import { GuildMember, TextDisplayBuilder, User } from "discord.js";
 import { ContainerBuilder } from "discord.js";
-import { checkUserBite, checkUserPet } from "./check_user.js";
-import { BiteData, PetData } from "./db.js";
-import { BiteUser, PetUser } from "../types/user.js";
+import { checkUser } from "./check_user.js";
+import { ActionData } from "./db.js";
+import { ActionUser } from "../types/user.js";
 import { buildActionReply } from "../components/buildActionReply.js";
 import { buildStatsReply } from "../components/buildStatsReply.js";
 import { randomImage } from "./helper.js";
+import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
 
-async function performBite(
+export async function performAction(
+  actionKind: ActionKind,
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
 ): Promise<ContainerBuilder> {
-  await checkUserBite(target, guild);
-  await checkUserBite(author, guild);
+  await checkUser(actionKind, target, guild);
+  await checkUser(actionKind, author, guild);
 
-  const biteTarget = await BiteData.findOne({
-    where: { user_id: target.id, guild_id: guild },
+  const targetRow = await ActionData.findOne({
+    where: { user_id: target.id, location_id: guild, action_type: actionKind },
   });
-  const biteAuthor = await BiteData.findOne({
-    where: { user_id: author.id, guild_id: guild },
+  const authorRow = await ActionData.findOne({
+    where: { user_id: author.id, location_id: guild, action_type: actionKind },
   });
 
-  const image = randomImage(biteAuthor as BiteUser);
+  const imageSource = ACTIONS[actionKind].imageSource;
+  const imageRow = imageSource === "author" ? authorRow : targetRow;
 
-  await biteTarget!.increment("has_been_bitten");
-  await biteAuthor!.increment("has_bitten");
+  const image = randomImage(imageRow as ActionUser);
+
+  await targetRow!.increment("has_received");
+  await authorRow!.increment("has_performed");
 
   return buildActionReply(
     target,
     author,
     guild,
-    "bite",
+    actionKind,
     image,
-    biteTarget!.get("has_been_bitten"),
+    targetRow!.get("has_received"),
   );
 }
 
-async function performPet(
-  target: User | GuildMember,
-  author: User | GuildMember,
-  guild: string,
-): Promise<ContainerBuilder> {
-  await checkUserPet(target, guild);
-  await checkUserPet(author, guild);
-
-  const petTarget = await PetData.findOne({
-    where: { user_id: target.id, guild_id: guild },
-  });
-  const petAuthor = await PetData.findOne({
-    where: { user_id: author.id, guild_id: guild },
-  });
-
-  const image = randomImage(petTarget as PetUser);
-
-  await petTarget!.increment("has_been_pet");
-  await petAuthor!.increment("has_pet");
-
-  return buildActionReply(
-    target,
-    author,
-    guild,
-    "pet",
-    image,
-    petTarget!.get("has_been_pet"),
-  );
-}
-
-async function getBiteStatsContainer(
+export async function getActionStatsContainer(
+  actionKind: ActionKind,
   target: User | GuildMember,
   guild: string,
 ): Promise<ContainerBuilder> {
-  const bite = await BiteData.findOne({
-    where: { user_id: target.id, guild_id: guild },
+  const row = await ActionData.findOne({
+    where: { user_id: target.id, location_id: guild, action_type: actionKind },
   });
 
-  if (!bite) {
+  if (!row) {
     const targetText = new TextDisplayBuilder().setContent(
-      [`The user has no bite data`].join("\n"),
+      [`The user has no ${actionKind} data`].join("\n"),
     );
     return new ContainerBuilder().addTextDisplayComponents(targetText);
   }
 
-  const totalHasBeenBitten = await BiteData.sum("has_been_bitten", {
-    where: { user_id: target.id },
+  const totalHasReceived = await ActionData.sum("has_received", {
+    where: { user_id: target.id, action_type: actionKind },
   });
 
-  const images = bite.get("images");
+  const images = row.get("images");
 
-  return buildStatsReply(bite, images, target, "bite", totalHasBeenBitten);
+  return buildStatsReply(row, images, target, actionKind, totalHasReceived);
 }
-
-async function getPetStatsContainer(
-  target: User | GuildMember,
-  guild: string,
-): Promise<ContainerBuilder> {
-  const pet = await PetData.findOne({
-    where: { user_id: target.id, guild_id: guild },
-  });
-
-  if (!pet) {
-    const targetText = new TextDisplayBuilder().setContent(
-      [`The user has no pet data`].join("\n"),
-    );
-    return new ContainerBuilder().addTextDisplayComponents(targetText);
-  }
-
-  const images = pet.get("images");
-
-  const totalHasBeenPet = await PetData.sum("has_been_pet", {
-    where: { user_id: target.id },
-  });
-
-  return buildStatsReply(pet, images, target, "pet", totalHasBeenPet);
-}
-
-export { performBite, performPet, getBiteStatsContainer, getPetStatsContainer };
