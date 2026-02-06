@@ -11,7 +11,7 @@ import { performAction } from "../../src/utilities/actionHelpers.js";
 import { command } from "../../src/commands/bite/bite.js";
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("/bite command", () => {
