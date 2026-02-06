@@ -1,12 +1,17 @@
 services:
-    node:
-        container_name: petbot
-        image: "node:20"
-        user: "node"
-        restart: always
-        working_dir: /home/node/app
-        volumes:
-            - ./:/home/node/app
-        entrypoint: []
-        tty: true
-        command: sh -c 'npm run dev:tui'
+  node:
+    container_name: petbot
+    image: "node:20-bullseye-slim"
+    restart: always
+    working_dir: /home/node/app
+    volumes:
+      - ./:/home/node/app:cached
+      - node_modules:/home/node/app/node_modules
+    environment:
+      - NPM_CONFIG_PREFIX=/home/node/.npm-global
+      - PATH=/home/node/.npm-global/bin:${PATH}
+    tty: true
+    command: sh -c 'npm ci --no-audit --no-fund && npm run dev:tui'
+
+volumes:
+  node_modules:

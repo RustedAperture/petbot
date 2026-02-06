@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 
 const config = JSON.parse(
-  fs.readFileSync(new URL("../config.json", import.meta.url), "utf8"),
+  fs.readFileSync(path.resolve(process.cwd(), "config.json"), "utf8"),
 );
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
@@ -70,7 +70,9 @@ client.slashCommands = new Collection();
 client.contextCommands = new Collection();
 
 const foldersPath = path.join(__dirname, "commands");
-const commandFolders = fs.readdirSync(foldersPath);
+const commandFolders = fs
+  .readdirSync(foldersPath)
+  .filter((f) => fs.statSync(path.join(foldersPath, f)).isDirectory());
 
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);

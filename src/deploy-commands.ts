@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const config = JSON.parse(
-  fs.readFileSync(new URL("../config.json", import.meta.url), "utf8"),
+  fs.readFileSync(path.resolve(process.cwd(), "config.json"), "utf8"),
 );
 
 const slashCommands: ApplicationCommandData[] = [];
@@ -19,7 +19,9 @@ const __dirname = path.dirname(__filename);
 const { clientId, token } = config as { clientId: string; token: string };
 
 const foldersPath = path.join(__dirname, "commands");
-const commandFolders = fs.readdirSync(foldersPath);
+const commandFolders = fs
+  .readdirSync(foldersPath)
+  .filter((f) => fs.statSync(path.join(foldersPath, f)).isDirectory());
 
 console.log("Listing commands and their directories:");
 for (const folder of commandFolders) {
