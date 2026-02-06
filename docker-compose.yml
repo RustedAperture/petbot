@@ -1,17 +1,39 @@
+# Production-ready Docker Compose for Petbot
+# NOTE: Do NOT commit secrets or concrete ALLOWED_IMAGE_HOSTS values. Use an override file or `.env` for sensitive values.
+version: "3.8"
+
 services:
-  node:
+  petbot:
     container_name: petbot
-    image: "node:20-bullseye-slim"
-    restart: always
+    # Image to pull by default; will be used as the tag if you build locally
+    image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
+    restart: unless-stopped
     working_dir: /home/node/app
-    volumes:
-      - ./:/home/node/app:cached
-      - node_modules:/home/node/app/node_modules
     environment:
-      - NPM_CONFIG_PREFIX=/home/node/.npm-global
-      - PATH=/home/node/.npm-global/bin:${PATH}
-    tty: true
-    command: sh -c 'npm ci --no-audit --no-fund && npm run dev:tui'
+      # TUI: set to 1 or true to enable the interactive TUI (requires a TTY)
+      - TUI=${TUI:-false}
+      # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
+      # - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+    volumes:
+      # Persist runtime data (sqlite DB, migrations, etc.)
+      - ./data:/home/node/app/data
+      # Mount your config.json (read-only). Create it locally as documented in README.
+      - ./config.json:/home/node/app/config.json:ro
+    tty: ${TUI:-false}
+    # The image's ENTRYPOINT/ CMD will start the bot (default: `node dist/src/index.js`).
+    # To run the interactive TUI locally use `TUI=1 docker compose run --service-ports --rm petbot`
 
 volumes:
-  node_modules:
+  data:
+    driver: local
+
+# Example: docker-compose.override.yml (keep out of VCS / do not commit values)
+# services:
+#   petbot:
+#     environment:
+#       - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+
+# Quick commands:
+# - Build locally:     docker compose build petbot
+# - Run in foreground: docker compose up --build
+# - Run TUI (one-off): TUI=1 docker compose run --service-ports --rm petbot
