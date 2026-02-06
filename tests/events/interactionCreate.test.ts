@@ -1,11 +1,11 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
-vi.mock("../../src/utilities/resetAction", () => ({ resetAction: vi.fn() }));
+vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
 
-import interactionCreate from "../../src/events/interactionCreate";
-import { resetAction } from "../../src/utilities/resetAction";
+import interactionCreate from "../../src/events/interactionCreate.js";
+import { resetAction } from "../../src/utilities/resetAction.js";
 
-beforeEach(() => vi.restoreAllMocks());
+beforeEach(() => { vi.restoreAllMocks(); });
 
 describe("interactionCreate", () => {
   it("executes a found chat command", async () => {

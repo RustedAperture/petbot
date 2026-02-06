@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { mockInteraction } from "../helpers/mockInteraction";
+import { mockInteraction } from "../helpers/mockInteraction.js";
 
 vi.mock("../../src/utilities/actionHelpers", () => ({
   performAction: vi.fn(),
@@ -7,8 +7,8 @@ vi.mock("../../src/utilities/actionHelpers", () => ({
 vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
-import { performAction } from "../../src/utilities/actionHelpers";
-import { command } from "../../src/commands/pet/pet";
+import { performAction } from "../../src/utilities/actionHelpers.js";
+import { command } from "../../src/commands/pet/pet.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

@@ -1,13 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { mockInteraction } from "../helpers/mockInteraction";
+import { mockInteraction } from "../helpers/mockInteraction.js";
 
 vi.mock("../../src/utilities/actionHelpers", () => ({
   getActionStatsContainer: vi.fn(),
 }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
-import { getActionStatsContainer } from "../../src/utilities/actionHelpers";
-import { command } from "../../src/commands/stats/statsContext";
+import { getActionStatsContainer } from "../../src/utilities/actionHelpers.js";
+import { command } from "../../src/commands/stats/statsContext.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

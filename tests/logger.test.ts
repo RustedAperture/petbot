@@ -1,10 +1,11 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import logger from "../src/logger";
 
-beforeEach(() => vi.restoreAllMocks());
+beforeEach(() => { vi.restoreAllMocks(); });
 
 describe("logger", () => {
-  it("exposes log methods and doesn't throw", () => {
+  it("exposes log methods and doesn't throw", async () => {
+    // @ts-ignore - module resolution for logger
+    const { default: logger } = await import("../../src/logger.js");
     expect(typeof (logger as any).info).toBe("function");
     expect(typeof (logger as any).debug).toBe("function");
 

@@ -6,7 +6,7 @@ vi.mock("dns/promises", () => ({ lookup: vi.fn() }));
 
 import fetch from "node-fetch";
 import { lookup } from "dns/promises";
-import { checkImage } from "../../src/utilities/check_image";
+import { checkImage } from "../../src/utilities/check_image.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

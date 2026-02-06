@@ -1,13 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { mockInteraction } from "../helpers/mockInteraction";
+import { mockInteraction } from "../helpers/mockInteraction.js";
 
-vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
-vi.mock("../../src/utilities/resetAction", () => ({ resetAction: vi.fn() }));
+vi.mock("../../src/utilities/check_user.js", () => ({ checkUser: vi.fn() }));
+vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
-import { checkUser } from "../../src/utilities/check_user";
-import { resetAction } from "../../src/utilities/resetAction";
-import { command } from "../../src/commands/user/reset";
+import { checkUser } from "../../src/utilities/check_user.js";
+import { resetAction } from "../../src/utilities/resetAction.js";
+import { command } from "../../src/commands/user/reset.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

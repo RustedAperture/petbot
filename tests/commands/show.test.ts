@@ -1,13 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { mockInteraction } from "../helpers/mockInteraction";
+import { mockInteraction } from "../helpers/mockInteraction.js";
 
-vi.mock("../../src/utilities/log", () => ({ log: vi.fn() }));
-vi.mock("../../src/utilities/db", () => ({ BotData: { findOne: vi.fn() } }));
+vi.mock("../../src/utilities/log.js", () => ({ log: vi.fn() }));
+vi.mock("../../src/utilities/db.js", () => ({ BotData: { findOne: vi.fn() } }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
-import { log } from "../../src/utilities/log";
-import { BotData } from "../../src/utilities/db";
-import { command } from "../../src/commands/admin/show";
+import { log } from "../../src/utilities/log.js";
+import { BotData } from "../../src/utilities/db.js";
+import { command } from "../../src/commands/admin/show.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

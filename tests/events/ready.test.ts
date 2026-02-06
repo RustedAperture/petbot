@@ -1,9 +1,9 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
-vi.mock("../../src/utilities/db", () => ({ sequelize: { sync: vi.fn() } }));
-import ready from "../../src/events/ready";
-import { sequelize } from "../../src/utilities/db";
-import logger from "../../src/logger";
+vi.mock("../../src/utilities/db.js", () => ({ sequelize: { sync: vi.fn() } }));
+import ready from "../../src/events/ready.js";
+import { sequelize } from "../../src/utilities/db.js";
+import logger from "../../src/logger.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

@@ -1,8 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { mockInteraction } from "../helpers/mockInteraction";
+import { mockInteraction } from "../helpers/mockInteraction.js";
 
-vi.mock("../../src/utilities/check_image", () => ({ checkImage: vi.fn() }));
-vi.mock("../../src/utilities/updateAction", () => ({ updateAction: vi.fn() }));
+vi.mock("../../src/utilities/check_image.js", () => ({ checkImage: vi.fn() }));
+vi.mock("../../src/utilities/updateAction.js", () => ({ updateAction: vi.fn() }));
 vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 vi.mock("../../src/utilities/normalizeUrl", () => ({
@@ -13,11 +13,11 @@ vi.mock("../../src/utilities/db", () => ({
   BotData: { findOne: vi.fn() },
 }));
 
-import { checkImage } from "../../src/utilities/check_image";
-import { updateAction } from "../../src/utilities/updateAction";
-import { ActionData, BotData } from "../../src/utilities/db";
+import { checkImage } from "../../src/utilities/check_image.js";
+import { updateAction } from "../../src/utilities/updateAction.js";
+import { ActionData, BotData } from "../../src/utilities/db.js";
 
-import { command } from "../../src/commands/user/set";
+import { command } from "../../src/commands/user/set.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

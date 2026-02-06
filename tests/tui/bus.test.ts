@@ -1,5 +1,5 @@
 import { vi, describe, it, expect } from "vitest";
-import { metrics } from "../../src/tui/bus";
+import { metrics } from "../../src/tui/bus.js";
 
 describe("tui bus metrics", () => {
   it("emits and receives events", async () => {
