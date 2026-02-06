@@ -1,16 +1,18 @@
 {
   "name": "petbot",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsc && node dist/deploy-commands.js && node dist/index.js",
-    "start": "node dist/index.js",
-    "start:tui": "TUI=1 node dist/index.js",
-    "dev:tui": "tsc && TUI=1 node dist/deploy-commands.js && TUI=1 node dist/index.js",
+    "test": "vitest --run",
+    "test:ci": "vitest --run --silent",
+    "test:watch": "vitest",
+    "dev": "tsc && node dist/src/deploy-commands.js && node dist/src/index.js",
+    "start": "node dist/src/index.js",
+    "start:tui": "TUI=1 node dist/src/index.js",
+    "dev:tui": "tsc && TUI=1 node dist/src/deploy-commands.js && TUI=1 node dist/src/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,json,md}\"",
@@ -27,13 +29,18 @@
     "prettier": "^3.7.4",
     "react": "^19.2.3",
     "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "node-fetch": "^3.3.1",
+    "umzug": "^3.8.2"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",
+    "@types/node-fetch": "^2.6.13",
     "@types/react": "^19.2.7",
     "eslint": "^9.33.0",
     "typescript": "^5.9.3",
-    "umzug": "^3.8.2"
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^1.6.1"
   }
 }

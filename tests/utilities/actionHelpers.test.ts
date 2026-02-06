@@ -1,0 +1,78 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("@utils/check_user.js", () => ({ checkUser: vi.fn() }));
+vi.mock("@utils/db.js", () => ({
+  ActionData: {
+    findOne: vi.fn(),
+  },
+}));
+vi.mock("@utils/helper.js", () => ({ randomImage: vi.fn() }));
+vi.mock("../../src/components/buildActionReply.js", () => ({
+  buildActionReply: vi.fn(),
+}));
+vi.mock("../../src/components/buildStatsReply.js", () => ({
+  buildStatsReply: vi.fn(),
+}));
+
+import {
+  performAction,
+  getActionStatsContainer,
+} from "@utils/actionHelpers.js";
+import { ActionData } from "@utils/db.js";
+import { randomImage } from "@utils/helper.js";
+import { buildActionReply } from "../../src/components/buildActionReply.js";
+import { buildStatsReply } from "../../src/components/buildStatsReply.js";
+
+describe("actionHelpers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("performAction increments counters and returns built reply", async () => {
+    const targetRow = {
+      get: vi
+        .fn()
+        .mockImplementation((k: string) => (k === "images" ? ["img"] : 0)),
+      increment: vi.fn(),
+    };
+    const authorRow = {
+      get: vi
+        .fn()
+        .mockImplementation((k: string) => (k === "images" ? ["img"] : 0)),
+      increment: vi.fn(),
+    };
+    (ActionData.findOne as any)
+      .mockResolvedValueOnce(targetRow)
+      .mockResolvedValueOnce(authorRow);
+
+    (randomImage as any).mockReturnValue("img");
+    (buildActionReply as any).mockReturnValue("container");
+
+    const res = await performAction(
+      "pet" as any,
+      { id: "t" } as any,
+      { id: "a" } as any,
+      "g1",
+    );
+
+    expect(targetRow.increment).toHaveBeenCalledWith("has_received");
+    expect(authorRow.increment).toHaveBeenCalledWith("has_performed");
+    expect(buildActionReply).toHaveBeenCalled();
+    expect(res).toBe("container");
+  });
+
+  it("getActionStatsContainer returns built stats reply when row exists", async () => {
+    const row = { get: vi.fn().mockReturnValue(["img"]) };
+    (ActionData.findOne as any).mockResolvedValue(row);
+    (ActionData.sum as any) = vi.fn().mockResolvedValue(7);
+    (buildStatsReply as any).mockReturnValue("statsContainer");
+
+    const res = await getActionStatsContainer(
+      "pet" as any,
+      { id: "t" } as any,
+      "g1",
+    );
+    expect(buildStatsReply).toHaveBeenCalled();
+    expect(res).toBe("statsContainer");
+  });
+});

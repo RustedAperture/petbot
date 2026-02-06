@@ -2,7 +2,16 @@
   "compilerOptions": {
     // File Layout
     "rootDir": "./",
-    "outDir": "./dist",
+    "outDir": "dist",
+    "baseUrl": "src",
+    "paths": {
+      "@utils/*": ["utilities/*"],
+      "@components/*": ["components/*"],
+      "@commands/*": ["commands/*"],
+      "@types/*": ["types/*"],
+      "@tui/*": ["tui/*"],
+      "@logger": ["logger.js"]
+    },
 
     // Environment Settings
     "module": "NodeNext",
@@ -16,6 +25,7 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noImplicitAny": false,
+    "types": ["vitest"],
 
     // JSX/TSX Support
     "jsx": "react-jsx",
@@ -29,7 +39,7 @@
     "sourceMap": true,
     "declaration": false
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.js"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx"],
   "exclude": [
     "node_modules",
     "dist",
