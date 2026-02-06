@@ -6,7 +6,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "vitest --run",
+    "test:ci": "vitest --run --silent",
+    "test:watch": "vitest",
     "dev": "tsc && node dist/deploy-commands.js && node dist/index.js",
     "start": "node dist/index.js",
     "start:tui": "TUI=1 node dist/index.js",
@@ -36,6 +38,8 @@
     "eslint": "^9.33.0",
     "typescript": "^5.9.3",
     "umzug": "^3.8.2",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^6.0.5",
     "vitest": "^1.6.1"
   }
 }

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../../tui/bus.js", () => ({ metrics: { emit: vi.fn() } }));
-import { emitEvent, emitCommand } from "../../utilities/metrics.js";
-import { metrics } from "../../tui/bus.js";
+vi.mock("../../src/tui/bus.js", () => ({ metrics: { emit: vi.fn() } }));
+import { emitEvent, emitCommand } from "../../src/utilities/metrics.js";
+import { metrics } from "../../src/tui/bus.js";
 
 describe("metrics util", () => {
   beforeEach(() => {

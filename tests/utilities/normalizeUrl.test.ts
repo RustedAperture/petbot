@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeUrl } from "../../utilities/normalizeUrl.js";
+import { normalizeUrl } from "@utils/normalizeUrl.js";
 
 describe("normalizeUrl", () => {
   it("returns same value for empty input", () => {

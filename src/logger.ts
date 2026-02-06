@@ -1,6 +1,6 @@
 import pino from "pino";
 import pretty from "pino-pretty";
-import { metrics } from "../tui/bus.js";
+import { metrics } from "./tui/bus.js";
 
 const prettyStream = pretty({
   colorize: true,

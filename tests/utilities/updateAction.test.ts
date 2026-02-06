@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock DB & logger modules
-vi.mock("../../utilities/db.js", () => ({
+vi.mock("@utils/db.js", () => ({
   ActionData: {
     findOne: vi.fn(),
     findAll: vi.fn(),
@@ -9,13 +9,13 @@ vi.mock("../../utilities/db.js", () => ({
   },
   BotData: { findOne: vi.fn() },
 }));
-vi.mock("../../utilities/log.js", () => ({ log: vi.fn() }));
-vi.mock("../../logger.js", () => ({
+vi.mock("@utils/log.js", () => ({ log: vi.fn() }));
+vi.mock("@logger", () => ({
   default: { debug: vi.fn(), error: vi.fn() },
 }));
 
-import { updateAction } from "../../utilities/updateAction.js";
-import { ActionData, BotData } from "../../utilities/db.js";
+import { updateAction } from "@utils/updateAction.js";
+import { ActionData, BotData } from "@utils/db.js";
 
 describe("updateAction", () => {
   beforeEach(() => {

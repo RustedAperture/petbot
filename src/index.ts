@@ -8,14 +8,14 @@ const config = JSON.parse(
 );
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
-import logger from "../logger.js";
+import logger from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { token } = config as { token: string };
 
 if (process.env.TUI === "1") {
-  import("../tui/dashboard.js").catch((err) => {
+  import("./tui/dashboard.js").catch((err) => {
     console.error("Failed to start TUI:", err);
   });
 }

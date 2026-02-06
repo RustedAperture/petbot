@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../../utilities/db.js", () => ({
+vi.mock("@utils/db.js", () => ({
   ActionData: {
     sum: vi.fn(),
     count: vi.fn(),
@@ -12,8 +12,8 @@ import {
   hexToRGBTuple,
   randomImage,
   fetchGlobalStats,
-} from "../../utilities/helper.js";
-import { ActionData, sequelize } from "../../utilities/db.js";
+} from "../../src/utilities/helper.js";
+import { ActionData, sequelize } from "../../src/utilities/db.js";
 
 describe("helper util", () => {
   beforeEach(() => {

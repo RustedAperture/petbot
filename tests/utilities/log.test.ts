@@ -4,7 +4,7 @@ import { MessageFlags } from "discord.js";
 vi.mock("../../logger.js", () => ({
   default: { debug: vi.fn(), error: vi.fn() },
 }));
-import { log } from "../../utilities/log.js";
+import { log } from "../../src/utilities/log.js";
 
 describe("log util", () => {
   beforeEach(() => {

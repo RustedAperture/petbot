@@ -56,14 +56,14 @@ vi.mock("discord.js", () => {
   };
 });
 
-vi.mock("../../utilities/helper.js", () => ({
+vi.mock("@utils/helper.js", () => ({
   getAccentColor: vi.fn().mockReturnValue([1, 2, 3]),
   getName: vi
     .fn()
     .mockImplementation((u: any) => u.username || u.displayName || "Name"),
 }));
 
-import { buildStatsReply } from "../../components/buildStatsReply.js";
+import { buildStatsReply } from "@components/buildStatsReply.js";
 
 describe("buildStatsReply", () => {
   beforeEach(() => {

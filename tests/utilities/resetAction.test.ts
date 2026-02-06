@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock DB & logger modules
-vi.mock("../../utilities/db.js", () => ({
+vi.mock("@utils/db.js", () => ({
   ActionData: {
     findOne: vi.fn(),
     findAll: vi.fn(),
@@ -9,13 +9,13 @@ vi.mock("../../utilities/db.js", () => ({
   },
   BotData: { findOne: vi.fn() },
 }));
-vi.mock("../../utilities/log.js", () => ({ log: vi.fn() }));
-vi.mock("../../logger.js", () => ({
+vi.mock("@utils/log.js", () => ({ log: vi.fn() }));
+vi.mock("@logger", () => ({
   default: { debug: vi.fn(), error: vi.fn() },
 }));
 
-import { resetAction } from "../../utilities/resetAction.js";
-import { ActionData, BotData } from "../../utilities/db.js";
+import { resetAction } from "@utils/resetAction.js";
+import { ActionData, BotData } from "../../src/utilities/db.js";
 
 describe("resetAction", () => {
   beforeEach(() => {
@@ -102,7 +102,7 @@ describe("resetAction", () => {
 
     await resetAction("pet" as any, interaction, "u1", 1, false);
 
-    const { default: logger } = await import("../../logger.js");
+    const { default: logger } = await import("../../src/logger.js");
     expect(logger.error).toHaveBeenCalled();
     expect(ActionData.update).not.toHaveBeenCalled();
   });

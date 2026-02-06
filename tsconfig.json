@@ -9,7 +9,8 @@
       "@components/*": ["components/*"],
       "@commands/*": ["commands/*"],
       "@types/*": ["types/*"],
-      "@tui/*": ["tui/*"]
+      "@tui/*": ["tui/*"],
+      "@logger": ["logger.js"]
     },
 
     // Environment Settings

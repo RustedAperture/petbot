@@ -20,7 +20,7 @@ vi.mock("discord.js", () => {
   };
 });
 
-import { buildGlobalStatsContainer } from "../../components/buildGlobalStatsContainer.js";
+import { buildGlobalStatsContainer } from "../../src/components/buildGlobalStatsContainer.js";
 
 describe("buildGlobalStatsContainer", () => {
   beforeEach(() => {

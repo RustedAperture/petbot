@@ -27,7 +27,7 @@ vi.mock("sequelize", () => {
   return { Sequelize: FakeSequelize, DataTypes, Model: FakeModel };
 });
 
-import { ActionData, BotData, sequelize } from "../../utilities/db.js";
+import { ActionData, BotData, sequelize } from "../../src/utilities/db.js";
 
 describe("db exports", () => {
   it("exports models and sequelize instance", () => {

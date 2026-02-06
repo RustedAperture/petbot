@@ -38,7 +38,7 @@ vi.mock("discord.js", () => {
   };
 });
 
-vi.mock("../../utilities/helper.js", () => ({
+vi.mock("@utils/helper.js", () => ({
   getAccentColor: vi.fn().mockReturnValue([11, 22, 33]),
   getName: vi
     .fn()
@@ -46,7 +46,7 @@ vi.mock("../../utilities/helper.js", () => ({
 }));
 vi.mock("../../logger.js", () => ({ default: { debug: vi.fn() } }));
 
-import { buildActionReply } from "../../components/buildActionReply.js";
+import { buildActionReply } from "@components/buildActionReply.js";
 
 describe("buildActionReply", () => {
   beforeEach(() => {

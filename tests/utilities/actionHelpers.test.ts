@@ -1,27 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../../utilities/check_user.js", () => ({ checkUser: vi.fn() }));
-vi.mock("../../utilities/db.js", () => ({
+vi.mock("@utils/check_user.js", () => ({ checkUser: vi.fn() }));
+vi.mock("@utils/db.js", () => ({
   ActionData: {
     findOne: vi.fn(),
   },
 }));
-vi.mock("../../utilities/helper.js", () => ({ randomImage: vi.fn() }));
-vi.mock("../../components/buildActionReply.js", () => ({
+vi.mock("@utils/helper.js", () => ({ randomImage: vi.fn() }));
+vi.mock("../../src/components/buildActionReply.js", () => ({
   buildActionReply: vi.fn(),
 }));
-vi.mock("../../components/buildStatsReply.js", () => ({
+vi.mock("../../src/components/buildStatsReply.js", () => ({
   buildStatsReply: vi.fn(),
 }));
 
 import {
   performAction,
   getActionStatsContainer,
-} from "../../utilities/actionHelpers.js";
-import { ActionData } from "../../utilities/db.js";
-import { randomImage } from "../../utilities/helper.js";
-import { buildActionReply } from "../../components/buildActionReply.js";
-import { buildStatsReply } from "../../components/buildStatsReply.js";
+} from "@utils/actionHelpers.js";
+import { ActionData } from "@utils/db.js";
+import { randomImage } from "@utils/helper.js";
+import { buildActionReply } from "../../src/components/buildActionReply.js";
+import { buildStatsReply } from "../../src/components/buildStatsReply.js";
 
 describe("actionHelpers", () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../../utilities/db.js", () => ({
+vi.mock("@utils/db.js", () => ({
   ActionData: {
     max: vi.fn(),
     findOne: vi.fn(),
@@ -8,12 +8,12 @@ vi.mock("../../utilities/db.js", () => ({
   },
   BotData: { findOne: vi.fn() },
 }));
-vi.mock("../../logger.js", () => ({
+vi.mock("@logger", () => ({
   default: { debug: vi.fn(), error: vi.fn() },
 }));
-import { checkUser } from "../../utilities/check_user.js";
-import { ActionData, BotData } from "../../utilities/db.js";
-import { ACTIONS } from "../../types/constants.js";
+import { checkUser } from "@utils/check_user.js";
+import { ActionData, BotData } from "@utils/db.js";
+import { ACTIONS } from "../../src/types/constants.js";
 
 describe("checkUser", () => {
   beforeEach(() => {
