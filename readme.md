@@ -103,4 +103,41 @@ If you prefer a single-file bundle for smaller images, I can convert the build t
 
 ---
 
+## Image security / SSRF protections 🔒
+
+The bot validates user-provided image URLs to reduce SSRF and network-probing risks.
+
+**Key behaviors:**
+
+- Only `http` and `https` schemes are accepted.
+- Hosts that resolve to private or loopback addresses (e.g., `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, IPv6 `::1`, `fe80::/10`, `fc00::/7`) are blocked by default.
+- Requests use a short timeout (5s) and **do not** follow redirects.
+- Optionally restrict allowed hosts with **`ALLOWED_IMAGE_HOSTS`** (a comma-separated list of hostnames). Subdomains are allowed (e.g., `cdn.example.com` matches `example.com`).
+
+**Security guidance:**
+
+- **Do not** commit an `ALLOWED_IMAGE_HOSTS` value or concrete host lists to your repository or a checked-in `docker-compose.yml`.
+- Prefer setting it via environment variables in your deployment platform, or in a non-committed override file (examples below).
+
+**Examples (do not commit these files/values into source control):**
+
+- Docker run:
+
+```bash
+docker run -e ALLOWED_IMAGE_HOSTS='example.com,images.example.net' ...
+```
+
+- Docker Compose override (create `docker-compose.override.yml` and keep it out of version control):
+
+```yaml
+services:
+  petbot:
+    environment:
+      - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+```
+
+If you want stricter controls, consider enforcing an allowlist in production and/or adding monitoring for blocked attempts.
+
+---
+
 If you want, I can add a short **Usage** section with example `docker-compose.yml` for Unraid and commit it to this PR.
