@@ -11,7 +11,7 @@ import { performAction } from "../../src/utilities/actionHelpers.js";
 import { command } from "../../src/commands/pet/pet.js";
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("/pet command", () => {

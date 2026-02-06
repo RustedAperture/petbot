@@ -10,7 +10,7 @@ import { BotData } from "../../src/utilities/db.js";
 import { command } from "../../src/commands/admin/setup.js";
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("/setup command", () => {

@@ -10,7 +10,7 @@ import { getActionStatsContainer } from "../../src/utilities/actionHelpers.js";
 import { command } from "../../src/commands/stats/stats.js";
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("/stats command", () => {

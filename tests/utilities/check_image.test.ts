@@ -9,7 +9,7 @@ import { lookup } from "dns/promises";
 import { checkImage } from "../../src/utilities/check_image.js";
 
 beforeEach(() => {
-  vi.restoreAllMocks();
+  vi.clearAllMocks();
   delete process.env.ALLOWED_IMAGE_HOSTS;
 });
 
@@ -91,6 +91,7 @@ describe("checkImage", () => {
     expect(notOk).toBe(false);
 
     // allowed subdomain
+    (lookup as any).mockResolvedValue([{ address: "1.2.3.4", family: 4 }]);
     (fetch as unknown as any).mockResolvedValue({
       ok: true,
       status: 200,
