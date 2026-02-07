@@ -7,7 +7,7 @@ vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { checkUser } from "../../src/utilities/check_user.js";
 import { resetAction } from "../../src/utilities/resetAction.js";
-import { command } from "../../src/commands/user/reset.js";
+import { command } from "../../src/commands/slash/reset.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

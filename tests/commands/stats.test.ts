@@ -7,7 +7,7 @@ vi.mock("../../src/utilities/actionHelpers", () => ({
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { getActionStatsContainer } from "../../src/utilities/actionHelpers.js";
-import { command } from "../../src/commands/stats/stats.js";
+import { command } from "../../src/commands/slash/stats.js";
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -7,7 +7,7 @@ vi.mock("../../src/utilities/actionHelpers", () => ({
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { performAction } from "../../src/utilities/actionHelpers.js";
-import { command } from "../../src/commands/pet/petContext.js";
+import { command } from "../../src/commands/context/petContext.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

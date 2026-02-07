@@ -19,16 +19,26 @@ const __dirname = path.dirname(__filename);
 const { clientId, token } = config as { clientId: string; token: string };
 
 const foldersPath = path.join(__dirname, "commands");
-const commandFolders = fs
-  .readdirSync(foldersPath)
-  .filter((f) => fs.statSync(path.join(foldersPath, f)).isDirectory());
 
-console.log("Listing commands and their directories:");
-for (const folder of commandFolders) {
-  console.log(`Directory: ${folder}`);
+// Prefer explicit slash/context directories under commands/
+const slashPath = path.join(foldersPath, "slash");
+const contextPath = path.join(foldersPath, "context");
 
-  const commandsPath = path.join(foldersPath, folder);
-  // collect JS files then exclude any whose basename is `index` (index.js, index.cjs, index.mjs, etc.)
+const existingPaths: Array<{ type: "slash" | "context"; path: string }> = [];
+if (fs.existsSync(slashPath) && fs.statSync(slashPath).isDirectory()) {
+  existingPaths.push({ type: "slash", path: slashPath });
+}
+if (fs.existsSync(contextPath) && fs.statSync(contextPath).isDirectory()) {
+  existingPaths.push({ type: "context", path: contextPath });
+}
+
+if (existingPaths.length === 0) {
+  console.log("No command folders found under commands/. Nothing to deploy.");
+}
+
+for (const { type, path: commandsPath } of existingPaths) {
+  console.log(`Listing ${type} commands in: ${commandsPath}`);
+
   const allJsFiles = fs
     .readdirSync(commandsPath)
     .filter((file) => file.endsWith(".js"));
@@ -38,6 +48,7 @@ for (const folder of commandFolders) {
   const skipped = allJsFiles.filter(
     (file) => path.parse(file).name === "index",
   );
+
   console.log(
     `  - Files: ${commandFiles.join(", ")}${skipped.length ? ` (skipped: ${skipped.join(", ")})` : ""}`,
   );
@@ -54,9 +65,9 @@ for (const folder of commandFolders) {
     if (command && "data" in command && "execute" in command) {
       const commandDataJSON = command.data.toJSON();
       console.log(
-        `    - Command: ${commandDataJSON.name} (Type: ${commandDataJSON.type === ApplicationCommandType.User ? "Context" : "Slash"})`,
+        `    - Command: ${commandDataJSON.name} (Type: ${type === "context" ? "Context" : "Slash"})`,
       );
-      if (commandDataJSON.type === ApplicationCommandType.User) {
+      if (type === "context") {
         contextCommands.push(commandDataJSON);
       } else {
         slashCommands.push(commandDataJSON);

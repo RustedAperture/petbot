@@ -7,7 +7,7 @@ vi.mock("../../src/utilities/db", () => ({
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { BotData } from "../../src/utilities/db.js";
-import { command } from "../../src/commands/admin/serverSetup.js";
+import { command } from "../../src/commands/slash/serverSetup.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
