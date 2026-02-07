@@ -39,7 +39,7 @@ describe("checkUser", () => {
     (ActionData.max as any).mockResolvedValue(null);
     (ActionData.findOne as any).mockResolvedValue(null);
     (BotData.findOne as any).mockResolvedValue({
-      get: vi.fn().mockReturnValue("guild-img"),
+      get: vi.fn().mockReturnValue({ pet: "guild-img" }),
     });
 
     const user = { id: "u2", displayName: "User2" } as any;

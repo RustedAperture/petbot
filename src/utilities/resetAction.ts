@@ -32,8 +32,17 @@ export const resetAction = async (
       );
     }
 
-    const baseImage =
-      guildSettings?.get(config.guildSettingField) ?? config.defaultImage;
+    const defaultImagesRaw = guildSettings?.get("default_images");
+    let baseImage: string;
+    if (defaultImagesRaw && typeof defaultImagesRaw === "object") {
+      baseImage =
+        (defaultImagesRaw as Record<string, string>)[actionKind] ??
+        config.defaultImage;
+    } else if (typeof defaultImagesRaw === "string") {
+      baseImage = defaultImagesRaw as string;
+    } else {
+      baseImage = config.defaultImage;
+    }
     img = slot === 1 ? baseImage : null;
 
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)

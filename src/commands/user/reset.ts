@@ -19,8 +19,7 @@ export const command = {
         .setDescription("The action for which you want to reset the image")
         .setRequired(true)
         .addChoices(
-          { name: "pet", value: "pet" },
-          { name: "bite", value: "bite" },
+          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
         ),
     )
     .addNumberOption((option) =>

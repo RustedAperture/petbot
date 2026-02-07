@@ -45,14 +45,7 @@ export const checkUser = async (
     },
   });
 
-  const guildSettings = await (BotData.findOne as any)({
-    where: {
-      guild_id: guild,
-      [config.guildSettingField]: {
-        [Op.ne]: null,
-      },
-    },
-  });
+  const guildSettings = await BotData.findOne({ where: { guild_id: guild } });
 
   if (!existingRecord) {
     try {
@@ -67,10 +60,20 @@ export const checkUser = async (
           );
           dataForNewEntry.images[0] = config.defaultImage;
         } else {
-          logger.debug("Guild settings found, using guild default image");
-          dataForNewEntry.images[0] = guildSettings.get(
-            config.guildSettingField,
-          ) as string;
+          // use the JSON map only
+          const defaultImages = guildSettings.get("default_images") as
+            | Record<string, string>
+            | null
+            | undefined;
+          if (defaultImages && defaultImages[actionType]) {
+            logger.debug("Guild default images map found, using mapped image");
+            dataForNewEntry.images[0] = defaultImages[actionType];
+          } else {
+            logger.debug(
+              "No guild-specific default, using action default image",
+            );
+            dataForNewEntry.images[0] = config.defaultImage;
+          }
         }
         logger.debug(`Using the default ${actionType} image.`);
       } else {

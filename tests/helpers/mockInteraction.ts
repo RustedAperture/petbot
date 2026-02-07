@@ -1,5 +1,10 @@
 export function mockInteraction(overrides: any = {}) {
-  const calls: any = { editedReplies: [], replies: [], followUps: [] };
+  const calls: any = {
+    editedReplies: [],
+    replies: [],
+    followUps: [],
+    showModals: [],
+  };
 
   const options = {
     getString: (k: string) =>
@@ -43,6 +48,7 @@ export function mockInteraction(overrides: any = {}) {
 
   const interaction: any = {
     deferReply: async () => {},
+    showModal: async (modal: any) => calls.showModals.push(modal),
     editReply: async (payload: any) => calls.editedReplies.push(payload),
     followUp: async (payload: any) => calls.followUps.push(payload),
     reply: async (payload: any) => calls.replies.push(payload),

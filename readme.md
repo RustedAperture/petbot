@@ -100,6 +100,7 @@ If you prefer a single-file bundle for smaller images, I can convert the build t
 - The TUI (Ink) requires a TTY — run with `-it` for interactive mode.
 - If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`).
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
+- If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
 
 ---
 
