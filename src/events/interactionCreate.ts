@@ -156,7 +156,12 @@ const interactionCreate = {
         const [, targetId] = custom.split(":");
         const action = select.values?.[0];
         const guild = select.guildId ?? select.channelId!;
-        const author = (select.member ?? select.user) as GuildMember | User;
+        // Normalize author to a User-like object (ensure .id exists)
+        let authorRaw = select.member ?? select.user;
+        const author =
+          authorRaw && (authorRaw as any).user
+            ? (authorRaw as any).user
+            : (authorRaw as any);
 
         try {
           // fetch target (try member first) and normalize types
@@ -176,6 +181,16 @@ const interactionCreate = {
 
           if (!action) {
             await select.editReply({ content: "No action selected." });
+            return;
+          }
+
+          // defensive check: ensure ids exist
+          if (!target || !(target as any).id) {
+            await select.editReply({ content: "Failed to resolve target." });
+            return;
+          }
+          if (!author || !(author as any).id) {
+            await select.editReply({ content: "Failed to resolve actor." });
             return;
           }
 
@@ -226,7 +241,12 @@ const interactionCreate = {
 
         const [, targetId] = custom.split(":");
         const guild = modal.guildId ?? modal.channelId!;
-        const author = (modal.member ?? modal.user) as GuildMember | User;
+        // Normalize author to a User-like object (ensure .id exists)
+        let authorRaw = modal.member ?? modal.user;
+        const author =
+          authorRaw && (authorRaw as any).user
+            ? (authorRaw as any).user
+            : (authorRaw as any);
 
         try {
           // fetch target (try member first) and normalize types
@@ -250,6 +270,16 @@ const interactionCreate = {
             if (comp && Array.isArray(comp.values) && comp.values.length > 0) {
               action = comp.values[0];
             }
+          }
+
+          // defensive check: ensure ids exist
+          if (!target || !(target as any).id) {
+            await modal.editReply({ content: "Failed to resolve target." });
+            return;
+          }
+          if (!author || !(author as any).id) {
+            await modal.editReply({ content: "Failed to resolve actor." });
+            return;
           }
 
           if (!action) {
