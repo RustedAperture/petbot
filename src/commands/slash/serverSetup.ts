@@ -54,6 +54,22 @@ export const command = {
         )
         .setRequired(false),
     )
+    .addStringOption((option) =>
+      option
+        .setName("default_bonk")
+        .setDescription(
+          "The URL for the default bonk image, used when a user doesnt have one already.",
+        )
+        .setRequired(false),
+    )
+    .addStringOption((option) =>
+      option
+        .setName("default_squish")
+        .setDescription(
+          "The URL for the default squish image, used when a user doesnt have one already.",
+        )
+        .setRequired(false),
+    )
     .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
   async execute(interaction: any) {
     emitCommand("serverSetup");
@@ -61,6 +77,8 @@ export const command = {
     const defaultPet = interaction.options.getString("default_pet");
     const defaultBite = interaction.options.getString("default_bite");
     const defaultHug = interaction.options.getString("default_hug");
+    const defaultBonk = interaction.options.getString("default_bonk");
+    const defaultSquish = interaction.options.getString("default_squish");
     const guildSettings = await BotData.findOne({
       where: {
         guild_id: interaction.guildId,
@@ -228,6 +246,66 @@ export const command = {
         setupEmbed.addFields({
           name: "Hug Default",
           value: defaultHug,
+        });
+      }
+    }
+
+    if (defaultBonk != null) {
+      // merge into the JSON map so future lookups prefer `default_images`
+      const botRow = await BotData.findOne({
+        where: { guild_id: interaction.guildId },
+      });
+      const current = botRow?.get("default_images") as any;
+      const map =
+        current && typeof current === "object"
+          ? { ...current }
+          : current
+            ? JSON.parse(current)
+            : {};
+      map.bonk = defaultBonk;
+
+      const [affectedRows] = await (BotData.update as any)(
+        { default_images: map } as any,
+        { where: { guild_id: interaction.guildId } },
+      );
+
+      if (affectedRows > 0) {
+        logger.debug(
+          `Updated default bonk image for guild: ${interaction.guildId}`,
+        );
+        setupEmbed.addFields({
+          name: "Bonk Default",
+          value: defaultBonk,
+        });
+      }
+    }
+
+    if (defaultSquish != null) {
+      // merge into the JSON map so future lookups prefer `default_images`
+      const botRow = await BotData.findOne({
+        where: { guild_id: interaction.guildId },
+      });
+      const current = botRow?.get("default_images") as any;
+      const map =
+        current && typeof current === "object"
+          ? { ...current }
+          : current
+            ? JSON.parse(current)
+            : {};
+      map.squish = defaultSquish;
+
+      const [affectedRows] = await (BotData.update as any)(
+        { default_images: map } as any,
+        { where: { guild_id: interaction.guildId } },
+      );
+
+      if (affectedRows > 0) {
+        logger.debug(
+          `Updated default squish image for guild: ${interaction.guildId}`,
+        );
+        setupEmbed.addFields({
+          name: "Squish Default",
+          value: defaultSquish,
         });
       }
     }

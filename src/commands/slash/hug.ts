@@ -10,44 +10,27 @@ import {
 import { performAction } from "../../utilities/actionHelpers.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { emitCommand } from "../../utilities/metrics.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
   data: new SlashCommandBuilder()
-    .setName("perform")
-    .setDescription("Performs a specific action on one or more users")
-    .addStringOption((option) =>
-      // add choices based on ACTIONS
-      option
-        .setName("action")
-        .setDescription("The action to perform")
-        .setRequired(true)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
-    )
+    .setName("hug")
+    .setDescription("Hugs another user")
     .addUserOption((option) =>
       option
         .setName("target1")
-        .setDescription("The user you want to target")
+        .setDescription("The user you want to hug")
         .setRequired(true),
     )
     .addUserOption((option) =>
       option
         .setName("target2")
-        .setDescription("The user you want to target")
+        .setDescription("The user you want to hug")
         .setRequired(false),
     )
     .addUserOption((option) =>
       option
         .setName("target3")
-        .setDescription("The user you want to target")
-        .setRequired(false),
-    )
-    .addUserOption((option) =>
-      option
-        .setName("target4")
-        .setDescription("The user you want to target")
+        .setDescription("The user you want to hug")
         .setRequired(false),
     )
     .setIntegrationTypes([
@@ -60,13 +43,12 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
-    emitCommand("perform");
+    emitCommand("hug");
     await interaction.deferReply();
 
     let target1: GuildMember | User | null;
     let target2: GuildMember | User | null;
     let target3: GuildMember | User | null;
-    let target4: GuildMember | User | null;
     let author: GuildMember | User;
     const inServer = interaction.guild;
 
@@ -74,13 +56,11 @@ export const command = {
       target1 = await interaction.options.getMember("target1");
       target2 = await interaction.options.getMember("target2");
       target3 = await interaction.options.getMember("target3");
-      target4 = await interaction.options.getMember("target4");
       author = interaction.member as GuildMember;
     } else {
       target1 = await interaction.options.getUser("target1");
       target2 = await interaction.options.getUser("target2");
       target3 = await interaction.options.getUser("target3");
-      target4 = await interaction.options.getUser("target4");
       author = interaction.user;
     }
 
@@ -102,36 +82,17 @@ export const command = {
     addTarget(target1);
     addTarget(target2);
     addTarget(target3);
-    addTarget(target4);
 
     const uniqueTargets = Array.from(targets);
 
-    const actionRaw = interaction.options.getString("action");
-    if (!actionRaw || !(actionRaw in ACTIONS)) {
-      await interaction.editReply({
-        content: "Invalid action",
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-    const action = actionRaw as ActionType;
-
-    await checkUser(action, author, guild);
-
-    // Fetch targets & ensure they have check entries concurrently
-    const targetsArray = uniqueTargets.map(
-      ({ user, member }) => member ?? user,
-    );
-
-    await Promise.all(targetsArray.map((t) => t.fetch && t.fetch(true)));
-    await Promise.all(targetsArray.map((t) => checkUser(action, t, guild)));
+    await checkUser("hug", author, guild);
 
     const containers: ContainerBuilder[] = [];
 
-    for (const target of targetsArray) {
-      const container = await performAction(action, target, author, guild, {
-        skipChecks: true,
-      });
+    for (const { user, member } of uniqueTargets) {
+      const target = member ?? user;
+      await target.fetch(true);
+      const container = await performAction("hug", target, author, guild);
       containers.push(container);
     }
 

@@ -70,12 +70,19 @@ client.slashCommands = new Collection();
 client.contextCommands = new Collection();
 
 const foldersPath = path.join(__dirname, "commands");
-const commandFolders = fs
-  .readdirSync(foldersPath)
-  .filter((f) => fs.statSync(path.join(foldersPath, f)).isDirectory());
 
-for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
+const slashPath = path.join(foldersPath, "slash");
+const contextPath = path.join(foldersPath, "context");
+
+const scanAndLoad = async (commandsPath: string, type: "slash" | "context") => {
+  if (
+    !fs.existsSync(commandsPath) ||
+    !fs.statSync(commandsPath).isDirectory()
+  ) {
+    logger.warn(`No ${type} commands folder at ${commandsPath}, skipping.`);
+    return;
+  }
+
   const allJsFiles = fs
     .readdirSync(commandsPath)
     .filter((file) => file.endsWith(".js"));
@@ -103,15 +110,13 @@ for (const folder of commandFolders) {
     }
 
     if ("data" in command && "execute" in command) {
-      const isContext =
-        command.data.constructor.name === "ContextMenuCommandBuilder";
-      if (isContext) {
+      if (type === "context") {
         client.contextCommands.set(command.data.name, command);
       } else {
         client.slashCommands.set(command.data.name, command);
       }
       logger.warn(
-        `Loaded command ${command.data.name} from ${filePath} (${isContext ? "context" : "slash"})`,
+        `Loaded command ${command.data.name} from ${filePath} (${type})`,
       );
     } else {
       logger.warn(
@@ -119,7 +124,10 @@ for (const folder of commandFolders) {
       );
     }
   }
-}
+};
+
+await scanAndLoad(slashPath, "slash");
+await scanAndLoad(contextPath, "context");
 
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs

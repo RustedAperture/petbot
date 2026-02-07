@@ -9,7 +9,7 @@ vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { fetchGlobalStats } from "../../src/utilities/helper.js";
 import { buildGlobalStatsContainer } from "../../src/components/buildGlobalStatsContainer.js";
-import { command } from "../../src/commands/stats/botStats.js";
+import { command } from "../../src/commands/slash/botStats.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();

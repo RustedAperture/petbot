@@ -8,13 +8,13 @@ vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { performAction } from "../../src/utilities/actionHelpers.js";
-import { command } from "../../src/commands/slash/pet.js";
+import { command } from "../../src/commands/slash/bonk.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("/pet command", () => {
+describe("/bonk command", () => {
   it("performs action and deduplicates targets", async () => {
     (performAction as any).mockResolvedValue({ container: "c" });
 

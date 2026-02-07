@@ -7,14 +7,15 @@ vi.mock("../../src/utilities/actionHelpers", () => ({
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { getActionStatsContainer } from "../../src/utilities/actionHelpers.js";
-import { command } from "../../src/commands/stats/stats.js";
+import { ACTIONS } from "../../src/types/constants.js";
+import { command } from "../../src/commands/slash/stats.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("/stats command", () => {
-  it("returns both pet and bite when action omitted", async () => {
+  it("returns stats for all actions when action omitted", async () => {
     (getActionStatsContainer as any).mockResolvedValue({ container: "pet" });
 
     const user = { id: "u1", fetch: vi.fn().mockResolvedValue(true) };
@@ -28,9 +29,10 @@ describe("/stats command", () => {
 
     await command.execute(interaction as any);
 
-    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(2);
+    const expected = Object.keys(ACTIONS).length;
+    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(expected);
     expect(interaction.__calls.editedReplies.length).toBe(1);
-    expect(interaction.__calls.followUps.length).toBe(1);
+    expect(interaction.__calls.followUps.length).toBe(expected - 1);
   });
 
   it("returns only pet when action is 'pet'", async () => {

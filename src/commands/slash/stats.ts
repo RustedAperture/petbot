@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import { emitCommand } from "../../utilities/metrics.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
+import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -21,8 +22,7 @@ export const command = {
         .setDescription("The action you want to get stats for")
         .setRequired(false)
         .addChoices(
-          { name: "Bite", value: "bite" },
-          { name: "Pet", value: "pet" },
+          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
         ),
     )
     .addUserOption((option) =>
@@ -85,20 +85,17 @@ export const command = {
 
     await targetUser.fetch(true);
 
-    let containers: ContainerBuilder[] = [];
+    const containers: ContainerBuilder[] = [];
+    const actionKinds = Object.keys(ACTIONS) as ActionType[];
 
-    if (action === "pet" || action === null) {
-      const petStats = await getActionStatsContainer("pet", targetUser, guild);
-      containers.push(petStats);
-    }
-
-    if (action === "bite" || action === null) {
-      const biteStats = await getActionStatsContainer(
-        "bite",
+    for (const kind of actionKinds) {
+      if (action !== null && action !== kind) continue;
+      const statsContainer = await getActionStatsContainer(
+        kind,
         targetUser,
         guild,
       );
-      containers.push(biteStats);
+      containers.push(statsContainer);
     }
 
     for (let i = 0; i < containers.length; i++) {

@@ -1,0 +1,2 @@
+# Release Drafter workflow disabled — using Octokit commit listing instead in publish-ghcr.yml
+# You can re-enable by restoring this workflow and the .github/release-drafter.yml file.

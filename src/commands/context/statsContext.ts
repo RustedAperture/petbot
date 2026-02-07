@@ -8,6 +8,7 @@ import {
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
+import { ACTIONS, type ActionType } from "../../types/constants.js";
 import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
@@ -43,12 +44,13 @@ export const command = {
 
     await target.fetch(true);
 
-    let containers: ContainerBuilder[] = [];
+    const containers: ContainerBuilder[] = [];
 
-    const biteStats = await getActionStatsContainer("bite", target, guild);
-    const petStats = await getActionStatsContainer("pet", target, guild);
-
-    containers.push(petStats, biteStats);
+    const actionKinds = Object.keys(ACTIONS) as ActionType[];
+    for (const kind of actionKinds) {
+      const stats = await getActionStatsContainer(kind, target, guild);
+      containers.push(stats);
+    }
 
     for (let i = 0; i < containers.length; i++) {
       const options = {

@@ -3,7 +3,7 @@ import { mockInteraction } from "../helpers/mockInteraction.js";
 
 vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
-import { command } from "../../src/commands/perform/performContext.js";
+import { command } from "../../src/commands/context/performContext.js";
 import { ACTIONS } from "../../src/types/constants.js";
 
 beforeEach(() => {
