@@ -11,4 +11,13 @@ if [ ! -f "/home/node/app/config.json" ]; then
   echo "[WARN] /home/node/app/config.json not found — make sure to mount your config or set required env vars."
 fi
 
+# Run deploy commands (register/update slash commands) before starting the bot
+# This ensures the up-to-date commands are deployed at container start.
+if [ -f "/home/node/app/dist/src/deploy-commands.js" ]; then
+  echo "[INFO] Running deploy-commands..."
+  node /home/node/app/dist/src/deploy-commands.js || echo "[WARN] deploy-commands failed — continuing to start bot"
+else
+  echo "[INFO] deploy-commands not present in container; skipping"
+fi
+
 exec "$@"
