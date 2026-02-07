@@ -23,8 +23,7 @@ export const command = {
         .setDescription("The action for which you want to update the image")
         .setRequired(true)
         .addChoices(
-          { name: "pet", value: "pet" },
-          { name: "bite", value: "bite" },
+          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
         ),
     )
     .addStringOption((option) =>
@@ -104,11 +103,15 @@ export const command = {
       });
 
       const images = actionData!.get("images");
+      const defaultImagesRaw = guildSettings?.get("default_images");
+      const guildDefault =
+        defaultImagesRaw && typeof defaultImagesRaw === "object"
+          ? (defaultImagesRaw as Record<string, string>)[action]
+          : typeof defaultImagesRaw === "string"
+            ? defaultImagesRaw
+            : undefined;
 
-      if (
-        images[0] === defaultBase ||
-        images[0] === guildSettings?.get(ACTIONS[action].guildSettingField)
-      ) {
+      if (images[0] === defaultBase || images[0] === guildDefault) {
         logger.debug("setting image while slot 1 is default");
         slot = 1;
       }

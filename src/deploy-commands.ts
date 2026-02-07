@@ -28,15 +28,29 @@ for (const folder of commandFolders) {
   console.log(`Directory: ${folder}`);
 
   const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
+  // collect JS files then exclude any whose basename is `index` (index.js, index.cjs, index.mjs, etc.)
+  const allJsFiles = fs
     .readdirSync(commandsPath)
     .filter((file) => file.endsWith(".js"));
-  console.log(`  - Files: ${commandFiles.join(", ")}`);
+  const commandFiles = allJsFiles.filter(
+    (file) => path.parse(file).name !== "index",
+  );
+  const skipped = allJsFiles.filter(
+    (file) => path.parse(file).name === "index",
+  );
+  console.log(
+    `  - Files: ${commandFiles.join(", ")}${skipped.length ? ` (skipped: ${skipped.join(", ")})` : ""}`,
+  );
 
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const loaded = await import(pathToFileURL(filePath).href);
     const command = (loaded as any).default || loaded; // support default export
+    if (command && (command as any).disabled) {
+      console.log(`    - Skipped disabled command: ${filePath}`);
+      continue;
+    }
+
     if (command && "data" in command && "execute" in command) {
       const commandDataJSON = command.data.toJSON();
       console.log(

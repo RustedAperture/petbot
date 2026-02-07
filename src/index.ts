@@ -76,13 +76,32 @@ const commandFolders = fs
 
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
+  const allJsFiles = fs
     .readdirSync(commandsPath)
     .filter((file) => file.endsWith(".js"));
+  const commandFiles = allJsFiles.filter(
+    (file) => path.parse(file).name !== "index",
+  );
+  const skipped = allJsFiles.filter(
+    (file) => path.parse(file).name === "index",
+  );
+
+  if (skipped.length > 0) {
+    logger.warn(
+      `Skipping index files in ${commandsPath}: ${skipped.join(", ")}`,
+    );
+  }
+
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const loaded = await import(pathToFileURL(filePath).href);
     const command = (loaded as any).default || loaded;
+
+    if (command && (command as any).disabled) {
+      logger.warn(`Skipping disabled command in ${filePath}`);
+      continue;
+    }
+
     if ("data" in command && "execute" in command) {
       const isContext =
         command.data.constructor.name === "ContextMenuCommandBuilder";

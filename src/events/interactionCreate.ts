@@ -5,6 +5,8 @@ import {
   type ButtonInteraction,
   type Client,
   type Message,
+  type GuildMember,
+  type User,
 } from "discord.js";
 import { resetAction } from "../utilities/resetAction.js";
 
@@ -145,6 +147,149 @@ const interactionCreate = {
         }
       }
     } else if (interaction.isStringSelectMenu()) {
+      const select = interaction;
+      const custom = select.customId || "";
+
+      if (custom.startsWith("perform-select:")) {
+        await select.deferReply();
+
+        const [, targetId] = custom.split(":");
+        const action = select.values?.[0];
+        const guild = select.guildId ?? select.channelId!;
+        const author = (select.member ?? select.user) as GuildMember | User;
+
+        try {
+          // fetch target (try member first) and normalize types
+          let target: GuildMember | User;
+          if (select.guild) {
+            try {
+              target = (await select.guild.members.fetch(
+                targetId,
+              )) as GuildMember;
+            } catch {
+              // fallback to user
+              target = (await select.client.users.fetch(targetId)) as User;
+            }
+          } else {
+            target = (await select.client.users.fetch(targetId)) as User;
+          }
+
+          if (!action) {
+            await select.editReply({ content: "No action selected." });
+            return;
+          }
+
+          // validate action
+          if (!(action in (await import("../types/constants.js")).ACTIONS)) {
+            await select.editReply({ content: "Invalid action." });
+            return;
+          }
+
+          const { checkUser } = await import("../utilities/check_user.js");
+          const { performAction } =
+            await import("../utilities/actionHelpers.js");
+
+          // Ensure both target and author have action rows ready concurrently
+          await Promise.all([
+            checkUser(action as any, target, guild),
+            checkUser(action as any, author, guild),
+          ]);
+
+          const container = await performAction(
+            action as any,
+            target,
+            author,
+            guild,
+            { skipChecks: true },
+          );
+
+          await select.editReply({
+            components: [container] as any,
+            flags: MessageFlags.IsComponentsV2,
+          });
+        } catch (err) {
+          console.error(err);
+          await select.editReply({ content: "Failed to perform action." });
+        }
+      }
+    } else if (interaction.isModalSubmit()) {
+      const modal = interaction;
+      const custom = modal.customId || "";
+      if (custom.startsWith("perform-modal:")) {
+        await modal.deferReply();
+        let action: string | null = null;
+        try {
+          action = modal.fields.getStringSelectValues("action")[0];
+        } catch {
+          // not a text input modal
+        }
+
+        const [, targetId] = custom.split(":");
+        const guild = modal.guildId ?? modal.channelId!;
+        const author = (modal.member ?? modal.user) as GuildMember | User;
+
+        try {
+          // fetch target (try member first) and normalize types
+          let target: GuildMember | User;
+          if (modal.guild) {
+            try {
+              target = (await modal.guild.members.fetch(
+                targetId,
+              )) as GuildMember;
+            } catch {
+              // fallback to user
+              target = (await modal.client.users.fetch(targetId)) as User;
+            }
+          } else {
+            target = (await modal.client.users.fetch(targetId)) as User;
+          }
+
+          if (!action) {
+            // attempt to read selection from raw modal data (label -> component pattern)
+            const comp = (modal as any).data?.components?.[0]?.component;
+            if (comp && Array.isArray(comp.values) && comp.values.length > 0) {
+              action = comp.values[0];
+            }
+          }
+
+          if (!action) {
+            await modal.editReply({ content: "No action provided." });
+            return;
+          }
+
+          // validate action
+          if (!(action in (await import("../types/constants.js")).ACTIONS)) {
+            await modal.editReply({ content: "Invalid action." });
+            return;
+          }
+
+          const { checkUser } = await import("../utilities/check_user.js");
+          const { performAction } =
+            await import("../utilities/actionHelpers.js");
+
+          // Ensure both target and author have action rows ready concurrently
+          await Promise.all([
+            checkUser(action as any, target, guild),
+            checkUser(action as any, author, guild),
+          ]);
+
+          const container = await performAction(
+            action as any,
+            target,
+            author,
+            guild,
+            { skipChecks: true },
+          );
+
+          await modal.editReply({
+            components: [container] as any,
+            flags: MessageFlags.IsComponentsV2,
+          });
+        } catch (err) {
+          console.error(err);
+          await modal.editReply({ content: "Failed to perform action." });
+        }
+      }
     }
   },
 };

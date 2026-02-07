@@ -4,8 +4,7 @@ import { ActionUser } from "../types/user.js";
 interface GuildData {
   id: number;
   guild_id: string;
-  default_pet_image: string;
-  default_bite_image: string;
+  default_images?: Record<string, string> | null;
   log_channel: string;
   nickname: string;
   sleep_image: string;
@@ -54,8 +53,7 @@ ActionData.init(
 class BotData extends Model<GuildData> implements GuildData {
   declare readonly id: number;
   declare guild_id: string;
-  declare default_pet_image: string;
-  declare default_bite_image: string;
+  declare default_images?: Record<string, string> | null;
   declare log_channel: string;
   declare nickname: string;
   declare sleep_image: string;
@@ -67,8 +65,7 @@ BotData.init(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     guild_id: DataTypes.STRING,
-    default_pet_image: DataTypes.TEXT,
-    default_bite_image: DataTypes.TEXT,
+    default_images: DataTypes.JSON,
     log_channel: DataTypes.STRING,
     nickname: DataTypes.STRING,
     sleep_image: DataTypes.TEXT,

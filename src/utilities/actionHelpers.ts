@@ -13,24 +13,39 @@ export async function performAction(
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
+  options?: { skipChecks?: boolean },
 ): Promise<ContainerBuilder> {
-  await checkUser(actionKind, target, guild);
-  await checkUser(actionKind, author, guild);
+  if (!options?.skipChecks) {
+    await checkUser(actionKind, target, guild);
+    await checkUser(actionKind, author, guild);
+  }
 
-  const targetRow = await ActionData.findOne({
-    where: { user_id: target.id, location_id: guild, action_type: actionKind },
-  });
-  const authorRow = await ActionData.findOne({
-    where: { user_id: author.id, location_id: guild, action_type: actionKind },
-  });
+  const [targetRow, authorRow] = await Promise.all([
+    ActionData.findOne({
+      where: {
+        user_id: target.id,
+        location_id: guild,
+        action_type: actionKind,
+      },
+    }),
+    ActionData.findOne({
+      where: {
+        user_id: author.id,
+        location_id: guild,
+        action_type: actionKind,
+      },
+    }),
+  ]);
 
   const imageSource = ACTIONS[actionKind].imageSource;
   const imageRow = imageSource === "author" ? authorRow : targetRow;
 
   const image = randomImage(imageRow as ActionUser);
 
-  await targetRow!.increment("has_received");
-  await authorRow!.increment("has_performed");
+  await Promise.all([
+    targetRow!.increment("has_received"),
+    authorRow!.increment("has_performed"),
+  ]);
 
   return buildActionReply(
     target,

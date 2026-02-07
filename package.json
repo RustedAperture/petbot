@@ -1,6 +1,6 @@
 {
   "name": "petbot",
-  "version": "6.2.3",
+  "version": "7.0.0",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
