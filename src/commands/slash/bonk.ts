@@ -85,14 +85,14 @@ export const command = {
 
     const uniqueTargets = Array.from(targets);
 
-    await checkUser("bonk" as any, author, guild);
+    await checkUser("bonk", author, guild);
 
     const containers: ContainerBuilder[] = [];
 
     for (const { user, member } of uniqueTargets) {
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performAction("bonk" as any, target, author, guild);
+      const container = await performAction("bonk", target, author, guild);
       containers.push(container);
     }
 
