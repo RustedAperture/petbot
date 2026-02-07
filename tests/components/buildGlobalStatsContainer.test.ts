@@ -29,10 +29,10 @@ describe("buildGlobalStatsContainer", () => {
 
   it("renders numbers into the stats text", () => {
     const stats = {
-      totalHasPet: 1234,
-      totalHasBitten: 10,
-      totalPetUsers: 555,
-      totalBiteUsers: 3,
+      totalsByAction: {
+        pet: { totalHasPerformed: 1234, totalUsers: 555 },
+        bite: { totalHasPerformed: 10, totalUsers: 3 },
+      },
       totalLocations: 7,
     };
 
@@ -40,7 +40,7 @@ describe("buildGlobalStatsContainer", () => {
 
     expect((container as any).texts.length).toBe(1);
     expect((container as any).texts[0].content).toContain(
-      stats.totalHasPet.toLocaleString(),
+      stats.totalsByAction.pet.totalHasPerformed.toLocaleString(),
     );
     expect((container as any).texts[0].content).toContain(
       "PetBot has visited 7",

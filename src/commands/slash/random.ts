@@ -34,12 +34,6 @@ export const command = {
         .setDescription("The user you want to target")
         .setRequired(false),
     )
-    .addUserOption((option) =>
-      option
-        .setName("target4")
-        .setDescription("The user you want to target")
-        .setRequired(false),
-    )
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
       ApplicationIntegrationType.UserInstall,
@@ -56,7 +50,6 @@ export const command = {
     let target1: GuildMember | User | null;
     let target2: GuildMember | User | null;
     let target3: GuildMember | User | null;
-    let target4: GuildMember | User | null;
     let author: GuildMember | User;
     const inServer = interaction.guild;
 
@@ -64,13 +57,11 @@ export const command = {
       target1 = await interaction.options.getMember("target1");
       target2 = await interaction.options.getMember("target2");
       target3 = await interaction.options.getMember("target3");
-      target4 = await interaction.options.getMember("target4");
       author = interaction.member as GuildMember;
     } else {
       target1 = await interaction.options.getUser("target1");
       target2 = await interaction.options.getUser("target2");
       target3 = await interaction.options.getUser("target3");
-      target4 = await interaction.options.getUser("target4");
       author = interaction.user;
     }
 
@@ -92,7 +83,6 @@ export const command = {
     addTarget(target1);
     addTarget(target2);
     addTarget(target3);
-    addTarget(target4);
 
     const uniqueTargets = Array.from(targets);
 

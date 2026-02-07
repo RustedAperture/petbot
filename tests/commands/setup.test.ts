@@ -25,6 +25,8 @@ describe("/setup command", () => {
         default_pet: "http://example/a.png",
         default_bite: null,
         sleep_image: null,
+        default_bonk: null,
+        default_squish: null,
       },
       fetchMember: { setNickname: vi.fn() },
     });
@@ -49,6 +51,8 @@ describe("/setup command", () => {
         default_pet: null,
         default_bite: null,
         sleep_image: null,
+        default_bonk: null,
+        default_squish: null,
       },
       fetchChannel: fakeLog,
       fetchMember: { setNickname: vi.fn() },
@@ -76,6 +80,8 @@ describe("/setup command", () => {
         default_pet: null,
         default_bite: null,
         sleep_image: null,
+        default_bonk: null,
+        default_squish: null,
       },
       fetchChannel: null,
     });
