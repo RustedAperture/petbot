@@ -117,9 +117,3 @@ jobs:
             return body;
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
-      - name: Show generated changelog
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          echo "Generated changelog:" 
-          echo "" 
-          echo "${{ steps.changelog.outputs.result }}"
