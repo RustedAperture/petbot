@@ -31,6 +31,12 @@ export const ACTIONS = {
     defaultImage: "https://cloud.wfox.app/s/26NNfnfkpBnTKbi/preview",
     imageSource: "target" as const,
   },
+  explode: {
+    past: "exploded",
+    noun: "explode",
+    defaultImage: "https://cloud.wfox.app/s/Wgf2wR6CjGgzTdR/preview",
+    imageSource: "target" as const,
+  },
 } as const;
 
 export type ActionType = keyof typeof ACTIONS;
