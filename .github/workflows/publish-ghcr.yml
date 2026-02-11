@@ -76,28 +76,45 @@ jobs:
               commits = res.data;
             }
 
-            // Build a line per commit and include any associated PR numbers
-            const lines = [];
+            // Collect associated PRs for commits and deduplicate them. If no PRs found, fall back to commits.
+            const prMap = new Map();
             for (const c of commits) {
-              const sha = c.sha.slice(0,7);
-              const msg = c.commit.message.split('\n')[0];
-              const author = (c.author && c.author.login) || (c.commit && c.commit.author && c.commit.author.name) || 'unknown';
-
-              let prText = '';
               try {
                 const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({ owner: context.repo.owner, repo: context.repo.repo, commit_sha: c.sha });
                 if (prs.data && prs.data.length > 0) {
-                  const nums = prs.data.map(p => `#${p.number}`);
-                  prText = ` ${nums.join(',')}`;
+                  for (const p of prs.data) {
+                    if (!prMap.has(p.number)) {
+                      prMap.set(p.number, {
+                        number: p.number,
+                        title: p.title || p.body?.split('\n')[0] || `PR #${p.number}`,
+                        user: (p.user && p.user.login) || (p.user && p.user.name) || 'unknown',
+                        html_url: p.html_url || `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${p.number}`,
+                        labels: p.labels && p.labels.length > 0 ? p.labels.map(l => l.name).join(', ') : null,
+                      });
+                    }
+                  }
                 }
               } catch (err) {
                 // ignore PR lookup errors
               }
-
-              lines.push(`- ${sha} ${msg} (${author})${prText}`);
             }
 
-            const body = lines.join('\n') || 'No commits since last release';
+            const lines = [];
+            if (prMap.size > 0) {
+              for (const pr of prMap.values()) {
+                const labelsText = pr.labels ? ` [${pr.labels}]` : '';
+                lines.push(`- [#${pr.number}](${pr.html_url}) ${pr.title} (${pr.user})${labelsText}`);
+              }
+            } else {
+              for (const c of commits) {
+                const sha = c.sha.slice(0,7);
+                const msg = c.commit.message.split('\n')[0];
+                const author = (c.author && c.author.login) || (c.commit && c.commit.author && c.commit.author.name) || 'unknown';
+                lines.push(`- ${sha} ${msg} (${author})`);
+              }
+            }
+
+            const body = lines.join('\n') || 'No PRs or commits since last release';
 
             // create the release using the API to ensure body newlines are preserved
             try {
