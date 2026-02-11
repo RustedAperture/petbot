@@ -98,3 +98,70 @@ export async function fetchGlobalStats() {
     };
   }
 }
+
+export async function fetchStatsForLocation(locationId: string) {
+  try {
+    const actionKinds = Object.keys(ACTIONS);
+
+    const sums = await Promise.all(
+      actionKinds.map((k) =>
+        ActionData.sum("has_performed", {
+          where: { action_type: k, location_id: locationId },
+        }),
+      ),
+    );
+
+    const uniqueGuilds = await sequelize
+      .query(
+        `SELECT COUNT(DISTINCT location_id) as uniqueGuilds FROM actionData WHERE location_id = :location`,
+        { type: QueryTypes.SELECT, replacements: { location: locationId } },
+      )
+      .then((result: any) => result[0].uniqueGuilds);
+
+    const counts = await Promise.all(
+      actionKinds.map((k) =>
+        ActionData.count({
+          distinct: true,
+          col: "user_id",
+          where: {
+            action_type: k,
+            has_performed: { [Op.gt]: 0 },
+            location_id: locationId,
+          },
+        }),
+      ),
+    );
+
+    const totalsByAction: Record<
+      string,
+      { totalHasPerformed: number; totalUsers: number }
+    > = {};
+    actionKinds.forEach((k, i) => {
+      totalsByAction[k] = {
+        totalHasPerformed: Number(sums[i]) || 0,
+        totalUsers: Number(counts[i]) || 0,
+      };
+    });
+
+    return {
+      totalsByAction,
+      totalLocations: Number(uniqueGuilds) || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching local stats:", error);
+
+    const actionKinds = Object.keys(ACTIONS);
+    const totalsByAction: Record<
+      string,
+      { totalHasPerformed: number; totalUsers: number }
+    > = {};
+    actionKinds.forEach((k) => {
+      totalsByAction[k] = { totalHasPerformed: 0, totalUsers: 0 };
+    });
+
+    return {
+      totalsByAction,
+      totalLocations: 0,
+    };
+  }
+}

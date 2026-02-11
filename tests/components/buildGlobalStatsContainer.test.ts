@@ -46,4 +46,24 @@ describe("buildGlobalStatsContainer", () => {
       "PetBot has visited 7",
     );
   });
+
+  it("renders local title and omits unique locations when isLocal=true", () => {
+    const stats = {
+      totalsByAction: {
+        pet: { totalHasPerformed: 12, totalUsers: 2 },
+        bite: { totalHasPerformed: 3, totalUsers: 1 },
+      },
+      totalLocations: 1,
+    };
+
+    const container = buildGlobalStatsContainer(stats as any, true);
+
+    expect((container as any).texts.length).toBe(1);
+    expect((container as any).texts[0].content).toContain(
+      "Local Bot Statistics",
+    );
+    expect((container as any).texts[0].content).not.toContain(
+      "PetBot has visited",
+    );
+  });
 });
