@@ -78,8 +78,9 @@ describe("helper util", () => {
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(6)
       .mockResolvedValueOnce(7);
-    (sequelize.query as any).mockResolvedValue([{ uniqueGuilds: 1 }]);
+    // presence check for location
     (ActionData.count as any)
+      .mockResolvedValueOnce(1) // presence for location -> totalLocations = 1
       .mockResolvedValueOnce(1)
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(3)
