@@ -12,12 +12,31 @@ interface GuildData {
   updatedAt: Date;
 }
 
+import fs from "fs";
+import path from "path";
+
+const storagePath =
+  process.env.DATABASE_STORAGE || path.join("data", "database.sqlite");
+
+if (!fs.existsSync(storagePath)) {
+  console.warn(
+    `Database file not found at ${storagePath}. Stats will be empty until a database is present.`,
+  );
+} else {
+  const stat = fs.statSync(storagePath);
+  if (stat.size === 0) {
+    console.warn(
+      `Database file at ${storagePath} exists but is empty. Stats will be empty.`,
+    );
+  }
+}
+
 const sequelize = new Sequelize("database", "user", "password", {
   host: "localhost",
   dialect: "sqlite",
   logging: false,
 
-  storage: "data/database.sqlite",
+  storage: storagePath,
 });
 
 class ActionData extends Model<ActionUser> implements ActionUser {

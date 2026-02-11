@@ -31,51 +31,29 @@ npm run dev
 
 ---
 
-## Docker (recommended for production)
+## Docker (development-first / default)
 
-We provide a production-ready **multi-stage Dockerfile** and a GitHub Action that can push multi-arch images to GHCR.
+This project now uses a development-focused container as the default and preferred way to run the bot locally and for day-to-day development. The repository's `Dockerfile` builds an image that runs both the bot and the web dev server concurrently (suitable for local development). Production-style multi-arch images may still be available via GHCR for CI/publishing workflows but **local development should use the container**.
 
-### Build & run locally
+### Run locally (recommended)
 
-- Build locally (tested):
-
-```bash
-docker buildx build --load --platform linux/amd64 -t petbot:local .
-```
-
-- Run with mounted data & config (TUI disabled unless you attach a TTY):
+- Build and run using docker compose (this uses the repo `Dockerfile` which runs in dev mode by default):
 
 ```bash
-docker run --rm --name petbot \
-  -v "$(pwd)/data":/home/node/app/data \
-  -v "$(pwd)/config.json":/home/node/app/config.json:ro \
-  -e TUI=1 petbot:local
+docker compose up --build
 ```
 
-- To get the interactive TUI attach a TTY:
+- The container mounts the repository so changes are reflected immediately. The Next.js dev server is exposed on port `3000` by default and you can access it at `http://localhost:3000`.
 
-```bash
-docker run -it --rm --name petbot -v "$(pwd)/data":/home/node/app/data \
-  -v "$(pwd)/config.json":/home/node/app/config.json:ro -e TUI=1 petbot:local
-```
+- The internal bot API remains bound to loopback by default (`127.0.0.1`) and is intentionally not published to the host.
 
-> The image's `entrypoint.sh` ensures `data/` permissions and warns if `config.json` is missing.
+### Notes
 
-### Pulling the published image
+- To enable the interactive TUI (requires a TTY) set `TUI=1` in the environment or run with `-it`.
+- The container entrypoint will run both the bot (root `npm run dev`) and the web dev server (`web npm run dev`) when running in dev mode.
+- If you need a production-style image (for releases), see CI / Publishing; note that local development is still intended to be performed with the dev-first container.
 
-We publish multi-arch images to GHCR. Example (replace `<owner>`):
-
-```bash
-docker pull ghcr.io/<owner>/petbot:latest
-```
-
-Or pull a semver-tagged release:
-
-```bash
-docker pull ghcr.io/<owner>/petbot:1.2.3
-```
-
-If you want to run on Unraid, map `./data` and `./config.json` in the container template and set any required env vars.
+> If you'd like, I can add an example `docker compose` snippet tailored for Unraid or add a short `DEVELOPING.md` section with tips (watchers, nodemon, etc.).
 
 ---
 

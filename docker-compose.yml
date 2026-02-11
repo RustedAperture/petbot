@@ -5,27 +5,39 @@ version: "3.8"
 services:
   petbot:
     container_name: petbot
-    # Image to pull by default; will be used as the tag if you build locally
-    image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     working_dir: /home/node/app
     environment:
+      # DEV container is the default and will run both bot and web in dev mode
+      - DEV=1
       # TUI: set to 1 or true to enable the interactive TUI (requires a TTY)
       - TUI=${TUI:-false}
-      # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
-      # - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+      # Keep internal API bound to loopback by default
+      - INTERNAL_HOST=127.0.0.1
     volumes:
+      # Mount the repository into the container for live edits
+      - ./:/home/node/app
       # Persist runtime data (sqlite DB, migrations, etc.)
       - ./data:/home/node/app/data
       # Mount your config.json (read-only). Create it locally as documented in README.
       - ./config.json:/home/node/app/config.json:ro
+      # Preserve the container-installed node_modules (host mount would otherwise overwrite them)
+      - node_modules:/home/node/app/node_modules
+      - web_node_modules:/home/node/app/web/node_modules
+    ports:
+      - "3000:3000" # Next dev server
+      # Note: INTERNAL_PORT (3030) remains internal by default; do NOT publish unless necessary.
     tty: ${TUI:-false}
-    # The image's ENTRYPOINT/ CMD will start the bot (default: `node dist/src/index.js`).
-    # To run the interactive TUI locally use `TUI=1 docker compose run --service-ports --rm petbot`
+    # The entrypoint will start both the bot and web when DEV=1; use docker compose up/build to run in dev mode.
 
 volumes:
   data:
     driver: local
+  node_modules: {}
+  web_node_modules: {}
 
 # Example: docker-compose.override.yml (keep out of VCS / do not commit values)
 # services:

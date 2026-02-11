@@ -148,3 +148,55 @@ client.login(token).catch((error) => {
   logger.error(error, "Bot login failed:");
   process.exit(1);
 });
+
+// Start a small internal HTTP server to expose bot stats for the web UI and health checks.
+import http from "node:http";
+import { fetchGlobalStats } from "./utilities/helper.js";
+
+const INTERNAL_PORT = process.env.INTERNAL_PORT
+  ? Number(process.env.INTERNAL_PORT)
+  : 3030;
+const INTERNAL_TOKEN = process.env.INTERNAL_TOKEN || null;
+
+const server = http.createServer(async (req, res) => {
+  try {
+    const url = req.url || "/";
+
+    if (INTERNAL_TOKEN) {
+      const provided = req.headers["x-internal-token"] as string | undefined;
+      if (!provided || provided !== INTERNAL_TOKEN) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
+    }
+
+    if (url === "/internal/stats") {
+      const stats = await fetchGlobalStats();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(stats));
+      return;
+    }
+
+    if (url === "/internal/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok" }));
+      return;
+    }
+
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "not found" }));
+  } catch (err) {
+    logger.error(err, "Internal server error");
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "internal" }));
+  }
+});
+
+// Bind internal API to loopback by default so it's only reachable from inside the container
+const INTERNAL_HOST = process.env.INTERNAL_HOST || "127.0.0.1";
+server.listen(INTERNAL_PORT, INTERNAL_HOST, () => {
+  logger.info(
+    `Internal API server listening on ${INTERNAL_HOST}:${INTERNAL_PORT}`,
+  );
+});

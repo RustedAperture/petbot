@@ -82,6 +82,25 @@ async function fetchStatsInternal(locationId?: string) {
       ),
     );
 
+    // Calculate total unique users (across all actions)
+    let uniqueUsers: number;
+    if (isLocal) {
+      uniqueUsers = await ActionData.count({
+        distinct: true,
+        col: "user_id",
+        where: {
+          has_performed: { [Op.gt]: 0 },
+          location_id: locationId,
+        },
+      });
+    } else {
+      const uniqueUsersResult: any = await sequelize.query(
+        `SELECT COUNT(DISTINCT user_id) as uniqueUsers FROM actionData WHERE has_performed > 0`,
+        { type: QueryTypes.SELECT },
+      );
+      uniqueUsers = uniqueUsersResult[0].uniqueUsers;
+    }
+
     const totalsByAction: Record<
       string,
       { totalHasPerformed: number; totalUsers: number }
@@ -96,6 +115,7 @@ async function fetchStatsInternal(locationId?: string) {
     return {
       totalsByAction,
       totalLocations: Number(uniqueGuilds) || 0,
+      totalUniqueUsers: Number(uniqueUsers) || 0,
     };
   } catch (error) {
     console.error(

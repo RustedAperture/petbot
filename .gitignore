@@ -1,10 +1,12 @@
 node_modules
 .env
 config.json
-data/database.sqlite
+database.sqlite
 /.idea/
 /.vscode/
 dist/
 *.d.ts
 *.d.ts.map
 app.json.log
+.next
+.DS_Store

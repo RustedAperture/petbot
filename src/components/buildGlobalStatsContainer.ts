@@ -8,6 +8,7 @@ export function buildGlobalStatsContainer(
       { totalHasPerformed: number; totalUsers: number }
     >;
     totalLocations: number;
+    totalUniqueUsers?: number;
   },
   isLocal = false,
 ) {
@@ -39,6 +40,11 @@ export function buildGlobalStatsContainer(
     lines.push("", "**Community Reach**");
     lines.push(
       `PetBot has visited ${stats.totalLocations.toLocaleString()} unique locations`,
+    );
+    lines.push(
+      `PetBot has reached ${(
+        stats.totalUniqueUsers ?? 0
+      ).toLocaleString()} unique users`,
     );
   }
 

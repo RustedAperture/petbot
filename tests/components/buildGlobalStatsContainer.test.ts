@@ -34,6 +34,7 @@ describe("buildGlobalStatsContainer", () => {
         bite: { totalHasPerformed: 10, totalUsers: 3 },
       },
       totalLocations: 7,
+      totalUniqueUsers: 600,
     };
 
     const container = buildGlobalStatsContainer(stats as any);
@@ -45,6 +46,7 @@ describe("buildGlobalStatsContainer", () => {
     expect((container as any).texts[0].content).toContain(
       "PetBot has visited 7",
     );
+    expect((container as any).texts[0].content).toContain("has reached 600");
   });
 
   it("renders local title and omits unique locations when isLocal=true", () => {
@@ -54,6 +56,7 @@ describe("buildGlobalStatsContainer", () => {
         bite: { totalHasPerformed: 3, totalUsers: 1 },
       },
       totalLocations: 1,
+      totalUniqueUsers: 1,
     };
 
     const container = buildGlobalStatsContainer(stats as any, true);
@@ -65,5 +68,6 @@ describe("buildGlobalStatsContainer", () => {
     expect((container as any).texts[0].content).not.toContain(
       "PetBot has visited",
     );
+    expect((container as any).texts[0].content).not.toContain("has reached");
   });
 });

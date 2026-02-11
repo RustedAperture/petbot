@@ -1,40 +1,35 @@
-# Stage: builder
-FROM node:20-bullseye-slim AS builder
+# Development Dockerfile (now the default runtime for the project)
+# This image runs both the bot and web in development mode by default
+FROM node:20-bullseye-slim
 
-WORKDIR /app
+WORKDIR /home/node/app
 
-# Keep npm global prefix consistent with your Unraid snippet
-ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
-ENV PATH=/home/node/.npm-global/bin:${PATH}
-
-# Install build deps for native modules (sqlite3)
-COPY package*.json ./
+# Install build deps for native modules (sqlite3) and other tooling
 RUN apt-get update && \
     apt-get install -y build-essential python3 libsqlite3-dev --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Install dependencies and build
+# Copy root and web package manifests and install all deps (including devDeps)
+COPY package*.json ./
+COPY package-lock.json ./
+COPY web/package*.json web/
+COPY web/package-lock.json web/
+
 RUN npm ci --no-audit --no-fund
+RUN cd web && npm ci --no-audit --no-fund
+
+# Copy project files
 COPY . .
-RUN npm run build && npm prune --production
 
-# Stage: runtime
-FROM node:20-bullseye-slim
-ENV NODE_ENV=production
-WORKDIR /home/node/app
-
-# Copy built app from builder
-COPY --from=builder /app ./
-
-# Create a non-root user and fix perms
+# Ensure files owned by non-root user
 RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
 
-# Copy entrypoint and set permissions
+# Copy entrypoint and make executable
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 USER app
 VOLUME ["/home/node/app/data"]
-EXPOSE 3000
+EXPOSE 3000 3030
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["node", "dist/src/index.js"]
+CMD ["/bin/sh", "-c", "npm run dev"]
