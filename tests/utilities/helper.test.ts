@@ -100,4 +100,17 @@ describe("helper util", () => {
     expect(res.totalsByAction.bonk.totalUsers).toBe(4);
     expect(res.totalsByAction.squish.totalUsers).toBe(5);
   });
+
+  it("fetchStatsForLocation handles errors and returns zeros", async () => {
+    (ActionData.sum as any).mockImplementation(() => {
+      throw new Error("boom");
+    });
+
+    const res = await fetchStatsForLocation("guild-99");
+
+    expect(res.totalsByAction.pet.totalHasPerformed).toBe(0);
+    expect(res.totalsByAction.bite.totalHasPerformed).toBe(0);
+    expect(res.totalsByAction.pet.totalUsers).toBe(0);
+    expect(res.totalLocations).toBe(0);
+  });
 });
