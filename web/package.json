@@ -9,12 +9,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/joy": "latest",
+    "@mui/material": "^7.3.7",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "@mui/joy": "latest",
-    "@emotion/react": "latest",
-    "@emotion/styled": "latest",
     "swr": "^2.2.0"
   }
 }
