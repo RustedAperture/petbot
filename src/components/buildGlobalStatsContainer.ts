@@ -1,17 +1,21 @@
 import { ContainerBuilder, TextDisplayBuilder } from "discord.js";
 import { ACTIONS } from "../types/constants.js";
 
-export function buildGlobalStatsContainer(stats: {
-  totalsByAction: Record<
-    string,
-    { totalHasPerformed: number; totalUsers: number }
-  >;
-  totalLocations: number;
-}) {
+export function buildGlobalStatsContainer(
+  stats: {
+    totalsByAction: Record<
+      string,
+      { totalHasPerformed: number; totalUsers: number }
+    >;
+    totalLocations: number;
+  },
+  isLocal = false,
+) {
   const container = new ContainerBuilder();
   const statsText = new TextDisplayBuilder();
 
-  const lines: string[] = ["# Global Bot Statistics", "", "**Actions**"];
+  const title = isLocal ? "# Local Bot Statistics" : "# Global Bot Statistics";
+  const lines: string[] = [title, "", "**Actions**"];
 
   const actionKinds = Object.keys(ACTIONS);
 
@@ -31,10 +35,12 @@ export function buildGlobalStatsContainer(stats: {
     lines.push(`${users.toLocaleString()} have used ${label}`);
   }
 
-  lines.push("", "**Community Reach**");
-  lines.push(
-    `PetBot has visited ${stats.totalLocations.toLocaleString()} unique locations`,
-  );
+  if (!isLocal) {
+    lines.push("", "**Community Reach**");
+    lines.push(
+      `PetBot has visited ${stats.totalLocations.toLocaleString()} unique locations`,
+    );
+  }
 
   statsText.setContent(lines.join("\n"));
 
