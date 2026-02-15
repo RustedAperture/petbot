@@ -11,8 +11,113 @@ export default async function statsHandler(req: any, res: any) {
   }
 
   try {
+    // support optional query params to filter stats by userId and/or guildId (locationId)
+    const url = new URL(
+      req.url || "",
+      `http://${req.headers.host || "localhost"}`,
+    );
+    const userId = url.searchParams.get("userId");
+    const guildId =
+      url.searchParams.get("guildId") || url.searchParams.get("locationId");
+
     const actionKinds = Object.keys(ACTIONS);
 
+    // Helper to build where-clauses depending on filters
+    const baseWhere = (actionType?: string) => {
+      const where: any = {};
+      if (actionType) where.action_type = actionType;
+      if (userId) where.user_id = userId;
+      if (guildId) where.location_id = guildId;
+      return where;
+    };
+
+    if (userId || guildId) {
+      // Filtered response (user or guild specific)
+      const sumsPromise = Promise.all(
+        actionKinds.map((k) =>
+          ActionData.sum("has_performed", { where: baseWhere(k) }),
+        ),
+      );
+
+      const usersPromise = Promise.all(
+        actionKinds.map((k) =>
+          ActionData.count({
+            distinct: true,
+            col: "user_id",
+            where: { ...baseWhere(k), has_performed: { [Op.gt]: 0 } },
+          }),
+        ),
+      );
+
+      const [sums, users] = await Promise.all([sumsPromise, usersPromise]);
+
+      const totalsByAction: Record<
+        string,
+        { totalHasPerformed: number; totalUsers: number; imageUrl?: string }
+      > = {};
+
+      actionKinds.forEach((k, i) => {
+        totalsByAction[k] = {
+          totalHasPerformed: Number(sums[i]) || 0,
+          totalUsers: Number(users[i]) || 0,
+          imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
+        };
+      });
+
+      const totalActionsPerformed = sums.reduce(
+        (acc, v) => acc + (Number(v) || 0),
+        0,
+      );
+
+      // total unique users for a guild filter = distinct user_id where location_id = guildId
+      // for a user filter, totalUniqueUsers is either 1 (user exists) or 0
+      let totalUniqueUsers = 0;
+      if (guildId) {
+        totalUniqueUsers = Number(
+          await ActionData.count({
+            distinct: true,
+            col: "user_id",
+            where: { location_id: guildId, has_performed: { [Op.gt]: 0 } },
+          }),
+        );
+      } else if (userId) {
+        const userPresence = await ActionData.count({
+          where: { user_id: userId, has_performed: { [Op.gt]: 0 } },
+        });
+        totalUniqueUsers = userPresence > 0 ? 1 : 0;
+      }
+
+      // totalLocations for a filtered query: if filtering by guild -> 1; if by user -> number of distinct locations the user has records in
+      let totalLocations = 0;
+      if (guildId) {
+        totalLocations =
+          (await ActionData.count({ where: { location_id: guildId } })) > 0
+            ? 1
+            : 0;
+      } else if (userId) {
+        totalLocations = Number(
+          await ActionData.count({
+            distinct: true,
+            col: "location_id",
+            where: { user_id: userId },
+          }),
+        );
+      }
+
+      const body = {
+        totalsByAction,
+        totalActionsPerformed: Number(totalActionsPerformed) || 0,
+        totalUniqueUsers: Number(totalUniqueUsers) || 0,
+        totalLocations: Number(totalLocations) || 0,
+        totalGuilds: guildId ? 1 : undefined,
+      };
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(body));
+      return;
+    }
+
+    // Unfiltered (global) response — existing behavior
     const sumsPromise = Promise.all(
       actionKinds.map((k) =>
         ActionData.sum("has_performed", { where: { action_type: k } }),

@@ -6,6 +6,9 @@ type UseGlobalStatsOptions = {
   refreshIntervalMs?: number;
   /** optional initial data */
   initialData?: GlobalStats | null;
+  /** optional filters */
+  userId?: string | null;
+  guildId?: string | null;
 };
 
 type UseGlobalStatsResult = {
@@ -19,10 +22,13 @@ type UseGlobalStatsResult = {
  * Fetches `/api/stats` (proxied to the bot on :3001 in dev) and returns loading / error state + a refresh function.
  * - Call from client components.
  * - Optional polling via `refreshIntervalMs`.
+ * - Can accept `userId` / `guildId` filters which are forwarded as query params.
  */
 export function useGlobalStats({
   refreshIntervalMs,
   initialData,
+  userId = null,
+  guildId = null,
 }: UseGlobalStatsOptions = {}): UseGlobalStatsResult {
   const [data, setData] = React.useState<GlobalStats | null>(
     initialData ?? null,
@@ -31,23 +37,31 @@ export function useGlobalStats({
   const [error, setError] = React.useState<Error | null>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
-  const fetchStats = React.useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true);
-    setError(null);
+  const fetchStats = React.useCallback(
+    async (signal?: AbortSignal) => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      // use the frontend proxy `/api/*` which is configured to forward to :3001
-      const res = await fetch("/api/stats", { signal, cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`);
-      const json = (await res.json()) as GlobalStats;
-      setData(json);
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      setError(err instanceof Error ? err : new Error(String(err)));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      try {
+        const qs = new URLSearchParams();
+        if (userId) qs.set("userId", userId);
+        if (guildId) qs.set("guildId", guildId);
+        const url = "/api/stats" + (qs.toString() ? `?${qs.toString()}` : "");
+
+        // use the frontend proxy `/api/*` which is configured to forward to :3001
+        const res = await fetch(url, { signal, cache: "no-store" });
+        if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`);
+        const json = (await res.json()) as GlobalStats;
+        setData(json);
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
+        setError(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [userId, guildId],
+  );
 
   const refresh = React.useCallback(() => {
     abortRef.current?.abort();

@@ -10,6 +10,15 @@ services:
     restart: unless-stopped
     working_dir: /home/node/app
     environment:
+      # Internal API secret (optional) — recommended in production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-}
+
+      # Discord OAuth (set these for the web UI to allow Sign in with Discord)
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      - DISCORD_TOKEN=${DISCORD_TOKEN:-}
+
       # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
       # - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
     ports:
@@ -17,8 +26,9 @@ services:
     volumes:
       # Persist runtime data (sqlite DB, migrations, etc.)
       - ./data:/home/node/app/data
-      # Mount your config.json (read-only). Create it locally as documented in README.
-      - ./config.json:/home/node/app/config.json:ro
+      # Legacy: you may still mount a `config.json` for backward compatibility, but
+      # using env vars / a `.env` file is preferred and config.json is deprecated.
+      # - ./config.json:/home/node/app/config.json:ro
     # The container will start both the bot and (if present) the Next.js server on port 3000.
 
 volumes:

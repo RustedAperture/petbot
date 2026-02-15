@@ -15,9 +15,10 @@ interface StatsCardProps {
 
 export default function StatsCardSimple({ statString, value }: StatsCardProps) {
   return (
-    <Card className="relative mx-auto w-full">
-      <CardContent>
-        <b>{statString}:</b> {formatNumber(value)}
+    <Card className="relative mx-auto w-full justify-center">
+      <CardContent className="flex items-center gap-1">
+        <b>{statString}:</b>
+        {formatNumber(value)}
       </CardContent>
     </Card>
   );

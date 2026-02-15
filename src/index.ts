@@ -3,9 +3,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 
-const config = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), "config.json"), "utf8"),
-);
+import config from "./config.js";
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
 import logger from "./logger.js";
