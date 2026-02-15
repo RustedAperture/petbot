@@ -9,7 +9,6 @@ import {
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
 import { checkUser } from "../../utilities/check_user.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -44,7 +43,6 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
-    emitCommand("random");
     await interaction.deferReply();
 
     let target1: GuildMember | User | null;

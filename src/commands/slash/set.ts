@@ -10,7 +10,6 @@ import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import logger from "../../logger.js";
 import { ActionData, BotData } from "../../utilities/db.js";
 import { updateAction } from "../../utilities/updateAction.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -75,8 +74,6 @@ export const command = {
     }
 
     const action = actionRaw as ActionType;
-
-    emitCommand(`/set ${action}`);
 
     let slot = interaction.options.getNumber("slot");
 

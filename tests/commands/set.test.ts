@@ -6,7 +6,7 @@ vi.mock("../../src/utilities/updateAction.js", () => ({
   updateAction: vi.fn(),
 }));
 vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
-vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
+
 vi.mock("../../src/utilities/normalizeUrl", () => ({
   normalizeUrl: (u: string) => u,
 }));

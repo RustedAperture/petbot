@@ -6,7 +6,6 @@ import {
 } from "discord.js";
 import { BotData } from "../../utilities/db.js";
 import logger from "../../logger.js";
-import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -72,7 +71,6 @@ export const command = {
     )
     .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
   async execute(interaction: any) {
-    emitCommand("serverSetup");
     const nickname = interaction.options.getString("nickname");
     const defaultPet = interaction.options.getString("default_pet");
     const defaultBite = interaction.options.getString("default_bite");

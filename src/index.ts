@@ -9,16 +9,11 @@ const config = JSON.parse(
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
 import logger from "./logger.js";
+import { startHttpServer } from "./http/server.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { token } = config as { token: string };
-
-if (process.env.TUI === "1") {
-  import("./tui/dashboard.js").catch((err) => {
-    console.error("Failed to start TUI:", err);
-  });
-}
 
 declare module "discord.js" {
   export interface Client {
@@ -57,7 +52,10 @@ const umzug = new Umzug({
   logger: console,
 });
 
-umzug.up();
+await umzug.up();
+
+// start the HTTP API for the web UI (runs on 3001 by default)
+startHttpServer(Number(process.env.HTTP_PORT) || 3001);
 
 const client: Client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],

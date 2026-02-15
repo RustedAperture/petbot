@@ -6,7 +6,6 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -23,7 +22,6 @@ export const command = {
     ]),
   aliases: ["bite-user"],
   async execute(interaction) {
-    emitCommand("bite-user");
     await interaction.deferReply();
 
     let target, author;

@@ -20,4 +20,10 @@ else
   echo "[INFO] deploy-commands not present in container; skipping"
 fi
 
+# If we have a built Next app, start it in the background so the container serves both UI + bot
+if [ -d "/home/node/app/apps/web/.next" ]; then
+  echo "[INFO] Starting Next.js server (apps/web)..."
+  (cd /home/node/app/apps/web && npm run start --silent) &
+fi
+
 exec "$@"

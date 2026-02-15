@@ -8,7 +8,6 @@ vi.mock("../../src/utilities/helper", () => ({
 vi.mock("../../src/components/buildGlobalStatsContainer", () => ({
   buildGlobalStatsContainer: vi.fn(),
 }));
-vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { fetchGlobalStats } from "../../src/utilities/helper.js";
 import { buildGlobalStatsContainer } from "../../src/components/buildGlobalStatsContainer.js";

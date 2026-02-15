@@ -4,7 +4,6 @@ import { mockInteraction } from "../helpers/mockInteraction.js";
 vi.mock("../../src/utilities/actionHelpers", () => ({
   performAction: vi.fn(),
 }));
-vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { performAction } from "../../src/utilities/actionHelpers.js";
 import { command } from "../../src/commands/context/biteContext.js";

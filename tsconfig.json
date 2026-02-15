@@ -9,7 +9,6 @@
       "@components/*": ["components/*"],
       "@commands/*": ["commands/*"],
       "@types/*": ["types/*"],
-      "@tui/*": ["tui/*"],
       "@logger": ["logger.js"]
     },
 
@@ -45,9 +44,6 @@
     "dist",
     "data",
     "migrations/**",
-    "utilities/**/*.js",
-    // Exclude the legacy non-TSX dashboard source to avoid duplicate emit
-    "tui/dashboard.ts",
-    "**/tui/dashboard.ts"
+    "utilities/**/*.js"
   ]
 }

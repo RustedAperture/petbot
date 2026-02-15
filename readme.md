@@ -24,10 +24,13 @@ A Discord bot by RustedAperture.
 
 ```bash
 npm install
+# run the bot backend
 npm run dev
+# run the web UI (in a separate shell)
+npm run dev:web
 ```
 
-3. Use `/setup` in a guild channel to configure the bot.
+3. Use `/setup` in a guild channel to configure the bot. The web UI will be available at `http://localhost:3000` when `npm run dev:web` is running.
 
 ---
 
@@ -43,21 +46,17 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 docker buildx build --load --platform linux/amd64 -t petbot:local .
 ```
 
-- Run with mounted data & config (TUI disabled unless you attach a TTY):
+- Run with mounted data & config (web UI exposed on port 3000):
 
 ```bash
 docker run --rm --name petbot \
+  -p 3000:3000 \
   -v "$(pwd)/data":/home/node/app/data \
   -v "$(pwd)/config.json":/home/node/app/config.json:ro \
-  -e TUI=1 petbot:local
+  petbot:local
 ```
 
-- To get the interactive TUI attach a TTY:
-
-```bash
-docker run -it --rm --name petbot -v "$(pwd)/data":/home/node/app/data \
-  -v "$(pwd)/config.json":/home/node/app/config.json:ro -e TUI=1 petbot:local
-```
+After the container starts, open `http://localhost:3000` to access the web UI.
 
 > The image's `entrypoint.sh` ensures `data/` permissions and warns if `config.json` is missing.
 
@@ -97,7 +96,7 @@ If you prefer a single-file bundle for smaller images, I can convert the build t
 
 ## Notes / Troubleshooting
 
-- The TUI (Ink) requires a TTY — run with `-it` for interactive mode.
+- The web UI is served by Next.js at port `3000` when running via `npm run dev:web` or the container.
 - If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`).
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
 - If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
