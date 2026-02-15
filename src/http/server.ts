@@ -4,6 +4,11 @@ import { ActionData, BotData } from "../utilities/db.js";
 import { Op } from "sequelize";
 import logger from "../logger.js";
 
+// API handlers (each API is implemented in its own file)
+import healthHandler from "./api/health.js";
+import statsHandler from "./api/stats.js";
+import { ACTIONS } from "../types/constants.js";
+
 export function startHttpServer(port = Number(process.env.HTTP_PORT) || 3001) {
   const server = http.createServer(async (req, res) => {
     const start = Date.now();
@@ -17,59 +22,21 @@ export function startHttpServer(port = Number(process.env.HTTP_PORT) || 3001) {
       // basic request logging
       logger.info({ method: req.method, pathname }, "HTTP request");
 
-      if (req.method === "GET" && pathname === "/api/health") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-        return;
-      }
-
-      if (req.method === "GET" && pathname === "/api/stats") {
-        const [
-          petSum,
-          biteSum,
-          guildCount,
-          totalPetUsers,
-          totalLocations,
-          totalPetPerformedUsers,
-          totalBitePerformedUsers,
-        ] = await Promise.all([
-          ActionData.sum("has_performed", { where: { action_type: "pet" } }),
-          ActionData.sum("has_performed", { where: { action_type: "bite" } }),
-          BotData.count(),
-          ActionData.count({
-            distinct: true,
-            col: "user_id",
-            where: { action_type: "pet" },
-          }),
-          ActionData.count({
-            distinct: true,
-            col: "location_id",
-            where: { action_type: "pet" },
-          }),
-          ActionData.count({
-            distinct: true,
-            col: "user_id",
-            where: { action_type: "pet", has_performed: { [Op.gt]: 0 } },
-          }),
-          ActionData.count({
-            distinct: true,
-            col: "user_id",
-            where: { action_type: "bite", has_performed: { [Op.gt]: 0 } },
-          }),
-        ]);
-
-        const body = {
-          totalHasPet: Number(petSum) || 0,
-          totalHasBitten: Number(biteSum) || 0,
-          totalGuilds: guildCount || 0,
-          totalPetUsers: totalPetUsers || 0,
-          totalLocations: totalLocations || 0,
-          totalPetPerformedUsers: totalPetPerformedUsers || 0,
-          totalBitePerformedUsers: totalBitePerformedUsers || 0,
+      // API routing: delegate to per-endpoint handlers under `src/http/api/`
+      if (pathname.startsWith("/api/")) {
+        const apiRouter: Record<string, Function> = {
+          "/api/health": healthHandler,
+          "/api/stats": statsHandler,
         };
 
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(body));
+        const handler = apiRouter[pathname];
+        if (handler) {
+          await handler(req, res);
+          return;
+        }
+
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "not_found" }));
         return;
       }
 
