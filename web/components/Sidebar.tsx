@@ -1,16 +1,4 @@
 import * as React from "react";
-import {
-  Sheet,
-  Typography,
-  List,
-  ListItem,
-  ListItemDecorator,
-  Box,
-  IconButton,
-  Divider,
-  Button,
-  ListItemButton,
-} from "@mui/joy";
 import { useColorScheme } from "@mui/joy/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -46,6 +34,12 @@ export default function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  React.useEffect(() => {
+    // keep Tailwind `dark` class in sync with MUI Joy mode
+    if (mode === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
+  }, [mode]);
+
   const isDark = mode === "dark";
 
   const toggleTheme = () => {
@@ -56,6 +50,8 @@ export default function Sidebar({
     } catch (err) {
       // ignore
     }
+    if (next === "dark") document.documentElement.classList.add("dark");
+    else document.documentElement.classList.remove("dark");
   };
 
   const handleSelect = (value: string) => {
@@ -63,149 +59,108 @@ export default function Sidebar({
     if (isMobile) setOpen(false);
   };
 
-  const sheetSx = isMobile
-    ? {
-        position: "fixed",
-        left: 0,
-        top: 0,
-        width: 260,
-        height: "100dvh",
-        zIndex: 1300,
-        p: 2,
-        bgcolor: "background.surface",
-      }
-    : {
-        width: 220,
-        minHeight: "100dvh",
-        position: "sticky",
-        top: 0,
-        p: 3,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-        borderRight: "1px solid",
-        borderColor: "divider",
-      };
-
   return (
     <>
       {isMobile && !open && (
-        <IconButton
+        <button
           onClick={() => setOpen(true)}
-          size="md"
           aria-label="Open menu"
-          sx={{ position: "fixed", left: 12, top: 12, zIndex: 1400 }}
+          className="fixed left-3 top-3 z-50 inline-flex items-center justify-center rounded-md bg-slate-800/80 p-2 text-white shadow-md"
         >
-          <MenuIcon />
-        </IconButton>
+          <MenuIcon fontSize="small" />
+        </button>
       )}
 
       {(open || !isMobile) && (
         <>
           {isMobile && open && (
-            <Box
+            <div
               onClick={() => setOpen(false)}
-              sx={{
-                position: "fixed",
-                inset: 0,
-                bgcolor: "rgba(0,0,0,0.3)",
-                zIndex: 1299,
-              }}
+              className="fixed inset-0 z-40 bg-black/30"
             />
           )}
 
-          <Sheet variant="outlined" sx={sheetSx}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <Typography level="h4">PetBot</Typography>
+          <aside
+            className={`z-50 ${
+              isMobile
+                ? "fixed left-0 top-0 w-64 h-screen p-4"
+                : "sticky top-0 w-56 min-h-screen p-6"
+            } bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col gap-4`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-semibold">PetBot</div>
 
-              <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                <IconButton
-                  variant="soft"
-                  color="neutral"
-                  size="sm"
+              <div className="flex items-center gap-2">
+                <button
                   onClick={toggleTheme}
                   aria-label={
                     isDark ? "Switch to light mode" : "Switch to dark mode"
                   }
+                  className="rounded-md bg-slate-100/60 p-1 text-slate-700 dark:bg-slate-700 dark:text-slate-200"
                 >
                   {isDark ? (
                     <LightModeIcon fontSize="small" />
                   ) : (
                     <DarkModeIcon fontSize="small" />
                   )}
-                </IconButton>
+                </button>
 
                 {isMobile && (
-                  <IconButton
-                    size="sm"
+                  <button
                     onClick={() => setOpen(false)}
                     aria-label="Close menu"
+                    className="rounded-md p-1 text-slate-700 dark:text-slate-200"
                   >
-                    <CloseIcon />
-                  </IconButton>
+                    <CloseIcon fontSize="small" />
+                  </button>
                 )}
-              </Box>
-            </Box>
+              </div>
+            </div>
 
-            <Divider />
+            <hr className="border-slate-200 dark:border-slate-700" />
 
-            <List
-              size="sm"
-              sx={{
-                gap: 1,
-                "--List-nestedInsetStart": "30px",
-                "--ListItem-radius": (theme) => theme.vars.radius.sm,
-              }}
-            >
-              <ListItem>
-                <ListItemButton
-                  selected={selected === "global"}
-                  onClick={() => handleSelect("global")}
-                >
-                  <ListItemDecorator>
-                    <PublicIcon />
-                  </ListItemDecorator>
-                  <Typography level="title-sm">Global</Typography>
-                </ListItemButton>
-              </ListItem>
+            <nav className="flex flex-col gap-2">
+              <button
+                onClick={() => handleSelect("global")}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${
+                  selected === "global"
+                    ? "bg-slate-100 dark:bg-slate-800 font-medium"
+                    : "text-slate-700 dark:text-slate-300"
+                }`}
+              >
+                <PublicIcon fontSize="small" />
+                <span>Global</span>
+              </button>
 
-              <ListItem>
-                <ListItemButton
-                  selected={selected === "guild"}
-                  onClick={() => handleSelect("guild")}
-                >
-                  <ListItemDecorator>
-                    <GroupsIcon />
-                  </ListItemDecorator>
-                  <Typography level="title-sm">Guild</Typography>
-                </ListItemButton>
-              </ListItem>
+              <button
+                onClick={() => handleSelect("guild")}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${
+                  selected === "guild"
+                    ? "bg-slate-100 dark:bg-slate-800 font-medium"
+                    : "text-slate-700 dark:text-slate-300"
+                }`}
+              >
+                <GroupsIcon fontSize="small" />
+                <span>Guild</span>
+              </button>
 
-              <ListItem>
-                <ListItemButton
-                  selected={selected === "user"}
-                  onClick={() => handleSelect("user")}
-                >
-                  <ListItemDecorator>
-                    <PersonIcon />
-                  </ListItemDecorator>
-                  <Typography level="title-sm">User</Typography>
-                </ListItemButton>
-              </ListItem>
-            </List>
+              <button
+                onClick={() => handleSelect("user")}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm ${
+                  selected === "user"
+                    ? "bg-slate-100 dark:bg-slate-800 font-medium"
+                    : "text-slate-700 dark:text-slate-300"
+                }`}
+              >
+                <PersonIcon fontSize="small" />
+                <span>User</span>
+              </button>
+            </nav>
 
-            <Box sx={{ flex: 1 }} />
-
-            <Typography level="body-xs" sx={{ color: "text.secondary" }}>
+            <div className="mt-auto text-xs text-slate-500 dark:text-slate-400">
               v1 — Stats viewer
-            </Typography>
-          </Sheet>
+            </div>
+          </aside>
         </>
       )}
     </>
