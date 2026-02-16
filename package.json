@@ -19,7 +19,8 @@
     "format": "prettier --write \"**/*.{js,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,json,md}\"",
     "tag": "git tag v$(node -p \"require('./package.json').version\") && git push origin v$(node -p \"require('./package.json').version\")",
-    "release": "npm run build && npm run test && npm run tag"
+    "release": "npm run build && npm run test && npm run tag",
+    "bearer:scan": "bearer scan . --severity critical,high,medium"
   },
   "author": "",
   "license": "ISC",
