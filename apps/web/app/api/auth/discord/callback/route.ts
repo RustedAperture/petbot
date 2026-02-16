@@ -137,6 +137,7 @@ export async function GET(req: Request) {
     ? `https://cdn.discordapp.com/avatars/${userJson.id}/${userJson.avatar}${String(userJson.avatar).startsWith("a_") ? ".gif" : ".png"}?size=128`
     : `https://cdn.discordapp.com/embed/avatars/${Number(userJson.discriminator) % 5}.png`;
 
+  // Persist full guild list server-side and keep cookie small (user object only)
   const session = {
     user: {
       id: userJson.id,
@@ -144,8 +145,37 @@ export async function GET(req: Request) {
       avatar: userJson.avatar ?? null,
       avatarUrl,
     },
-    guilds: guildsJson.map((g: any) => ({ id: g.id, name: g.name })),
   };
+
+  // Persist the user's guild list to the internal API (server-side storage)
+  try {
+    const internalBase =
+      process.env.INTERNAL_API_URL ||
+      `${process.env.HTTP_TLS_CERT || process.env.HTTP_TLS_KEY || process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.HTTP_HOST || "127.0.0.1"}:${process.env.HTTP_PORT || "3001"}`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (process.env.INTERNAL_API_SECRET)
+      headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
+    // send full guilds list to internal API (upsert) — await so session is available immediately after redirect
+    try {
+      const persistRes = await fetch(`${internalBase}/api/userSessions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ userId: userJson.id, guilds: guildsJson || [] }),
+      });
+      if (!persistRes.ok) {
+        console.warn(
+          "failed to persist user guilds to internal API",
+          await persistRes.text(),
+        );
+      }
+    } catch (err) {
+      console.warn("failed to persist user guilds to internal API", err);
+    }
+  } catch (err) {
+    console.warn("error while persisting user guilds", err);
+  }
 
   const cookieVal = makeCookieValue(session);
   const sessionCookieHeader = makeCookieHeader(cookieVal);

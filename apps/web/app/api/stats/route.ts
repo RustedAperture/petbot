@@ -78,6 +78,23 @@ export async function GET(req: Request) {
   if (!session)
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  // If the cookie doesn't contain guilds (we now persist them server-side),
+  // attempt to fetch persisted guilds for authorization checks.
+  if (!Array.isArray(session.guilds)) {
+    try {
+      const res = await fetch(
+        `${getInternalApiBase()}/api/userSessions?userId=${encodeURIComponent(session.user.id)}`,
+        { headers },
+      );
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.guilds)) session.guilds = json.guilds;
+      }
+    } catch (_) {
+      // ignore — we'll treat missing guilds as an empty list below
+    }
+  }
+
   // Validate and authorize requested params
   const allowed = new URLSearchParams();
 

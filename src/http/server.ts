@@ -9,6 +9,7 @@ import logger from "../logger.js";
 import healthHandler from "./api/health.js";
 import statsHandler from "./api/stats.js";
 import guildsHandler from "./api/guilds.js";
+import userSessionsHandler from "./api/userSessions.js";
 
 function sha256buf(s: string) {
   return crypto.createHash("sha256").update(String(s)).digest();
@@ -98,6 +99,7 @@ export function startHttpServer(
           "/api/health": healthHandler,
           "/api/stats": statsHandler,
           "/api/guilds": guildsHandler,
+          "/api/userSessions": userSessionsHandler,
         };
 
         const handlerFn = apiRouter[pathname];

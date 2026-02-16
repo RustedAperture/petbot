@@ -78,4 +78,25 @@ BotData.init(
   },
 );
 
-export { ActionData, BotData, sequelize };
+// Per-user persisted session info (server-side storage for user guilds / metadata)
+class UserSession extends Model {
+  declare user_id: string;
+  declare guilds?: any[] | null;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
+}
+
+UserSession.init(
+  {
+    user_id: { type: DataTypes.STRING, primaryKey: true },
+    guilds: DataTypes.JSON,
+    createdAt: DataTypes.DATE,
+    updatedAt: DataTypes.DATE,
+  },
+  {
+    sequelize,
+    modelName: "userSession",
+  },
+);
+
+export { ActionData, BotData, UserSession, sequelize };
