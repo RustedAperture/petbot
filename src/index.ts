@@ -96,7 +96,18 @@ const scanAndLoad = async (commandsPath: string, type: "slash" | "context") => {
   }
 
   for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
+    // Sanitize filename to prevent path traversal (must be a plain basename)
+    const safeName = path.basename(file);
+    if (safeName !== file || file.includes("..") || file.includes(path.sep)) {
+      logger.warn(
+        `Skipping suspicious command filename in ${commandsPath}: ${file}`,
+      );
+      continue;
+    }
+
+    // join using the sanitized basename only; avoid resolving user-controlled segments
+    const filePath = path.join(commandsPath, safeName);
+
     const loaded = await import(pathToFileURL(filePath).href);
     const command = (loaded as any).default || loaded;
 

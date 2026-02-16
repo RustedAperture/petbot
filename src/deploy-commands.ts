@@ -52,7 +52,18 @@ for (const { type, path: commandsPath } of existingPaths) {
   );
 
   for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
+    // sanitize filename (defend against path traversal in repo or mount)
+    const safeName = path.basename(file);
+    if (safeName !== file || file.includes("..") || file.includes(path.sep)) {
+      console.log(
+        `    - Skipping suspicious filename in ${commandsPath}: ${file}`,
+      );
+      continue;
+    }
+
+    // join using the sanitized basename only
+    const filePath = path.join(commandsPath, safeName);
+
     const loaded = await import(pathToFileURL(filePath).href);
     const command = (loaded as any).default || loaded; // support default export
     if (command && (command as any).disabled) {
