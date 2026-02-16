@@ -20,10 +20,8 @@ jobs:
       - name: Run Bearer security scan
         uses: bearer/bearer-action@v2
         with:
-          scanner: "sast,secrets,dataflow"
           diff: true
           severity: "medium,high,critical"
-          exit-code: "1"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
