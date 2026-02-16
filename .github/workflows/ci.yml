@@ -29,8 +29,11 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
         run: npm ci --no-audit --no-fund
+
+      - name: Install dependencies (apps/web)
+        run: npm ci --prefix apps/web --no-audit --no-fund
 
       - name: Build
         run: npm run build
