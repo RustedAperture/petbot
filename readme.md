@@ -107,6 +107,8 @@ To enable "Sign in with Discord" for the web UI you must set the following envir
 - `DISCORD_CLIENT_SECRET` — OAuth application client secret
 - `NEXT_PUBLIC_SITE_URL` — public URL for the site (defaults to `http://localhost:3000` in dev)
 
+Security: the OAuth flow now generates a cryptographically-random `state` value and stores it in a short-lived HttpOnly cookie; the callback validates that `state` to protect against CSRF/session-fixation.
+
 Register a Discord OAuth application and configure its redirect URI to: `https://<your-site>/api/auth/discord/callback` (or `http://localhost:3000/api/auth/discord/callback` for local dev).
 
 ## Notes / Troubleshooting

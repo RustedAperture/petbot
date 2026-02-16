@@ -3,15 +3,12 @@ import https from "node:https";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { URL } from "node:url";
-import { ActionData, BotData } from "../utilities/db.js";
-import { Op } from "sequelize";
 import logger from "../logger.js";
 
 // API handlers (each API is implemented in its own file)
 import healthHandler from "./api/health.js";
 import statsHandler from "./api/stats.js";
 import guildsHandler from "./api/guilds.js";
-import { ACTIONS } from "../types/constants.js";
 
 function sha256buf(s: string) {
   return crypto.createHash("sha256").update(String(s)).digest();

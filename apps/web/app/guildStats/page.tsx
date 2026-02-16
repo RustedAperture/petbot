@@ -36,7 +36,7 @@ export default function GuildStatsPage() {
           </div>
         ) : (
           <p className="mt-4 text-sm text-muted-foreground">
-            Select a guild (via Sign in) or append ?guildId=... to the URL.
+            Sign in to view stats for a guilds.
           </p>
         )}
       </main>

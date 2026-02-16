@@ -12,12 +12,66 @@ function makeCookieHeader(value: string) {
   return `${COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
 }
 
+import crypto from "node:crypto";
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
+  const stateParam = url.searchParams.get("state");
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
+  // Validate state cookie matches state param to protect against CSRF / session-fixation
+  const cookieHeader = req.headers.get("cookie") || "";
+  const cookies = Object.fromEntries(
+    cookieHeader
+      .split(";")
+      .map((c) => c.split("=").map((s) => s.trim()))
+      .map(([k, v]) => [k, decodeURIComponent(v || "")]),
+  );
+  const savedState = cookies["petbot_oauth_state"] as string | undefined;
+
+  // clear state cookie helper
+  const clearStateCookie = () =>
+    `${"petbot_oauth_state"}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+
   if (!code) return NextResponse.redirect(new URL("/", siteUrl));
+
+  if (!stateParam || !savedState) {
+    const res = NextResponse.json(
+      { error: "invalid_oauth_state" },
+      { status: 400 },
+    );
+    res.headers.set("Set-Cookie", clearStateCookie());
+    return res;
+  }
+
+  try {
+    const a = Buffer.from(
+      crypto.createHash("sha256").update(stateParam).digest(),
+    );
+    const b = Buffer.from(
+      crypto.createHash("sha256").update(savedState).digest(),
+    );
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      const res = NextResponse.json(
+        { error: "invalid_oauth_state" },
+        { status: 400 },
+      );
+      res.headers.set("Set-Cookie", clearStateCookie());
+      return res;
+    }
+  } catch (err) {
+    const res = NextResponse.json(
+      { error: "invalid_oauth_state" },
+      { status: 400 },
+    );
+    res.headers.set("Set-Cookie", clearStateCookie());
+    return res;
+  }
+
+  // clear the one-time state cookie now that it's been validated
+  const stateClearingHeader = clearStateCookie();
+
   if (!process.env.DISCORD_CLIENT_ID || !process.env.DISCORD_CLIENT_SECRET) {
     return NextResponse.json(
       { error: "discord_oauth_not_configured" },
@@ -94,9 +148,11 @@ export async function GET(req: Request) {
   };
 
   const cookieVal = makeCookieValue(session);
-  const cookieHeader = makeCookieHeader(cookieVal);
+  const sessionCookieHeader = makeCookieHeader(cookieVal);
 
   const redirect = NextResponse.redirect(new URL("/", siteUrl));
-  redirect.headers.set("Set-Cookie", cookieHeader);
+  // set session cookie and clear the one-time oauth state cookie
+  redirect.headers.set("Set-Cookie", sessionCookieHeader);
+  redirect.headers.append("Set-Cookie", stateClearingHeader);
   return redirect;
 }
