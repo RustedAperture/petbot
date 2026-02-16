@@ -4,14 +4,23 @@ import * as React from "react";
 
 export function useBotGuilds(userId?: string | null) {
   const [data, setData] = React.useState<string[] | null>(null);
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  // don't show a loading state if there's no userId — avoid an unnecessary API call
+  const [isLoading, setIsLoading] = React.useState<boolean>(Boolean(userId));
   const [error, setError] = React.useState<Error | null>(null);
 
   const refresh = React.useCallback(async () => {
+    // no-op when userId is not provided (caller should pass a userId to trigger fetch)
+    if (!userId) {
+      setIsLoading(false);
+      setError(null);
+      setData(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const qs = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+      const qs = `?userId=${encodeURIComponent(userId)}`;
       const res = await fetch(`/api/guilds${qs}`, { cache: "no-store" });
       if (!res.ok)
         throw new Error(`Failed to fetch bot guilds (${res.status})`);
