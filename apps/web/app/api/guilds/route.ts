@@ -12,7 +12,8 @@ function readCookie(req: Request) {
 }
 
 function getInternalApiBase() {
-  if (process.env.INTERNAL_API_URL) return process.env.INTERNAL_API_URL.replace(/\/$/, "");
+  if (process.env.INTERNAL_API_URL)
+    return process.env.INTERNAL_API_URL.replace(/\/$/, "");
   const host = process.env.HTTP_HOST || "127.0.0.1";
   const port = process.env.HTTP_PORT || "3001";
   const preferHttps = Boolean(
@@ -22,7 +23,10 @@ function getInternalApiBase() {
     process.env.INTERNAL_API_USE_HTTPS === "true" ||
     process.env.NODE_ENV === "production",
   );
-  const protocol = preferHttps && host !== "127.0.0.1" && host !== "localhost" ? "https" : "http";
+  const protocol =
+    preferHttps && host !== "127.0.0.1" && host !== "localhost"
+      ? "https"
+      : "http";
   return `${protocol}://${host}:${port}`;
 }
 
@@ -53,7 +57,9 @@ export async function GET(req: Request) {
   if (internalSecret) headers["x-internal-api-key"] = internalSecret;
 
   const targetBase = `${getInternalApiBase()}/api/guilds`;
-  const target = allowed.toString() ? `${targetBase}?${allowed.toString()}` : targetBase;
+  const target = allowed.toString()
+    ? `${targetBase}?${allowed.toString()}`
+    : targetBase;
 
   const res = await fetch(target, { headers });
 
