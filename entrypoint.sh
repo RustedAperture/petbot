@@ -21,9 +21,14 @@ else
 fi
 
 # If we have a built Next app, start it in the background so the container serves both UI + bot
-if [ -d "/home/node/app/apps/web/.next" ]; then
+# Set SKIP_WEB to a non-empty value to disable entrypoint auto-start (useful when running Next.js in a separate container)
+if [ -d "/home/node/app/apps/web/.next" ] && [ -z "${SKIP_WEB:-}" ]; then
   echo "[INFO] Starting Next.js server (apps/web)..."
   (cd /home/node/app/apps/web && npm run start --silent) &
+else
+  if [ -n "${SKIP_WEB:-}" ]; then
+    echo "[INFO] SKIP_WEB is set; skipping Next.js auto-start in entrypoint"
+  fi
 fi
 
 exec "$@"
