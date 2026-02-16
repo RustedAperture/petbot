@@ -9,6 +9,8 @@ services:
     image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
     restart: unless-stopped
     working_dir: /home/node/app
+    env_file:
+      - .env
     environment:
       # Internal API secret (optional) — recommended in production
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-}
@@ -19,8 +21,17 @@ services:
       - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-}
 
+      # HTTP API bind settings (the bot's internal HTTP API)
+      - HTTP_HOST=${HTTP_HOST:-127.0.0.1}
+      - HTTP_PORT=${HTTP_PORT:-3001}
+
+      # Optional / runtime config
+      - DEFAULT_GUILD_ID=${DEFAULT_GUILD_ID:-}
       # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
-      # - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+      # - ALLOWED_IMAGE_HOSTS=${ALLOWED_IMAGE_HOSTS:-}
+
+      # Ensure the runtime runs in production mode by default
+      - NODE_ENV=${NODE_ENV:-production}
     ports:
       - "3000:3000"
     volumes:
