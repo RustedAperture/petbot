@@ -17,19 +17,19 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { EllipsisVertical, LogOut } from "lucide-react";
-import { useSession } from "@/hooks/use-session";
 
 export function AppUser({
   user,
+  onSignOut,
 }: {
   user: {
     name: string;
     email?: string | null;
     avatar?: string | null;
   };
+  onSignOut?: () => void | Promise<void>;
 }) {
   const { isMobile } = useSidebar();
-  const { signOut } = useSession();
 
   return (
     <SidebarMenu>
@@ -56,7 +56,13 @@ export function AppUser({
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuItem onClick={() => void signOut()}>
+            <DropdownMenuItem
+              onClick={() =>
+                void (onSignOut
+                  ? onSignOut()
+                  : window.location.assign("/api/auth/logout"))
+              }
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

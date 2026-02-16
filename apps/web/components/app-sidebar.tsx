@@ -98,18 +98,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 // small client-only wrapper that uses the shared AppUser component
 function SessionAccount() {
-  const { session, loading, signIn } = useSession();
+  const { session, loading, signIn, signOut } = useSession();
 
   if (loading)
     return <div className="text-sm text-muted-foreground">Loading…</div>;
 
   if (!session)
     return (
-      <div className="flex gap-2 items-center">
-        <button onClick={signIn} className="btn btn-ghost text-sm">
-          Sign in with Discord
-        </button>
-      </div>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            onClick={signIn}
+          >
+            Sign in with Discord
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
     );
 
   // AppUser expects { name, email?, avatar? }
@@ -119,5 +125,5 @@ function SessionAccount() {
     avatar: session.user.avatarUrl ?? session.user.avatar ?? undefined,
   };
 
-  return <AppUser user={userProp} />;
+  return <AppUser user={userProp} onSignOut={signOut} />;
 }
