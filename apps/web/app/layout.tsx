@@ -15,7 +15,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Read user's theme preference from cookie (server-side) so SSR output matches client
+  // Read user's theme preference and sidebar state from cookie (server-side) so SSR output matches client
   const headersList = await headers();
   const cookieHeader = headersList.get?.("cookie") ?? "";
   const themeCookie = cookieHeader
@@ -24,10 +24,19 @@ export default async function RootLayout({
     ?.split("=")[1];
   const htmlClass = themeCookie === "dark" ? "dark" : undefined;
 
+  // Read persisted sidebar state (server-side) to avoid "flash" on mount.
+  const sidebarCookie = cookieHeader
+    .split("; ")
+    .find((c: string) => c.startsWith("sidebar_state="))
+    ?.split("=")[1];
+  const sidebarDefaultOpen =
+    sidebarCookie === undefined ? true : sidebarCookie === "true";
+
   return (
     <html className={htmlClass}>
       <body>
         <SidebarProvider
+          defaultOpen={sidebarDefaultOpen}
           style={
             {
               "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -35,10 +44,12 @@ export default async function RootLayout({
             } as React.CSSProperties
           }
         >
-          <AppSidebar variant="inset" />
+          <AppSidebar variant="floating" />
           <SidebarInset>
             <AppHeader />
-            {children}
+            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+              {children}
+            </div>
           </SidebarInset>
         </SidebarProvider>
       </body>

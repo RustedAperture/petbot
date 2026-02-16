@@ -17,7 +17,7 @@ export default function GlobalStatsPage() {
   >;
 
   return (
-    <main className="p-6">
+    <main>
       {isLoading ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Loading global stats…

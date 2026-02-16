@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -17,8 +18,9 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { Palette } from "lucide-react";
+import { BotMessageSquare, Palette } from "lucide-react";
 import { Separator } from "./ui/separator";
+import { memo } from "react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -33,23 +35,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   return (
-    <Sidebar {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <a href="/">
-                <span className="text-base font-semibold">PetBot</span>
-              </a>
+              <Link
+                href="/"
+                aria-label="PetBot"
+                className="flex items-center gap-2 group-data-[collapsible=icon]:mx-auto"
+              >
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-200 text-stone-900">
+                  <BotMessageSquare />
+                </div>
+                <span className="group-data-[collapsible=icon]:hidden text-xl">
+                  PetBot
+                </span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+        <SidebarGroup>
           <SidebarGroupLabel>Stats</SidebarGroupLabel>
           <SidebarMenu>
             {STATS_MENU.map((item) => {
@@ -64,10 +76,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     tooltip={item.title}
                     className={active ? activeClass : undefined}
                   >
-                    <a href={item.href}>
+                    <Link href={item.href}>
                       <item.Icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
@@ -78,11 +90,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem className="flex items-center gap-2">
-                <SidebarMenuButton disabled>
+                <SidebarMenuButton
+                  disabled
+                  className="group-data-[collapsible=icon]:hidden"
+                >
                   <Palette />
                   Theme
                 </SidebarMenuButton>
-                <ThemeToggle />
+                <div className="ml-auto group-data-[collapsible=icon]:mx-auto">
+                  <ThemeToggle />
+                </div>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -97,33 +114,36 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 // small client-only wrapper that uses the shared AppUser component
-function SessionAccount() {
+const SessionAccountInner = () => {
   const { session, loading, signIn, signOut } = useSession();
+
+  // If we already have a session, render it immediately so a background
+  // `refresh()` doesn't replace the UI with a transient loading state.
+  if (session) {
+    const userProp = {
+      name: session.user.username,
+      email: undefined as string | undefined,
+      avatar: session.user.avatarUrl ?? session.user.avatar ?? undefined,
+    };
+    return <AppUser user={userProp} onSignOut={signOut} />;
+  }
 
   if (loading)
     return <div className="text-sm text-muted-foreground">Loading…</div>;
 
-  if (!session)
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            size="lg"
-            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            onClick={signIn}
-          >
-            Sign in with Discord
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    );
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          size="lg"
+          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          onClick={signIn}
+        >
+          Sign in with Discord
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+};
 
-  // AppUser expects { name, email?, avatar? }
-  const userProp = {
-    name: session.user.username,
-    email: undefined as string | undefined,
-    avatar: session.user.avatarUrl ?? session.user.avatar ?? undefined,
-  };
-
-  return <AppUser user={userProp} onSignOut={signOut} />;
-}
+export const SessionAccount = memo(SessionAccountInner);

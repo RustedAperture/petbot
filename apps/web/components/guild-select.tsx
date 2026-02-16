@@ -20,7 +20,7 @@ type Props = {
   placeholder?: string;
 };
 
-export default function GuildSelect({
+function GuildSelect({
   value = null,
   onChange,
   size = "default",
@@ -85,3 +85,5 @@ export default function GuildSelect({
     </div>
   );
 }
+
+export default React.memo(GuildSelect);
