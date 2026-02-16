@@ -15,7 +15,16 @@ export default function UserStatsPage() {
   const { session } = useSession();
   const resolvedUserId = queryUserId ?? session?.user.id ?? null;
 
-  const queryUserScoped = params.get("userScoped") === "true";
+  const rawUserScopedParam = params.get("userScoped");
+  const explicitUserScoped = rawUserScopedParam === "true";
+  // Default to user-scoped when the resolved user is the session user and the
+  // client did not explicitly provide userScoped. This makes `/userStats`
+  // show the signed-in user's global stats by default.
+  const defaultUserScoped =
+    rawUserScopedParam === null &&
+    resolvedUserId !== null &&
+    resolvedUserId === session?.user.id;
+  const queryUserScoped = explicitUserScoped || defaultUserScoped;
 
   const { data, isLoading, error } = useGlobalStats({
     userId: resolvedUserId,
