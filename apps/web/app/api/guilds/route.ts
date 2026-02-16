@@ -17,13 +17,13 @@ export async function GET(req: Request) {
   if (!raw)
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const url = new URL(req.url);
-  const incoming = url.searchParams;
+  // Enforce userId from the validated session cookie (ignore any query param)
+  if (!/^\d+$/.test(raw)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
-  // Only allow the documented query param(s) and validate them (discord ids are numeric)
   const allowed = new URLSearchParams();
-  const userId = incoming.get("userId");
-  if (userId && /^\d+$/.test(userId)) allowed.set("userId", userId);
+  allowed.set("userId", raw);
 
   const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
