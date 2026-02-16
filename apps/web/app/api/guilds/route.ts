@@ -18,15 +18,23 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
-  const qs = url.search || "";
-  const internalSecret = process.env.INTERNAL_API_SECRET;
+  const incoming = url.searchParams;
 
+  // Only allow the documented query param(s) and validate them (discord ids are numeric)
+  const allowed = new URLSearchParams();
+  const userId = incoming.get("userId");
+  if (userId && /^\d+$/.test(userId)) allowed.set("userId", userId);
+
+  const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
   if (internalSecret) headers["x-internal-api-key"] = internalSecret;
 
-  const res = await fetch(`http://localhost:3001/api/guilds${qs}`, {
-    headers,
-  });
+  const targetBase = `http://localhost:${process.env.HTTP_PORT || 3001}/api/guilds`;
+  const target = allowed.toString()
+    ? `${targetBase}?${allowed.toString()}`
+    : targetBase;
+
+  const res = await fetch(target, { headers });
 
   const text = await res.text();
   try {
