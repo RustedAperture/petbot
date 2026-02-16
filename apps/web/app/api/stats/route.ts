@@ -92,11 +92,20 @@ export async function GET(req: Request) {
   if (guildId) {
     if (!/^\d+$/.test(guildId))
       return NextResponse.json({ error: "invalid_guildId" }, { status: 400 });
+
     const isMember =
       Array.isArray(session.guilds) &&
       session.guilds.some((g) => g.id === guildId);
-    if (!isMember)
+
+    // Allow if the session user is a member, OR if this is a user‑scoped request
+    // (client provided userId and it matches the session user). In the latter
+    // case the backend `/api/stats` will perform the DB presence check and
+    // return 404 if the user has no rows for that location.
+    const isUserScoped = Boolean(userId && userId === session.user.id);
+
+    if (!isMember && !isUserScoped)
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
     allowed.set("guildId", guildId);
   }
 
