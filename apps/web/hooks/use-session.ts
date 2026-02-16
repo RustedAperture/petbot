@@ -12,26 +12,64 @@ type Session = {
   guilds: Array<{ id: string; name: string }>;
 } | null;
 
-export function useSession() {
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [loading, setLoading] = React.useState(true);
+// Module-scoped cache so multiple mounts (e.g. during client navigation)
+// reuse the previously-fetched session and avoid flashing `loading`.
+let _cachedSession: Session | undefined = undefined;
+let _isRefreshing = false;
+const _listeners = new Set<(s: Session | null) => void>();
 
-  const refresh = React.useCallback(async () => {
+export function useSession() {
+  const [session, setSession] = React.useState<Session | null>(
+    _cachedSession ?? null,
+  );
+  const [loading, setLoading] = React.useState<boolean>(
+    _cachedSession === undefined,
+  );
+
+  // notify other hook instances when cache changes
+  React.useEffect(() => {
+    const l = (s: Session | null) => setSession(s);
+    _listeners.add(l);
+    return () => {
+      _listeners.delete(l);
+    };
+  }, []);
+
+  const refresh = React.useCallback(async (force = false) => {
+    // If we have a cached value and no force-refresh requested, reuse it.
+    if (!force && _cachedSession !== undefined) {
+      setSession(_cachedSession ?? null);
+      setLoading(false);
+      return;
+    }
+
+    // prevent concurrent refreshes
+    if (_isRefreshing) return;
+    _isRefreshing = true;
     setLoading(true);
+
     try {
       const res = await fetch("/api/auth/session", { cache: "no-store" });
       if (!res.ok) throw new Error("failed");
       const json = await res.json();
-      setSession(json.session ?? null);
+      _cachedSession = json.session ?? null;
+      _listeners.forEach((fn) => fn(_cachedSession ?? null));
+      setSession(_cachedSession ?? null);
     } catch (err) {
+      _cachedSession = null;
+      _listeners.forEach((fn) => fn(null));
       setSession(null);
     } finally {
+      _isRefreshing = false;
       setLoading(false);
     }
   }, []);
 
   React.useEffect(() => {
-    void refresh();
+    // Only fetch on first mount if we haven't cached the session.
+    if (_cachedSession === undefined) {
+      void refresh();
+    }
   }, [refresh]);
 
   return {
@@ -41,6 +79,8 @@ export function useSession() {
     signIn: () => (window.location.href = "/api/auth/discord"),
     signOut: async () => {
       // optimistic UI update so the user sees immediate feedback
+      _cachedSession = null;
+      _listeners.forEach((fn) => fn(null));
       setSession(null);
       setLoading(false);
 
@@ -55,7 +95,7 @@ export function useSession() {
       }
 
       // ensure client session reflects server truth after logout
-      await refresh();
+      await refresh(true);
     },
   } as const;
 }

@@ -22,11 +22,31 @@ export default async function statsHandler(req: any, res: any) {
 
     const actionKinds = Object.keys(ACTIONS);
 
+    // If both userId + guildId are supplied, only return guild/location-level aggregates
+    // when the requesting user actually has a DB row for that location. This allows the
+    // front-end to request `/api/stats?userId=...&locationId=...` and receive full
+    // location stats if the user has any presence at that location.
+    let effectiveUserId: string | null = userId;
+    if (userId && guildId) {
+      const userRowCount = await ActionData.count({
+        where: { user_id: userId, location_id: guildId },
+      });
+      if (userRowCount > 0) {
+        // user is present at the location — treat this request as a guild/location query
+        effectiveUserId = null;
+      } else {
+        // user has no rows for that location — do not disclose location stats
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "not_found" }));
+        return;
+      }
+    }
+
     // Helper to build where-clauses depending on filters
     const baseWhere = (actionType?: string) => {
       const where: any = {};
       if (actionType) where.action_type = actionType;
-      if (userId) where.user_id = userId;
+      if (effectiveUserId) where.user_id = effectiveUserId;
       if (guildId) where.location_id = guildId;
       return where;
     };
@@ -80,9 +100,9 @@ export default async function statsHandler(req: any, res: any) {
             where: { location_id: guildId, has_performed: { [Op.gt]: 0 } },
           }),
         );
-      } else if (userId) {
+      } else if (effectiveUserId) {
         const userPresence = await ActionData.count({
-          where: { user_id: userId, has_performed: { [Op.gt]: 0 } },
+          where: { user_id: effectiveUserId, has_performed: { [Op.gt]: 0 } },
         });
         totalUniqueUsers = userPresence > 0 ? 1 : 0;
       }
@@ -94,12 +114,12 @@ export default async function statsHandler(req: any, res: any) {
           (await ActionData.count({ where: { location_id: guildId } })) > 0
             ? 1
             : 0;
-      } else if (userId) {
+      } else if (effectiveUserId) {
         totalLocations = Number(
           await ActionData.count({
             distinct: true,
             col: "location_id",
-            where: { user_id: userId },
+            where: { user_id: effectiveUserId },
           }),
         );
       }

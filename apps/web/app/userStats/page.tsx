@@ -17,7 +17,7 @@ export default function UserStatsPage() {
 
   if (!resolvedUserId)
     return (
-      <main className="p-6">
+      <main>
         <h2 className="text-lg font-semibold">User Stats</h2>
         <p className="mt-4 text-sm text-muted-foreground">
           Sign in to view your stats.
@@ -31,7 +31,7 @@ export default function UserStatsPage() {
   const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
 
   return (
-    <main className="p-6">
+    <main>
       {isLoading ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Loading user stats…
