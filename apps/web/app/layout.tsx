@@ -22,7 +22,9 @@ export default async function RootLayout({
     .split("; ")
     .find((c: string) => c.startsWith("theme="))
     ?.split("=")[1];
-  const htmlClass = themeCookie === "dark" ? "dark" : undefined;
+  // Default to dark mode when no explicit preference is present.
+  // Respect `theme=light` if the user explicitly chose light.
+  const htmlClass = themeCookie === "light" ? undefined : "dark";
 
   // Read persisted sidebar state (server-side) to avoid "flash" on mount.
   const sidebarCookie = cookieHeader

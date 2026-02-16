@@ -243,7 +243,6 @@ export default function DmStatsPage() {
                     sessionStorage.removeItem("dmStatsFailedLocation");
                   } catch {}
                 }}
-                size="sm"
               />
               <Button size="sm" onClick={submitLocation}>
                 Update

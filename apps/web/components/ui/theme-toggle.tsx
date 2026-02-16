@@ -40,9 +40,8 @@ export default function ThemeToggle() {
         }
       }
 
-      const prefers =
-        window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
-      setIsDark(prefers);
+      // Default to dark mode when no explicit preference is stored
+      setIsDark(true);
     } catch (e) {
       setIsDark(false);
     }

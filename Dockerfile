@@ -16,9 +16,9 @@ RUN apt-get update && \
 # Install dependencies and build
 RUN npm ci --no-audit --no-fund
 COPY . .
-# Build frontend app (if present)
+# Install frontend deps (if present). The root `npm run build` will perform the actual build
 RUN if [ -d "apps/web" ]; then \
-  cd apps/web && npm install --no-audit --no-fund && npm run build || true; \
+  cd apps/web && npm ci --no-audit --no-fund; \
 fi
 
 # Build backend and prune dev deps
