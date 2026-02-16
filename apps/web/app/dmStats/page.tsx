@@ -77,38 +77,42 @@ export default function DmStatsPage() {
     router.push(`/dmStats`);
   }, [router]);
 
-  // If no locationId provided, show textbox (authenticated users only)
+  // If no locationId provided, the header contains the input — page shows guidance.
 
-  // If a 404 occurs after a user-initiated update, clear the location query and
-  // show a short message on the page (keeps user on the DM page with no stats).
+  // If a 404 occurs for a location-scoped request, always fall back to the
+  // regular DM page and show an error message (do not keep showing stale stats).
   React.useEffect(() => {
     if (!error) return;
     const isNotFound = String(error?.message).includes("(404)");
-    if (isNotFound && userInitiatedRef.current) {
-      userInitiatedRef.current = false;
-      // capture the attempted id (if available) so we can show it after clearing the URL
-      const failed = attemptedLocationRef.current ?? locationInput ?? null;
-      attemptedLocationRef.current = null;
-      setLocationInput("");
+    if (!isNotFound) return;
 
-      if (failed) {
-        setFailedLocationId(failed);
-        try {
-          sessionStorage.setItem("dmStatsFailedLocation", failed);
-        } catch {}
-      } else {
-        // fallback message when we don't have the id
-        const msg =
-          "No DM stats found for that location or you do not have access.";
-        setLoadErrorMessage(msg);
-        try {
-          sessionStorage.setItem("dmStatsFailedLocation", "");
-        } catch {}
-      }
+    // Determine the id we attempted to load (user input, attempted ref, or current query)
+    const failed =
+      attemptedLocationRef.current ??
+      locationInput ??
+      resolvedLocationId ??
+      null;
+    attemptedLocationRef.current = null;
+    userInitiatedRef.current = false;
+    setLocationInput("");
 
-      router.replace(`/dmStats`);
+    if (failed) {
+      setFailedLocationId(failed);
+      try {
+        sessionStorage.setItem("dmStatsFailedLocation", failed);
+      } catch {}
+    } else {
+      const msg =
+        "No DM stats found for that location or you do not have access.";
+      setLoadErrorMessage(msg);
+      try {
+        sessionStorage.setItem("dmStatsFailedLocation", "");
+      } catch {}
     }
-  }, [error, router]);
+
+    // If we were location-scoped, remove the query param and show the fallback UI.
+    if (resolvedLocationId) router.replace(`/dmStats`);
+  }, [error, router, locationInput, resolvedLocationId]);
 
   // Clear transient load message when location-scoped data successfully loads.
   // Do NOT clear the message when *global* data refreshes after we replaced the URL —
@@ -122,6 +126,41 @@ export default function DmStatsPage() {
       } catch {}
     }
   }, [data, resolvedLocationId]);
+  // If there's a 404 while trying to load a location, we replace the URL
+  // and fall back to the default /dmStats page with an error message. Also
+  // short-circuit here so we don't accidentally continue rendering stale data.
+  if (error && String(error?.message).includes("(404)") && resolvedLocationId) {
+    return (
+      <main>
+        <h2 className="text-lg font-semibold">DM Chat Stats</h2>
+
+        {!session ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Sign in to view DM chat stats for a location.
+          </p>
+        ) : (
+          <>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Use the <strong>DM</strong> input in the header to view stats for
+              a channel or guild.
+            </p>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Tip: right‑click the chat and select{" "}
+              <code className="font-mono">Copy Channel ID</code> to get the
+              location id.
+            </p>
+
+            <p className="mt-4 text-sm text-muted-foreground">
+              No DM stats found for location{" "}
+              <strong>{resolvedLocationId}</strong> or you do not have access.
+            </p>
+          </>
+        )}
+      </main>
+    );
+  }
+
   if (!resolvedLocationId)
     return (
       <main>
@@ -133,25 +172,10 @@ export default function DmStatsPage() {
           </p>
         ) : (
           <>
-            <form
-              className="mt-4 flex items-center gap-2"
-              onSubmit={submitLocation}
-            >
-              <Input
-                placeholder="Enter location id (channel/guild id)"
-                value={locationInput}
-                onChange={(e) => {
-                  setLocationInput((e.target as HTMLInputElement).value);
-                  setLoadErrorMessage(null);
-                  setFailedLocationId(null);
-                  try {
-                    sessionStorage.removeItem("dmStatsFailedLocation");
-                  } catch {}
-                }}
-                aria-label="location id"
-              />
-              <Button type="submit">Show stats</Button>
-            </form>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Use the <strong>DM</strong> input in the header to view stats for
+              a channel or guild.
+            </p>
 
             <p className="mt-2 text-sm text-muted-foreground">
               Tip: right‑click the chat and select{" "}
@@ -200,8 +224,8 @@ export default function DmStatsPage() {
           <div className="mt-4 flex gap-2">
             <Input
               value={resolvedLocationId}
-              onChange={(e) => {
-                setLocationInput((e.target as HTMLInputElement).value);
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setLocationInput(e.target.value);
                 setLoadErrorMessage(null);
                 setFailedLocationId(null);
                 try {
@@ -230,35 +254,7 @@ export default function DmStatsPage() {
         className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
         aria-busy={isLoading}
       >
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="mx-auto w-full">
-            <CardContent className="flex items-center gap-2">
-              <Input
-                value={locationInput}
-                onChange={(e) => {
-                  setLocationInput((e.target as HTMLInputElement).value);
-                  setLoadErrorMessage(null);
-                  setFailedLocationId(null);
-                  try {
-                    sessionStorage.removeItem("dmStatsFailedLocation");
-                  } catch {}
-                }}
-              />
-              <Button size="sm" onClick={submitLocation}>
-                Update
-              </Button>
-              <Button size="sm" variant="ghost" onClick={clearLocation}>
-                Clear
-              </Button>
-
-              {isLoading && (
-                <span className="text-xs text-muted-foreground ml-2">
-                  Refreshing…
-                </span>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
           <StatsCardSimple
             statString="Total Actions Performed"
             value={data.totalActionsPerformed}

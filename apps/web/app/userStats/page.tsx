@@ -10,10 +10,18 @@ import StatsCardSimple from "@/components/stats/stats-card-simple";
 export default function UserStatsPage() {
   const params = useSearchParams();
   const queryUserId = params.get("userId");
+  const queryLocationId =
+    params.get("guildId") ?? params.get("locationId") ?? null;
   const { session } = useSession();
   const resolvedUserId = queryUserId ?? session?.user.id ?? null;
 
-  const { data, isLoading, error } = useGlobalStats({ userId: resolvedUserId });
+  const queryUserScoped = params.get("userScoped") === "true";
+
+  const { data, isLoading, error } = useGlobalStats({
+    userId: resolvedUserId,
+    guildId: queryLocationId,
+    userScoped: queryUserScoped,
+  });
 
   if (!resolvedUserId)
     return (

@@ -9,8 +9,8 @@ export type MenuItem = {
 };
 
 export const STATS_MENU: MenuItem[] = [
-  { id: "global", title: "Global Stats", href: "/globalStats", Icon: Earth },
-  { id: "guild", title: "Guild Stats", href: "/guildStats", Icon: Users },
-  { id: "dm", title: "DM Stats", href: "/dmStats", Icon: MessageSquare },
-  { id: "user", title: "User Stats", href: "/userStats", Icon: User },
+  { id: "global", title: "Global", href: "/globalStats", Icon: Earth },
+  { id: "guild", title: "Guild", href: "/guildStats", Icon: Users },
+  { id: "dm", title: "DM", href: "/dmStats", Icon: MessageSquare },
+  { id: "user", title: "User", href: "/userStats", Icon: User },
 ];

@@ -87,7 +87,7 @@ export async function GET(req: Request) {
         { headers },
       );
       if (res.ok) {
-        const json = await res.json();
+        const json: any = await res.json();
         if (Array.isArray(json.guilds)) session.guilds = json.guilds;
       }
     } catch (_) {
@@ -97,13 +97,18 @@ export async function GET(req: Request) {
 
   // Validate and authorize requested params
   const allowed = new URLSearchParams();
+  const userScoped = incoming.get("userScoped") === "true";
 
   if (userId) {
     if (!/^\d+$/.test(userId))
       return NextResponse.json({ error: "invalid_userId" }, { status: 400 });
     if (userId !== session.user.id)
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    allowed.set("userId", userId);
+    // only forward `userId` to the internal API when the client explicitly
+    // requests user-scoped results via `userScoped=true` — otherwise the
+    // presence-only (legacy DM) flow below will validate and forward a
+    // guild-only request to preserve legacy behavior.
+    if (userScoped) allowed.set("userId", userId);
   }
 
   if (guildId) {
@@ -114,16 +119,38 @@ export async function GET(req: Request) {
       Array.isArray(session.guilds) &&
       session.guilds.some((g) => g.id === guildId);
 
-    // Allow if the session user is a member, OR if this is a user‑scoped request
-    // (client provided userId and it matches the session user). In the latter
-    // case the backend `/api/stats` will perform the DB presence check and
-    // return 404 if the user has no rows for that location.
-    const isUserScoped = Boolean(userId && userId === session.user.id);
+    // Allow if the session user is a member, OR if the provided `userId`
+    // matches the session user. This gate only controls authorization; the
+    // legacy DM vs explicit user‑scoped behavior is handled later.
+    const isSessionUserMatch = Boolean(userId && userId === session.user.id);
 
-    if (!isMember && !isUserScoped)
+    if (!isMember && !isSessionUserMatch)
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
     allowed.set("guildId", guildId);
+  }
+
+  // Legacy DM behavior: if the client supplied `userId` equal to the session
+  // user but did NOT request `userScoped`, treat the `userId` as a validation
+  // token (presence check). If the user has presence at the location, forward
+  // only `guildId` (returning location-level aggregates). If no presence,
+  // return 404.
+  if (userId && userId === session.user.id && guildId && !userScoped) {
+    const presenceCheckUrl = `${targetBase}?userId=${encodeURIComponent(session.user.id)}&guildId=${encodeURIComponent(guildId)}`;
+    const presenceResp = await fetch(presenceCheckUrl, { headers });
+    if (presenceResp.status === 404)
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+    // presence exists — forward the guild-only request (legacy cumulative stats)
+    const forwardUrl = `${targetBase}?guildId=${encodeURIComponent(guildId)}`;
+    const forwardResp = await fetch(forwardUrl, { headers });
+    const forwardText = await forwardResp.text();
+    try {
+      const json = JSON.parse(forwardText);
+      return NextResponse.json(json, { status: forwardResp.status });
+    } catch {
+      return new NextResponse(forwardText, { status: forwardResp.status });
+    }
   }
 
   const target = allowed.toString()

@@ -38,20 +38,21 @@ describe("/api/stats handler - DM location presence behavior", () => {
     );
   });
 
-  it("when user has a row for the location, returns location-level aggregates", async () => {
+  it("when user has a row for the location, returns user-scoped aggregates for that location", async () => {
     // presence check -> user present
     (ActionData.count as any)
       .mockResolvedValueOnce(1) // presence
-      .mockResolvedValueOnce(5) // usersPromise[0]
-      .mockResolvedValueOnce(6) // usersPromise[1]
-      .mockResolvedValueOnce(7) // usersPromise[2]
-      .mockResolvedValueOnce(8) // usersPromise[3]
-      .mockResolvedValueOnce(9) // usersPromise[4]
-      .mockResolvedValueOnce(11) // usersPromise[5] (explode)
-      .mockResolvedValueOnce(3) // totalUniqueUsers (distinct user_id where location_id)
-      .mockResolvedValueOnce(1); // totalLocations (count where location_id)
+      // per-action distinct-user counts (user-scoped -> should be 1 for actions user performed)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(0) // explode (user hasn't performed)
+      .mockResolvedValueOnce(1) // totalUniqueUsers (user presence -> 1)
+      .mockResolvedValueOnce(1); // totalLocations (user present at the requested location)
 
-    // sums for each action kind
+    // sums for each action kind (these are the user's totals at the location)
     (ActionData.sum as any)
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(20)
@@ -80,7 +81,7 @@ describe("/api/stats handler - DM location presence behavior", () => {
     console.log("API body:", JSON.stringify(body, null, 2));
 
     expect(body.totalActionsPerformed).toBe(10 + 20 + 30 + 40 + 50);
-    expect(body.totalUniqueUsers).toBe(3);
+    expect(body.totalUniqueUsers).toBe(1);
     expect(body.totalLocations).toBe(1);
     expect(body.totalsByAction.pet.totalHasPerformed).toBe(10);
     expect(body.totalsByAction.bite.totalHasPerformed).toBe(20);

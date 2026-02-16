@@ -8,7 +8,6 @@ import { useBotGuilds } from "@/hooks/use-bot-guilds";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { Card, CardContent } from "@/components/ui/card";
-import GuildSelect from "@/components/guild-select";
 
 export default function GuildStatsPage() {
   const params = useSearchParams();
@@ -48,19 +47,20 @@ export default function GuildStatsPage() {
     guildId: resolvedGuildId,
   });
 
-  // If no guildId provided, show the selector (or sign-in prompt)
+  // If no guildId provided, ask the user to pick one using the header selector
   if (!resolvedGuildId)
     return (
       <main>
         <h2 className="text-lg font-semibold">Guild Stats</h2>
 
         {session ? (
-          <div className="mt-4">
-            <GuildSelect value={resolvedGuildId} onChange={handleGuildChange} />
-          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Use the <strong>Guild</strong> selector in the header to choose a
+            guild.
+          </p>
         ) : (
           <p className="mt-4 text-sm text-muted-foreground">
-            Sign in to view stats for a guilds.
+            Sign in to view stats for a guild.
           </p>
         )}
       </main>
@@ -87,22 +87,7 @@ export default function GuildStatsPage() {
           className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
           aria-busy={isLoading}
         >
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="mx-auto w-full">
-              <CardContent className="flex items-center gap-2">
-                <GuildSelect
-                  value={resolvedGuildId}
-                  onChange={handleGuildChange}
-                  size="sm"
-                />
-
-                {isLoading && (
-                  <span className="text-xs text-muted-foreground ml-2">
-                    Refreshing…
-                  </span>
-                )}
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
             <StatsCardSimple
               statString="Total Actions Performed"
               value={data.totalActionsPerformed}

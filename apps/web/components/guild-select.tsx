@@ -48,8 +48,6 @@ function GuildSelect({
   return (
     <div className={className}>
       <div className="flex items-center gap-3">
-        <label className="text-sm text-muted-foreground">Guild</label>
-
         {botGuildsLoading ? (
           <div className="text-sm text-muted-foreground">Loading guilds…</div>
         ) : session ? (
