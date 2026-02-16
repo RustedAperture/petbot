@@ -6,6 +6,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
@@ -15,6 +16,9 @@ import {
 import ThemeToggle from "@/components/ui/theme-toggle";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
+import { AppUser } from "@/components/app-user";
+import { Palette } from "lucide-react";
+import { Separator } from "./ui/separator";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -70,28 +74,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             })}
           </SidebarMenu>
         </SidebarGroup>
-        <SidebarGroup />
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem className="flex items-center gap-2">
+                <SidebarMenuButton disabled>
+                  <Palette />
+                  Theme
+                </SidebarMenuButton>
+                <ThemeToggle />
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
+      <Separator />
       <SidebarFooter>
-        <div className="flex flex-col gap-2 px-2">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Theme</div>
-            <ThemeToggle />
-          </div>
-
-          {/* Account / Discord OAuth area */}
-          <div className="mt-2 border-t pt-2">
-            <AccountArea />
-          </div>
-        </div>
+        <SessionAccount />
       </SidebarFooter>
     </Sidebar>
   );
 }
 
-// small client-only account area placed in the sidebar footer
-function AccountArea() {
-  const { session, loading, signIn, signOut } = useSession();
+// small client-only wrapper that uses the shared AppUser component
+function SessionAccount() {
+  const { session, loading, signIn } = useSession();
 
   if (loading)
     return <div className="text-sm text-muted-foreground">Loading…</div>;
@@ -105,22 +112,12 @@ function AccountArea() {
       </div>
     );
 
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-muted" />
-          <div className="text-sm">{session.user.username}</div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={signOut}
-            className="text-xs text-destructive underline"
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  // AppUser expects { name, email?, avatar? }
+  const userProp = {
+    name: session.user.username,
+    email: undefined as string | undefined,
+    avatar: session.user.avatarUrl ?? session.user.avatar ?? undefined,
+  };
+
+  return <AppUser user={userProp} />;
 }

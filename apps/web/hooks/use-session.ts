@@ -3,7 +3,12 @@
 import * as React from "react";
 
 type Session = {
-  user: { id: string; username: string; avatar?: string | null };
+  user: {
+    id: string;
+    username: string;
+    avatar?: string | null;
+    avatarUrl?: string | null;
+  };
   guilds: Array<{ id: string; name: string }>;
 } | null;
 

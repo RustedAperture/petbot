@@ -79,11 +79,16 @@ export async function GET(req: Request) {
     guildsJson = (await guildsRes.json()) || [];
   }
 
+  const avatarUrl = userJson.avatar
+    ? `https://cdn.discordapp.com/avatars/${userJson.id}/${userJson.avatar}${String(userJson.avatar).startsWith("a_") ? ".gif" : ".png"}?size=128`
+    : `https://cdn.discordapp.com/embed/avatars/${Number(userJson.discriminator) % 5}.png`;
+
   const session = {
     user: {
       id: userJson.id,
       username: `${userJson.username}#${userJson.discriminator}`,
       avatar: userJson.avatar ?? null,
+      avatarUrl,
     },
     guilds: guildsJson.map((g: any) => ({ id: g.id, name: g.name })),
   };
