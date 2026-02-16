@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run Bearer security scan before allowing a commit. Exit non-zero to block commit.
+
+npm run bearer:scan
