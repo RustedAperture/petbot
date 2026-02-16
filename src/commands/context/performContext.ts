@@ -9,7 +9,6 @@ import {
   LabelBuilder,
   StringSelectMenuBuilder,
 } from "discord.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { ACTIONS } from "../../types/constants.js";
 
 export const command = {
@@ -27,8 +26,6 @@ export const command = {
     ]),
   aliases: ["perform-user"],
   async execute(interaction: any) {
-    emitCommand("perform-user");
-
     const inServer = interaction.guild;
     let target: GuildMember | User;
 

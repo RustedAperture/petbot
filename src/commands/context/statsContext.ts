@@ -9,7 +9,6 @@ import {
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
-import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -26,8 +25,6 @@ export const command = {
     ]),
   aliases: ["petStats", "biteStats"],
   async execute(interaction: UserContextMenuCommandInteraction) {
-    emitCommand("stats");
-
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });

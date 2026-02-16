@@ -16,6 +16,12 @@ RUN apt-get update && \
 # Install dependencies and build
 RUN npm ci --no-audit --no-fund
 COPY . .
+# Build frontend app (if present)
+RUN if [ -d "apps/web" ]; then \
+  cd apps/web && npm install --no-audit --no-fund && npm run build || true; \
+fi
+
+# Build backend and prune dev deps
 RUN npm run build && npm prune --production
 
 # Stage: runtime

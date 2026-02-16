@@ -8,9 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const config = JSON.parse(
-  fs.readFileSync(path.resolve(process.cwd(), "config.json"), "utf8"),
-);
+import config from "./config.js";
 
 const slashCommands: ApplicationCommandData[] = [];
 const contextCommands: ApplicationCommandData[] = [];

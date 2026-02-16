@@ -4,7 +4,6 @@ import { mockInteraction } from "../helpers/mockInteraction.js";
 vi.mock("../../src/utilities/db", () => ({
   BotData: { findOne: vi.fn(), create: vi.fn(), update: vi.fn() },
 }));
-vi.mock("../../src/utilities/metrics", () => ({ emitCommand: vi.fn() }));
 
 import { BotData } from "../../src/utilities/db.js";
 import { command } from "../../src/commands/slash/serverSetup.js";

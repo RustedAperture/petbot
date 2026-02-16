@@ -8,7 +8,6 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -25,7 +24,6 @@ export const command = {
     ]),
   aliases: ["pet-user"],
   async execute(interaction) {
-    emitCommand("pet-user");
     await interaction.deferReply();
 
     let target: GuildMember | User;

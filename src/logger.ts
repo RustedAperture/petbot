@@ -1,6 +1,5 @@
 import pino from "pino";
 import pretty from "pino-pretty";
-import { metrics } from "./tui/bus.js";
 
 const prettyStream = pretty({
   colorize: true,
@@ -10,7 +9,7 @@ const prettyStream = pretty({
 
 prettyStream.on("data", (chunk) => {
   const line = chunk.toString().replace(/\n+$/, "");
-  if (line) metrics.emit("log", line);
+  // metrics removed — no-op
 });
 
 const jsonDest = pino.destination({ dest: "app.json.log", sync: false });

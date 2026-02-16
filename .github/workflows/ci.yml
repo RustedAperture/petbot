@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -14,14 +17,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Run Bearer security scan
+        uses: bearer/bearer-action@v2
+        with:
+          diff: true
+          severity: "medium,high,critical"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install dependencies (root)
         run: npm ci --no-audit --no-fund
+
+      - name: Install dependencies (apps/web)
+        run: npm ci --prefix apps/web --no-audit --no-fund
 
       - name: Build
         run: npm run build

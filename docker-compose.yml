@@ -9,19 +9,38 @@ services:
     image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
     restart: unless-stopped
     working_dir: /home/node/app
+    env_file:
+      - .env
     environment:
-      # TUI: set to 1 or true to enable the interactive TUI (requires a TTY)
-      - TUI=${TUI:-false}
+      # Internal API secret (optional) — recommended in production
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-}
+
+      # Discord OAuth (set these for the web UI to allow Sign in with Discord)
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      - DISCORD_TOKEN=${DISCORD_TOKEN:-}
+
+      # HTTP API bind settings (the bot's internal HTTP API)
+      - HTTP_HOST=${HTTP_HOST:-127.0.0.1}
+      - HTTP_PORT=${HTTP_PORT:-3001}
+
+      # Optional / runtime config
+      - DEFAULT_GUILD_ID=${DEFAULT_GUILD_ID:-}
       # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
-      # - ALLOWED_IMAGE_HOSTS=example.com,images.example.net
+      # - ALLOWED_IMAGE_HOSTS=${ALLOWED_IMAGE_HOSTS:-}
+
+      # Ensure the runtime runs in production mode by default
+      - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "3000:3000"
     volumes:
       # Persist runtime data (sqlite DB, migrations, etc.)
       - ./data:/home/node/app/data
-      # Mount your config.json (read-only). Create it locally as documented in README.
-      - ./config.json:/home/node/app/config.json:ro
-    tty: ${TUI:-false}
-    # The image's ENTRYPOINT/ CMD will start the bot (default: `node dist/src/index.js`).
-    # To run the interactive TUI locally use `TUI=1 docker compose run --service-ports --rm petbot`
+      # Legacy: you may still mount a `config.json` for backward compatibility, but
+      # using env vars / a `.env` file is preferred and config.json is deprecated.
+      # - ./config.json:/home/node/app/config.json:ro
+    # The container will start both the bot and (if present) the Next.js server on port 3000.
 
 volumes:
   data:
@@ -36,4 +55,4 @@ volumes:
 # Quick commands:
 # - Build locally:     docker compose build petbot
 # - Run in foreground: docker compose up --build
-# - Run TUI (one-off): TUI=1 docker compose run --service-ports --rm petbot
+# - After `docker compose up`, open the web UI at http://localhost:3000

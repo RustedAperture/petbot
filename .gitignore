@@ -8,3 +8,5 @@ dist/
 *.d.ts
 *.d.ts.map
 app.json.log
+.DS_Store
+.next/

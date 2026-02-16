@@ -9,7 +9,6 @@ import {
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
 import { checkUser } from "../../utilities/check_user.js";
-import { emitCommand } from "../../utilities/metrics.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -43,7 +42,6 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
-    emitCommand("hug");
     await interaction.deferReply();
 
     let target1: GuildMember | User | null;

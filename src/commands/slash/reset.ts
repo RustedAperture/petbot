@@ -6,7 +6,6 @@ import {
 } from "discord.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { resetAction } from "../../utilities/resetAction.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -65,8 +64,6 @@ export const command = {
     }
 
     const action = actionRaw as ActionType;
-
-    emitCommand(`/reset ${action}`);
 
     let slot = interaction.options.getNumber("slot");
 

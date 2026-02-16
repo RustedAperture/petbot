@@ -5,7 +5,6 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from "discord.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { buildGlobalStatsContainer } from "../../components/buildGlobalStatsContainer.js";
 import {
   fetchGlobalStats,
@@ -32,8 +31,6 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction: ChatInputCommandInteraction) {
-    emitCommand("botstats");
-
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });

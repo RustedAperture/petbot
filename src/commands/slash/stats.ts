@@ -8,7 +8,6 @@ import {
   SlashCommandBuilder,
   User,
 } from "discord.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
@@ -42,8 +41,6 @@ export const command = {
     ]),
   aliases: ["bite-stats", "pet-stats"],
   async execute(interaction: ChatInputCommandInteraction) {
-    emitCommand("stats");
-
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });

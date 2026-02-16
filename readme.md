@@ -10,24 +10,28 @@ A Discord bot by RustedAperture.
 
 ### Local (development)
 
-1. Create `config.json` in the project root:
+1. Create a `.env` file in the project root (or set environment variables):
 
-```json
-{
-  "token": "",
-  "clientId": "",
-  "guildId": ""
-}
 ```
+DISCORD_TOKEN=
+DISCORD_CLIENT_ID=
+DEFAULT_GUILD_ID=   # optional
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+(You can also provide these via Docker environment variables; legacy `config.json` support remains temporarily but is deprecated.)
 
 2. Install deps and run in dev mode:
 
 ```bash
 npm install
+# run the bot backend
 npm run dev
+# run the web UI (in a separate shell)
+npm run dev:web
 ```
 
-3. Use `/setup` in a guild channel to configure the bot.
+3. Use `/setup` in a guild channel to configure the bot. The web UI will be available at `http://localhost:3000` when `npm run dev:web` is running.
 
 ---
 
@@ -43,23 +47,21 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 docker buildx build --load --platform linux/amd64 -t petbot:local .
 ```
 
-- Run with mounted data & config (TUI disabled unless you attach a TTY):
+- Run with mounted data & config (web UI exposed on port 3000):
 
 ```bash
 docker run --rm --name petbot \
+  -p 3000:3000 \
   -v "$(pwd)/data":/home/node/app/data \
-  -v "$(pwd)/config.json":/home/node/app/config.json:ro \
-  -e TUI=1 petbot:local
+  -e DISCORD_TOKEN="$DISCORD_TOKEN" \
+  -e DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" \
+  -e NEXT_PUBLIC_SITE_URL="http://localhost:3000" \
+  petbot:local
 ```
 
-- To get the interactive TUI attach a TTY:
+After the container starts, open `http://localhost:3000` to access the web UI.
 
-```bash
-docker run -it --rm --name petbot -v "$(pwd)/data":/home/node/app/data \
-  -v "$(pwd)/config.json":/home/node/app/config.json:ro -e TUI=1 petbot:local
-```
-
-> The image's `entrypoint.sh` ensures `data/` permissions and warns if `config.json` is missing.
+> The image's `entrypoint.sh` ensures `data/` permissions and will warn if required environment variables are not set.
 
 ### Pulling the published image
 
@@ -75,7 +77,7 @@ Or pull a semver-tagged release:
 docker pull ghcr.io/<owner>/petbot:1.2.3
 ```
 
-If you want to run on Unraid, map `./data` and `./config.json` in the container template and set any required env vars.
+If you want to run on Unraid, map `./data` and set the required environment variables (do not commit secrets). Legacy `config.json` mounting is supported temporarily but using env vars is recommended.
 
 ---
 
@@ -97,7 +99,21 @@ If you prefer a single-file bundle for smaller images, I can convert the build t
 
 ## Notes / Troubleshooting
 
-- The TUI (Ink) requires a TTY — run with `-it` for interactive mode.
+### Discord OAuth (web UI)
+
+To enable "Sign in with Discord" for the web UI you must set the following environment variables for the `apps/web` Next app (development: use your shell or `.env`):
+
+- `DISCORD_CLIENT_ID` — OAuth application client id
+- `DISCORD_CLIENT_SECRET` — OAuth application client secret
+- `NEXT_PUBLIC_SITE_URL` — public URL for the site (defaults to `http://localhost:3000` in dev)
+
+Security: the OAuth flow now generates a cryptographically-random `state` value and stores it in a short-lived HttpOnly cookie; the callback validates that `state` to protect against CSRF/session-fixation.
+
+Register a Discord OAuth application and configure its redirect URI to: `https://<your-site>/api/auth/discord/callback` (or `http://localhost:3000/api/auth/discord/callback` for local dev).
+
+## Notes / Troubleshooting
+
+- The web UI is served by Next.js at port `3000` when running via `npm run dev:web` or the container.
 - If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`).
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
 - If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
@@ -115,10 +131,19 @@ The bot validates user-provided image URLs to reduce SSRF and network-probing ri
 - Requests use a short timeout (5s) and **do not** follow redirects.
 - Optionally restrict allowed hosts with **`ALLOWED_IMAGE_HOSTS`** (a comma-separated list of hostnames). Subdomains are allowed (e.g., `cdn.example.com` matches `example.com`).
 
+**HTTP API access (internal-only by default)**
+
+- The bot's HTTP API (default port `3001`) is intended to be accessed only by the local Next.js frontend—it is **bound to localhost by default** so external callers cannot reach it.
+- Environment variables:
+  - `HTTP_HOST` — host/interface the API server binds to (defaults to `127.0.0.1`).
+  - `HTTP_PORT` — port the API listens on (defaults to `3001`).
+  - `INTERNAL_API_SECRET` — optional secret; when set, callers must include `x-internal-api-key: <secret>` on requests.
+- Recommended deployment: expose **only** port `3000` (Next.js) to the public internet and keep the bot API internal/private.
+
 **Security guidance:**
 
-- **Do not** commit an `ALLOWED_IMAGE_HOSTS` value or concrete host lists to your repository or a checked-in `docker-compose.yml`.
-- Prefer setting it via environment variables in your deployment platform, or in a non-committed override file (examples below).
+- **Do not** bind the API to a public interface in production unless you have a strong reason and you protect it (e.g., with `INTERNAL_API_SECRET` and firewall rules).
+- If running in containers, use a private Docker network or host networking so only the Next.js container can reach the bot API.
 
 **Examples (do not commit these files/values into source control):**
 

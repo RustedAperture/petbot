@@ -6,7 +6,6 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { emitCommand } from "../../utilities/metrics.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -24,7 +23,6 @@ export const command = {
     ]),
   aliases: ["random-user"],
   async execute(interaction) {
-    emitCommand("random-user");
     await interaction.deferReply();
 
     let target, author;
