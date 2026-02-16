@@ -52,7 +52,25 @@ for (const { type, path: commandsPath } of existingPaths) {
   );
 
   for (const file of commandFiles) {
+    // sanitize filename (defend against path traversal in repo or mount)
+    if (
+      file.includes("..") ||
+      file.includes(path.sep) ||
+      path.parse(file).base !== file
+    ) {
+      console.log(
+        `    - Skipping suspicious filename in ${commandsPath}: ${file}`,
+      );
+      continue;
+    }
+
     const filePath = path.join(commandsPath, file);
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(commandsPath)) {
+      console.log(`    - Skipping command outside commands dir: ${filePath}`);
+      continue;
+    }
+
     const loaded = await import(pathToFileURL(filePath).href);
     const command = (loaded as any).default || loaded; // support default export
     if (command && (command as any).disabled) {
