@@ -9,8 +9,9 @@ import StatsCardSimple from "@/components/stats/stats-card-simple";
 export default function GlobalStatsPage() {
   const { data, isLoading, error, refresh } = useGlobalStats();
 
-  if (!data)
+  if (!data) {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+  }
 
   const entries = Object.entries(data.totalsByAction) as Array<
     [string, ActionTotals]

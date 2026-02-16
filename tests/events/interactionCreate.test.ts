@@ -5,7 +5,9 @@ vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
 import interactionCreate from "../../src/events/interactionCreate.js";
 import { resetAction } from "../../src/utilities/resetAction.js";
 
-beforeEach(() => { vi.restoreAllMocks(); });
+beforeEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("interactionCreate", () => {
   it("executes a found chat command", async () => {
@@ -71,7 +73,7 @@ describe("interactionCreate", () => {
       customId: "reset-pet",
       deferReply: vi.fn().mockResolvedValue(undefined),
       editReply: vi.fn().mockResolvedValue(undefined),
-      message: Promise.resolve({ components: [ { components: [ null, { content: "first\nSlot: 2\n<@123>" } ] } ] }),
+      message: Promise.resolve({ components: [{ components: [null, { content: "first\nSlot: 2\n<@123>" }] }] }),
     };
 
     await interactionCreate.execute(buttonInteraction);
@@ -89,7 +91,7 @@ describe("interactionCreate", () => {
       customId: "reset-pet",
       deferReply: vi.fn().mockResolvedValue(undefined),
       editReply: vi.fn().mockResolvedValue(undefined),
-      message: Promise.resolve({ components: [ { components: [ null, { content: "no-slot-here" } ] } ] }),
+      message: Promise.resolve({ components: [{ components: [null, { content: "no-slot-here" }] }] }),
     };
 
     await interactionCreate.execute(buttonInteraction);
@@ -106,7 +108,7 @@ describe("interactionCreate", () => {
       customId: "reset-bite",
       deferReply: vi.fn().mockResolvedValue(undefined),
       editReply: vi.fn().mockResolvedValue(undefined),
-      message: Promise.resolve({ components: [ { components: [ null, { content: "first\nSlot: 3\n<@789>" } ] } ] }),
+      message: Promise.resolve({ components: [{ components: [null, { content: "first\nSlot: 3\n<@789>" }] }] }),
     };
 
     await interactionCreate.execute(buttonInteraction);

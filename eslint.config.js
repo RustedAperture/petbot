@@ -1,5 +1,7 @@
 import js from "@eslint/js";
 import globals from "globals";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
 
 export default [
   js.configs.recommended,
@@ -58,7 +60,38 @@ export default [
     },
     rules: {},
   },
+  // TypeScript-specific rules: prefer @typescript-eslint for unused vars
   {
-    ignores: ["node_modules/**", "data/**", ".idea/**", ".vscode/**"],
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module",
+      },
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin,
+    },
+    rules: {
+      "no-undef": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
+    ignores: [
+      "node_modules/**",
+      "data/**",
+      ".idea/**",
+      ".vscode/**",
+      ".next/**",
+      "apps/web/.next/**",
+      "dist/**",
+      "coverage/**",
+    ],
   },
 ];

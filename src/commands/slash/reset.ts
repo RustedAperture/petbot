@@ -65,7 +65,7 @@ export const command = {
 
     const action = actionRaw as ActionType;
 
-    let slot = interaction.options.getNumber("slot");
+    const slot = interaction.options.getNumber("slot");
 
     const guild = interaction.guildId ?? interaction.channelId;
 

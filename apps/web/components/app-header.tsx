@@ -33,21 +33,27 @@ export function AppHeader() {
     (e?: React.FormEvent) => {
       e?.preventDefault();
       const trimmed = dmInput?.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        return;
+      }
       try {
         sessionStorage.removeItem("dmStatsFailedLocation");
-      } catch {}
+      } catch {
+        /* noop */
+      }
       router.push(`/dmStats?locationId=${encodeURIComponent(trimmed)}`);
     },
     [dmInput, router],
   );
 
-  const clearDm = React.useCallback(() => {
+  const _clearDm = React.useCallback(() => {
     setDmInput("");
     try {
       sessionStorage.removeItem("dmStatsFailedLocation");
-    } catch {}
-    router.push(`/dmStats`);
+    } catch {
+      /* noop */
+    }
+    router.push("/dmStats");
   }, [router]);
 
   return (

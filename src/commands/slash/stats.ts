@@ -62,21 +62,21 @@ export const command = {
       }
     } else {
       switch (interaction.context) {
-        case 0:
-          if (interaction.member && "user" in interaction.member) {
-            const member = interaction.member as { user: { id: string } };
-            targetUser = inServer
-              ? await inServer.members.fetch(member.user.id)
-              : interaction.user;
-          } else if (interaction.member) {
-            targetUser = interaction.member as GuildMember;
-          } else {
-            targetUser = interaction.user;
-          }
-          break;
-        default:
+      case 0:
+        if (interaction.member && "user" in interaction.member) {
+          const member = interaction.member as { user: { id: string } };
+          targetUser = inServer
+            ? await inServer.members.fetch(member.user.id)
+            : interaction.user;
+        } else if (interaction.member) {
+          targetUser = interaction.member as GuildMember;
+        } else {
           targetUser = interaction.user;
-          break;
+        }
+        break;
+      default:
+        targetUser = interaction.user;
+        break;
       }
     }
 
@@ -86,7 +86,9 @@ export const command = {
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
 
     for (const kind of actionKinds) {
-      if (action !== null && action !== kind) continue;
+      if (action !== null && action !== kind) {
+        continue;
+      }
       const statsContainer = await getActionStatsContainer(
         kind,
         targetUser,

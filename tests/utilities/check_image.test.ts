@@ -1,5 +1,4 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
-import type fetchType from "node-fetch";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
 vi.mock("node-fetch", () => ({ default: vi.fn() }));
 vi.mock("dns/promises", () => ({ lookup: vi.fn() }));
@@ -58,7 +57,9 @@ describe("checkImage", () => {
     const fetchMock = fetch as unknown as any;
     fetchMock.mockClear();
 
-    (lookup as unknown as any).mockResolvedValue([{ address: "10.0.0.5", family: 4 }]);
+    (lookup as unknown as any).mockResolvedValue([
+      { address: "10.0.0.5", family: 4 },
+    ]);
 
     const ok = await checkImage("http://some-host/whatever");
     expect(ok).toBe(false);

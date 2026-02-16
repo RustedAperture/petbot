@@ -7,7 +7,6 @@ import { useGlobalStats } from "@/hooks/use-global-stats";
 import { useBotGuilds } from "@/hooks/use-bot-guilds";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function GuildStatsPage() {
   const params = useSearchParams();
@@ -38,7 +37,7 @@ export default function GuildStatsPage() {
     }
   }, [resolvedGuildId, botGuildsLoading, availableGuilds, router]);
 
-  const handleGuildChange = React.useCallback(
+  const _handleGuildChange = React.useCallback(
     (v: string) => router.push(`/guildStats?guildId=${v}`),
     [router],
   );
@@ -48,7 +47,7 @@ export default function GuildStatsPage() {
   });
 
   // If no guildId provided, ask the user to pick one using the header selector
-  if (!resolvedGuildId)
+  if (!resolvedGuildId) {
     return (
       <main>
         <h2 className="text-lg font-semibold">Guild Stats</h2>
@@ -65,9 +64,11 @@ export default function GuildStatsPage() {
         )}
       </main>
     );
+  }
 
-  if (!data)
+  if (!data) {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+  }
 
   const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
 

@@ -54,19 +54,29 @@ export function useGlobalStats({
 
       try {
         const qs = new URLSearchParams();
-        if (userId) qs.set("userId", userId);
+        if (userId) {
+          qs.set("userId", userId);
+        }
         const effectiveGuildId = guildId ?? locationId ?? null;
-        if (effectiveGuildId) qs.set("guildId", effectiveGuildId);
-        if (userScoped) qs.set("userScoped", "true");
+        if (effectiveGuildId) {
+          qs.set("guildId", effectiveGuildId);
+        }
+        if (userScoped) {
+          qs.set("userScoped", "true");
+        }
         const url = "/api/stats" + (qs.toString() ? `?${qs.toString()}` : "");
 
         // use the frontend proxy `/api/*` which is configured to forward to :3001
         const res = await fetch(url, { signal, cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch stats (${res.status})`);
+        }
         const json = (await res.json()) as GlobalStats;
         setData(json);
       } catch (err: any) {
-        if (err?.name === "AbortError") return;
+        if (err?.name === "AbortError") {
+          return;
+        }
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
@@ -88,7 +98,9 @@ export function useGlobalStats({
   }, [refresh]);
 
   React.useEffect(() => {
-    if (!refreshIntervalMs || refreshIntervalMs <= 0) return;
+    if (!refreshIntervalMs || refreshIntervalMs <= 0) {
+      return;
+    }
     const id = window.setInterval(() => refresh(), refreshIntervalMs);
     return () => clearInterval(id);
   }, [refreshIntervalMs, refresh]);

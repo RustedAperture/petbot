@@ -20,8 +20,8 @@ describe("/stats command", () => {
     const user = { id: "u1", fetch: vi.fn().mockResolvedValue(true) };
     const interaction = mockInteraction({
       options: {
-        getMember: (k: string) => user,
-        getUser: (k: string) => user,
+        getMember: (_k: string) => user,
+        getUser: (_k: string) => user,
         getString: () => null,
       },
     });
@@ -40,8 +40,8 @@ describe("/stats command", () => {
     const user = { id: "u1", fetch: vi.fn().mockResolvedValue(true) };
     const interaction = mockInteraction({
       options: {
-        getMember: (k: string) => user,
-        getUser: (k: string) => user,
+        getMember: (_k: string) => user,
+        getUser: (_k: string) => user,
         getString: () => "pet",
       },
     });

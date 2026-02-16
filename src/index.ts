@@ -75,7 +75,9 @@ client.contextCommands = new Collection();
 // Register commands from the static manifest (no runtime path joins)
 for (const mod of slashCommands) {
   const command = (mod as any).default || mod;
-  if (!command || (command as any).disabled) continue;
+  if (!command || (command as any).disabled) {
+    continue;
+  }
   if ("data" in command && "execute" in command) {
     client.slashCommands.set(command.data.name, command);
     logger.warn(
@@ -83,13 +85,15 @@ for (const mod of slashCommands) {
     );
   } else {
     logger.warn(
-      `A static slash command is missing a required "data" or "execute" property.`,
+      "A static slash command is missing a required \"data\" or \"execute\" property.",
     );
   }
 }
 for (const mod of contextCommands) {
   const command = (mod as any).default || mod;
-  if (!command || (command as any).disabled) continue;
+  if (!command || (command as any).disabled) {
+    continue;
+  }
   if ("data" in command && "execute" in command) {
     client.contextCommands.set(command.data.name, command);
     logger.warn(
@@ -97,7 +101,7 @@ for (const mod of contextCommands) {
     );
   } else {
     logger.warn(
-      `A static context command is missing a required "data" or "execute" property.`,
+      "A static context command is missing a required \"data\" or \"execute\" property.",
     );
   }
 }

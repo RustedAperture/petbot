@@ -39,7 +39,9 @@ function GuildSelect({
 
   const handleChange = React.useCallback(
     (v: string) => {
-      if (onChange) return onChange(v);
+      if (onChange) {
+        return onChange(v);
+      }
       router.push(`/guildStats?guildId=${v}`);
     },
     [onChange, router],

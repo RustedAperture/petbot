@@ -6,7 +6,6 @@ import { useSession } from "@/hooks/use-session";
 import { useGlobalStats } from "@/hooks/use-global-stats";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -39,7 +38,9 @@ export default function DmStatsPage() {
         setFailedLocationId(stored);
         sessionStorage.removeItem("dmStatsFailedLocation");
       }
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const { data, isLoading, error } = useGlobalStats({
@@ -51,14 +52,18 @@ export default function DmStatsPage() {
     (e?: React.FormEvent) => {
       e?.preventDefault();
       const trimmed = locationInput?.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        return;
+      }
       // mark that this navigation was initiated by the user so we can special-case 404
       userInitiatedRef.current = true;
       attemptedLocationRef.current = trimmed;
       setLoadErrorMessage(null);
       try {
         sessionStorage.removeItem("dmStatsFailedLocation");
-      } catch {}
+      } catch {
+        /* noop */
+      }
       router.push(`/dmStats?locationId=${encodeURIComponent(trimmed)}`);
     },
     [locationInput, router],
@@ -70,11 +75,13 @@ export default function DmStatsPage() {
     setFailedLocationId(null);
     try {
       sessionStorage.removeItem("dmStatsFailedLocation");
-    } catch {}
+    } catch {
+      /* noop */
+    }
     userInitiatedRef.current = false;
     attemptedLocationRef.current = null;
     setLocationInput("");
-    router.push(`/dmStats`);
+    router.push("/dmStats");
   }, [router]);
 
   // If no locationId provided, the header contains the input — page shows guidance.
@@ -82,9 +89,13 @@ export default function DmStatsPage() {
   // If a 404 occurs for a location-scoped request, always fall back to the
   // regular DM page and show an error message (do not keep showing stale stats).
   React.useEffect(() => {
-    if (!error) return;
+    if (!error) {
+      return;
+    }
     const isNotFound = String(error?.message).includes("(404)");
-    if (!isNotFound) return;
+    if (!isNotFound) {
+      return;
+    }
 
     // Determine the id we attempted to load (user input, attempted ref, or current query)
     const failed =
@@ -100,18 +111,24 @@ export default function DmStatsPage() {
       setFailedLocationId(failed);
       try {
         sessionStorage.setItem("dmStatsFailedLocation", failed);
-      } catch {}
+      } catch {
+        /* noop */
+      }
     } else {
       const msg =
         "No DM stats found for that location or you do not have access.";
       setLoadErrorMessage(msg);
       try {
         sessionStorage.setItem("dmStatsFailedLocation", "");
-      } catch {}
+      } catch {
+        /* noop */
+      }
     }
 
     // If we were location-scoped, remove the query param and show the fallback UI.
-    if (resolvedLocationId) router.replace(`/dmStats`);
+    if (resolvedLocationId) {
+      router.replace("/dmStats");
+    }
   }, [error, router, locationInput, resolvedLocationId]);
 
   // Clear transient load message when location-scoped data successfully loads.
@@ -123,7 +140,9 @@ export default function DmStatsPage() {
       setFailedLocationId(null);
       try {
         sessionStorage.removeItem("dmStatsFailedLocation");
-      } catch {}
+      } catch {
+        /* noop */
+      }
     }
   }, [data, resolvedLocationId]);
   // If there's a 404 while trying to load a location, we replace the URL
@@ -161,7 +180,7 @@ export default function DmStatsPage() {
     );
   }
 
-  if (!resolvedLocationId)
+  if (!resolvedLocationId) {
     return (
       <main>
         <h2 className="text-lg font-semibold">DM Chat Stats</h2>
@@ -197,12 +216,14 @@ export default function DmStatsPage() {
         )}
       </main>
     );
+  }
 
   // Show page-level loader / error when trying to load a location's stats
-  if (!data && isLoading)
+  if (!data && isLoading) {
     return (
       <p className="mt-4 text-sm text-muted-foreground">Loading DM stats…</p>
     );
+  }
 
   if (!data && error) {
     const isNotFound = error.message.includes("(404)");
@@ -230,7 +251,9 @@ export default function DmStatsPage() {
                 setFailedLocationId(null);
                 try {
                   sessionStorage.removeItem("dmStatsFailedLocation");
-                } catch {}
+                } catch {
+                  /* noop */
+                }
               }}
             />
             <Button onClick={submitLocation}>Try</Button>
@@ -243,8 +266,9 @@ export default function DmStatsPage() {
     );
   }
 
-  if (!data)
+  if (!data) {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+  }
 
   const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
 

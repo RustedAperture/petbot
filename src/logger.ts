@@ -8,7 +8,7 @@ const prettyStream = pretty({
 });
 
 prettyStream.on("data", (chunk) => {
-  const line = chunk.toString().replace(/\n+$/, "");
+  const _line = chunk.toString().replace(/\n+$/, "");
   // metrics removed — no-op
 });
 

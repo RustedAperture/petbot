@@ -34,7 +34,9 @@ export async function GET(req: Request) {
   const clearStateCookie = () =>
     `${"petbot_oauth_state"}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 
-  if (!code) return NextResponse.redirect(new URL("/", siteUrl));
+  if (!code) {
+    return NextResponse.redirect(new URL("/", siteUrl));
+  }
 
   if (!stateParam || !savedState) {
     const res = NextResponse.json(
@@ -61,6 +63,7 @@ export async function GET(req: Request) {
       return res;
     }
   } catch (err) {
+    console.error("Error validating OAuth state:", err);
     const res = NextResponse.json(
       { error: "invalid_oauth_state" },
       { status: 400 },
@@ -124,8 +127,9 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  if (!userRes.ok)
+  if (!userRes.ok) {
     return NextResponse.json({ error: "failed_fetch_user" }, { status: 500 });
+  }
   const userJson = await userRes.json();
 
   let guildsJson: any[] = [];
@@ -155,8 +159,9 @@ export async function GET(req: Request) {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
-    if (process.env.INTERNAL_API_SECRET)
+    if (process.env.INTERNAL_API_SECRET) {
       headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
+    }
     // send full guilds list to internal API (upsert) — await so session is available immediately after redirect
     try {
       const persistRes = await fetch(`${internalBase}/api/userSessions`, {

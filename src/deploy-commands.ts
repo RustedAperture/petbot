@@ -1,9 +1,4 @@
-import {
-  REST,
-  Routes,
-  ApplicationCommandData,
-  ApplicationCommandType,
-} from "discord.js";
+import { REST, Routes, ApplicationCommandData } from "discord.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";

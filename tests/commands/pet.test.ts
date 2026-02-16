@@ -23,8 +23,12 @@ describe("/pet command", () => {
     const interaction = mockInteraction({
       options: {
         getUser: (k: string) => {
-          if (k === "target1") return user1;
-          if (k === "target2") return user2;
+          if (k === "target1") {
+            return user1;
+          }
+          if (k === "target2") {
+            return user2;
+          }
           return null;
         },
       },
@@ -46,8 +50,12 @@ describe("/pet command", () => {
     const interaction = mockInteraction({
       options: {
         getUser: (k: string) => {
-          if (k === "target1") return user1;
-          if (k === "target2") return user2;
+          if (k === "target1") {
+            return user1;
+          }
+          if (k === "target2") {
+            return user2;
+          }
           return null;
         },
       },

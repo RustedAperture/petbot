@@ -27,18 +27,26 @@ describe("perform context command", () => {
 
     // Recursively search for a select payload with options
     function findSelect(obj: any): any {
-      if (!obj || typeof obj !== "object") return null;
+      if (!obj || typeof obj !== "object") {
+        return null;
+      }
       if (Array.isArray(obj)) {
         for (const el of obj) {
           const found = findSelect(el);
-          if (found) return found;
+          if (found) {
+            return found;
+          }
         }
         return null;
       }
-      if (obj.options && Array.isArray(obj.options)) return obj;
+      if (obj.options && Array.isArray(obj.options)) {
+        return obj;
+      }
       for (const k of Object.keys(obj)) {
         const found = findSelect(obj[k]);
-        if (found) return found;
+        if (found) {
+          return found;
+        }
       }
       return null;
     }

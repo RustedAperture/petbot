@@ -27,7 +27,7 @@ export default async function statsHandler(req: any, res: any) {
     // - If the user has no rows for that location, return 404.
     // - Otherwise continue and keep `effectiveUserId` set so subsequent queries
     //   apply both `user_id` and `location_id` filters.
-    let effectiveUserId: string | null = userId;
+    const effectiveUserId: string | null = userId;
     if (userId && guildId) {
       const userRowCount = await ActionData.count({
         where: { user_id: userId, location_id: guildId },
@@ -44,9 +44,15 @@ export default async function statsHandler(req: any, res: any) {
     // Helper to build where-clauses depending on filters
     const baseWhere = (actionType?: string) => {
       const where: any = {};
-      if (actionType) where.action_type = actionType;
-      if (effectiveUserId) where.user_id = effectiveUserId;
-      if (guildId) where.location_id = guildId;
+      if (actionType) {
+        where.action_type = actionType;
+      }
+      if (effectiveUserId) {
+        where.user_id = effectiveUserId;
+      }
+      if (guildId) {
+        where.location_id = guildId;
+      }
       return where;
     };
 

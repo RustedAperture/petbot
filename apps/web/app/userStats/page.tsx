@@ -32,7 +32,7 @@ export default function UserStatsPage() {
     userScoped: queryUserScoped,
   });
 
-  if (!resolvedUserId)
+  if (!resolvedUserId) {
     return (
       <main>
         <h2 className="text-lg font-semibold">User Stats</h2>
@@ -41,9 +41,11 @@ export default function UserStatsPage() {
         </p>
       </main>
     );
+  }
 
-  if (!data)
+  if (!data) {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+  }
 
   const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
 

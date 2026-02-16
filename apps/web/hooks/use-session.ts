@@ -26,7 +26,9 @@ const LOCAL_TTL_MS = 1000 * 60 * 5; // 5 minutes
 function readLocalCache(): Session | undefined {
   try {
     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
-    if (!raw) return undefined;
+    if (!raw) {
+      return undefined;
+    }
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") {
       localStorage.removeItem(LOCALSTORAGE_KEY);
@@ -108,13 +110,17 @@ export function useSession() {
     }
 
     // prevent concurrent refreshes
-    if (_isRefreshing) return;
+    if (_isRefreshing) {
+      return;
+    }
     _isRefreshing = true;
     setLoading(true);
 
     try {
       const res = await fetch("/api/auth/session", { cache: "no-store" });
-      if (!res.ok) throw new Error("failed");
+      if (!res.ok) {
+        throw new Error("failed");
+      }
       const json = await res.json();
       _cachedSession = json.session ?? null;
 
@@ -127,7 +133,7 @@ export function useSession() {
 
       _listeners.forEach((fn) => fn(_cachedSession ?? null));
       setSession(_cachedSession ?? null);
-    } catch (err) {
+    } catch (_err) {
       _cachedSession = null;
       _listeners.forEach((fn) => fn(null));
       setSession(null);
@@ -167,7 +173,7 @@ export function useSession() {
           method: "GET",
           credentials: "same-origin",
         });
-      } catch (err) {
+      } catch (_err) {
         // ignore network errors — UI already updated optimistically
       }
 

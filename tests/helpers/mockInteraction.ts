@@ -36,10 +36,10 @@ export function mockInteraction(overrides: any = {}) {
   const guild = overrides.guild ?? {
     id: overrides.guildId ?? "guild-1",
     channels: {
-      fetch: async (id: string) => overrides.fetchChannel ?? null,
+      fetch: async (_id: string) => overrides.fetchChannel ?? null,
     },
     members: {
-      fetch: async (id: string) =>
+      fetch: async (_id: string) =>
         overrides.fetchMember ?? { setNickname: () => {} },
     },
   };

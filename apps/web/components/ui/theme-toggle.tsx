@@ -4,7 +4,6 @@ import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +14,7 @@ import { SidebarMenuButton, SidebarMenuItem, useSidebar } from "./sidebar";
 
 export function ThemeToggle() {
   const { setTheme } = useTheme();
-  const { isMobile, state } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const { isMobile } = useSidebar();
 
   return (
     <DropdownMenu>

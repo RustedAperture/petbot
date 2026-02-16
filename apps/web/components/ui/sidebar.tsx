@@ -92,15 +92,19 @@ function SidebarProvider({
   // Read persisted sidebar state from cookie on mount (client-only).
   React.useEffect(() => {
     // don't override controlled `open` prop
-    if (openProp !== undefined) return;
+    if (openProp !== undefined) {
+      return;
+    }
 
     try {
       const match = document.cookie
         .split("; ")
         .find((c) => c.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-      if (!match) return;
+      if (!match) {
+        return;
+      }
       _setOpen(match.split("=")[1] === "true");
-    } catch (e) {
+    } catch (_e) {
       // ignore
     }
   }, [openProp]);

@@ -1,4 +1,4 @@
-interface GuildData {
+export interface GuildData {
   id: number;
   guild_id: string;
   default_images?: Record<string, string> | null;

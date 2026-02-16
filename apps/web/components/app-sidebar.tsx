@@ -17,7 +17,7 @@ import {
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare, Palette } from "lucide-react";
+import { BotMessageSquare } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
@@ -32,8 +32,12 @@ export function AppSidebar({
     "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear";
 
   const matchPath = (href: string) => {
-    if (!href) return false;
-    if (href === "/") return pathname === "/";
+    if (!href) {
+      return false;
+    }
+    if (href === "/") {
+      return pathname === "/";
+    }
     return pathname === href || pathname.startsWith(href + "/");
   };
 
@@ -131,8 +135,9 @@ const SessionAccountInner = () => {
     return <AppUser user={userProp} onSignOut={signOut} />;
   }
 
-  if (loading)
+  if (loading) {
     return <div className="text-sm text-muted-foreground">Loading…</div>;
+  }
 
   return (
     <SidebarMenu>

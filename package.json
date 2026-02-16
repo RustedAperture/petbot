@@ -21,6 +21,7 @@
     "tag": "git tag v$(node -p \"require('./package.json').version\") && git push origin v$(node -p \"require('./package.json').version\")",
     "release": "npm run build && npm run test && npm run tag",
     "prepare": "husky install",
+    "lint:web": "cd apps/web && npm run lint",
     "bearer:scan": "bearer scan . --severity critical,high,medium"
   },
   "author": "",
@@ -43,6 +44,8 @@
     "@types/react": "^19.2.7",
     "eslint": "^9.33.0",
     "husky": "^9.1.7",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.0.5",

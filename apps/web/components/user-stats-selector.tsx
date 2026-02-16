@@ -43,7 +43,9 @@ export default function UserStatsSelector() {
       e?.preventDefault();
       const trimmed = (userScopeInput ?? "").trim();
       const resolvedUserId = queryUserId ?? session?.user.id ?? null;
-      if (!resolvedUserId) return;
+      if (!resolvedUserId) {
+        return;
+      }
 
       if (!trimmed) {
         router.push(
@@ -69,7 +71,9 @@ export default function UserStatsSelector() {
   const handleUserScopeSelect = React.useCallback(
     (val: string | null) => {
       const resolvedUserId = queryUserId ?? session?.user.id ?? null;
-      if (!resolvedUserId) return;
+      if (!resolvedUserId) {
+        return;
+      }
       setUserScopeInput(val ?? "");
       if (!val) {
         router.push(

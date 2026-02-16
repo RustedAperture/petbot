@@ -29,8 +29,9 @@ export async function GET(req: Request) {
             process.env.INTERNAL_API_URL ||
             `${process.env.HTTP_TLS_CERT || process.env.HTTP_TLS_KEY || process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.HTTP_HOST || "127.0.0.1"}:${process.env.HTTP_PORT || "3001"}`;
           const headers: Record<string, string> = {};
-          if (process.env.INTERNAL_API_SECRET)
+          if (process.env.INTERNAL_API_SECRET) {
             headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
+          }
           void fetch(
             `${internalBase}/api/userSessions?userId=${encodeURIComponent(userId)}`,
             { method: "DELETE", headers },

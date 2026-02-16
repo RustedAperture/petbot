@@ -10,7 +10,9 @@ function readSession(req: Request) {
   );
 
   const raw = cookies["petbot_session"];
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   try {
     return JSON.parse(raw) as {
@@ -38,11 +40,14 @@ export async function GET(req: Request) {
 
   const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
-  if (internalSecret) headers["x-internal-api-key"] = internalSecret;
+  if (internalSecret) {
+    headers["x-internal-api-key"] = internalSecret;
+  }
 
   function getInternalApiBase() {
-    if (process.env.INTERNAL_API_URL)
+    if (process.env.INTERNAL_API_URL) {
       return process.env.INTERNAL_API_URL.replace(/\/$/, "");
+    }
     const host = process.env.HTTP_HOST || "127.0.0.1";
     const port = process.env.HTTP_PORT || "3001";
     const preferHttps = Boolean(
@@ -75,8 +80,9 @@ export async function GET(req: Request) {
 
   // For filtered requests, require a valid session and enforce authorization.
   const session = readSession(req);
-  if (!session)
+  if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
 
   // If the cookie doesn't contain guilds (we now persist them server-side),
   // attempt to fetch persisted guilds for authorization checks.
@@ -88,7 +94,9 @@ export async function GET(req: Request) {
       );
       if (res.ok) {
         const json: any = await res.json();
-        if (Array.isArray(json.guilds)) session.guilds = json.guilds;
+        if (Array.isArray(json.guilds)) {
+          session.guilds = json.guilds;
+        }
       }
     } catch (_) {
       // ignore — we'll treat missing guilds as an empty list below
@@ -100,20 +108,25 @@ export async function GET(req: Request) {
   const userScoped = incoming.get("userScoped") === "true";
 
   if (userId) {
-    if (!/^\d+$/.test(userId))
+    if (!/^\d+$/.test(userId)) {
       return NextResponse.json({ error: "invalid_userId" }, { status: 400 });
-    if (userId !== session.user.id)
+    }
+    if (userId !== session.user.id) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     // only forward `userId` to the internal API when the client explicitly
     // requests user-scoped results via `userScoped=true` — otherwise the
     // presence-only (legacy DM) flow below will validate and forward a
     // guild-only request to preserve legacy behavior.
-    if (userScoped) allowed.set("userId", userId);
+    if (userScoped) {
+      allowed.set("userId", userId);
+    }
   }
 
   if (guildId) {
-    if (!/^\d+$/.test(guildId))
+    if (!/^\d+$/.test(guildId)) {
       return NextResponse.json({ error: "invalid_guildId" }, { status: 400 });
+    }
 
     const isMember =
       Array.isArray(session.guilds) &&
@@ -124,8 +137,9 @@ export async function GET(req: Request) {
     // legacy DM vs explicit user‑scoped behavior is handled later.
     const isSessionUserMatch = Boolean(userId && userId === session.user.id);
 
-    if (!isMember && !isSessionUserMatch)
+    if (!isMember && !isSessionUserMatch) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
 
     allowed.set("guildId", guildId);
   }
@@ -138,8 +152,9 @@ export async function GET(req: Request) {
   if (userId && userId === session.user.id && guildId && !userScoped) {
     const presenceCheckUrl = `${targetBase}?userId=${encodeURIComponent(session.user.id)}&guildId=${encodeURIComponent(guildId)}`;
     const presenceResp = await fetch(presenceCheckUrl, { headers });
-    if (presenceResp.status === 404)
+    if (presenceResp.status === 404) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
 
     // presence exists — forward the guild-only request (legacy cumulative stats)
     const forwardUrl = `${targetBase}?guildId=${encodeURIComponent(guildId)}`;
