@@ -75,6 +75,8 @@ jobs:
           context: .
           file: ./Dockerfile
           target: ${{ matrix.target }}
-          platforms: linux/amd64
+          # Validate both amd64 and arm64 like the publish workflow to catch
+          # platform-specific build issues early in CI.
+          platforms: linux/amd64,linux/arm64
           push: false
           cache-from: type=gha

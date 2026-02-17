@@ -45,10 +45,10 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 
 ```bash
 # Build bot-only image (sqlite3 will be rebuilt)
-docker build --target bot -t petbot-bot:local .
+docker buildx --target bot -t petbot-bot:local .
 
 # Build web-only image
-docker build --target web -t petbot-web:local .
+docker buildx --target web -t petbot-web:local .
 ```
 
 - Run with mounted data & config (web UI exposed on port 3000) using docker-compose:
