@@ -114,7 +114,7 @@ Register a Discord OAuth application and configure its redirect URI to: `https:/
 ## Notes / Troubleshooting
 
 - The web UI is served by Next.js at port `3000` when running via `npm run dev:web` or the container.
-- If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`).
+- If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`). The Dockerfile now forces `sqlite3` to be built from source during image builds so cross-architecture Docker Buildx runs won't attempt to download incompatible prebuilt binaries.
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
 - If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
 

@@ -6,6 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && cd apps/web && npm run build",
+    "build:server": "tsc",
+    "build:ci": "npm --prefix apps/web run build && npm run build:server",
     "test": "vitest --run",
     "test:ci": "vitest --run --silent",
     "test:watch": "vitest",
@@ -20,7 +22,7 @@
     "format:check": "prettier --check \"**/*.{js,json,md}\"",
     "tag": "git tag v$(node -p \"require('./package.json').version\") && git push origin v$(node -p \"require('./package.json').version\")",
     "release": "npm run build && npm run test && npm run tag",
-    "prepare": "husky install",
+    "prepare": "node ./scripts/prepare.js",
     "lint:web": "cd apps/web && npm run lint",
     "bearer:scan": "bearer scan . --severity critical,high,medium"
   },
