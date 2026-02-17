@@ -51,6 +51,7 @@ services:
       - .env
     environment:
       - SKIP_WEB=1
+      - SKIP_DEPLOY_COMMANDS=1
       - NODE_ENV=${NODE_ENV:-production}
       # Ensure Next.js uses HTTP for the bot internal API inside Docker
       - INTERNAL_API_URL=http://petbot-bot:3001

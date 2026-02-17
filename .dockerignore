@@ -6,3 +6,12 @@ docker-compose.yml
 .vscode
 .env
 *.log
+
+# Exclude test files and local dev artifacts from build context
+tests
+coverage
+.husky
+
+# Prevent accidental inclusion of a prebuilt Next output in the build context
+# (we build inside the container during normal builds)
+apps/web/.next

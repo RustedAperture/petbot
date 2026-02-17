@@ -54,10 +54,21 @@ FROM node:20-bullseye-slim
 ENV NODE_ENV=production
 WORKDIR /home/node/app
 
-# Copy built app from builder
-COPY --from=builder /app ./
+# Copy only runtime artifacts from the builder (avoid copying source/tests/etc.)
+# - compiled server (`dist`)
+# - production `node_modules`
+# - Next.js build output + web node_modules/public assets
+# - migrations (umzug needs these at runtime)
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/apps/web/.next ./apps/web/.next
+COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
+COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/migrations ./migrations
 
-# Create a non-root user and fix perms
+# Create a non-root user and fix perms (only owned files are present now)
 RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
 
 # Copy entrypoint and set permissions

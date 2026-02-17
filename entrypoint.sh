@@ -12,8 +12,10 @@ if [ ! -f "/home/node/app/config.json" ]; then
 fi
 
 # Run deploy commands (register/update slash commands) before starting the bot
-# This ensures the up-to-date commands are deployed at container start.
-if [ -f "/home/node/app/dist/src/deploy-commands.js" ]; then
+# Skip deploy-commands when SKIP_DEPLOY_COMMANDS is set (useful for `petbot-web`)
+if [ -n "${SKIP_DEPLOY_COMMANDS:-}" ]; then
+  echo "[INFO] SKIP_DEPLOY_COMMANDS is set; skipping deploy-commands"
+elif [ -f "/home/node/app/dist/src/deploy-commands.js" ]; then
   echo "[INFO] Running deploy-commands..."
   node /home/node/app/dist/src/deploy-commands.js || echo "[WARN] deploy-commands failed — continuing to start bot"
 else
