@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Stage: builder
-FROM node:20-bullseye-slim AS builder
+FROM node:24-bullseye-slim AS builder
 
 WORKDIR /app
 
@@ -44,7 +44,7 @@ RUN ./node_modules/.bin/tsc && npm prune --production
 
 # Web builder — builds only the Next.js app and its web dependencies so
 # `bot` builds are not affected by the expensive frontend build.
-FROM node:20-bullseye-slim AS web-builder
+FROM node:24-bullseye-slim AS web-builder
 WORKDIR /app
 
 # Install only web dependencies (cached). This keeps web build isolated.
@@ -63,7 +63,7 @@ RUN npm --prefix apps/web run build
 
 # --- Split targets ---------------------------------------------------------
 # Bot-only runtime (server only)
-FROM node:20-bullseye-slim AS bot
+FROM node:24-bullseye-slim AS bot
 ENV NODE_ENV=production
 WORKDIR /home/node/app
 
@@ -81,7 +81,7 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["node", "dist/src/index.js"]
 
 # Web-only runtime (Next.js only)
-FROM node:20-bullseye-slim AS web
+FROM node:24-bullseye-slim AS web
 ENV NODE_ENV=production
 WORKDIR /home/node/app
 
