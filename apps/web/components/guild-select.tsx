@@ -28,7 +28,7 @@ function GuildSelect({
   placeholder = "Choose a guild",
 }: Props) {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, refresh } = useSession();
   const { data: botGuildIds, isLoading: botGuildsLoading } = useBotGuilds(
     session?.user.id ?? null,
   );
@@ -36,6 +36,23 @@ function GuildSelect({
   const availableGuilds = (session?.guilds ?? []).filter((g) =>
     (botGuildIds ?? []).includes(g.id),
   );
+
+  // If the client session reports no guilds but the bot has guild data,
+  // the short-lived localStorage cache may have expired — force a single
+  // refresh to re-fetch guilds and renew the local cache.
+  const _triedSessionRefresh = React.useRef(false);
+  React.useEffect(() => {
+    if (
+      !_triedSessionRefresh.current &&
+      session &&
+      (session.guilds ?? []).length === 0 &&
+      !botGuildsLoading &&
+      (botGuildIds ?? []).length > 0
+    ) {
+      _triedSessionRefresh.current = true;
+      void refresh(true);
+    }
+  }, [session, botGuildIds, botGuildsLoading, refresh]);
 
   const handleChange = React.useCallback(
     (v: string) => {

@@ -16,7 +16,7 @@ import { useBotGuilds } from "@/hooks/use-bot-guilds";
 export default function UserStatsSelector() {
   const params = useSearchParams();
   const router = useRouter();
-  const { session } = useSession();
+  const { session, refresh } = useSession();
 
   const queryUserId = params.get("userId") ?? null;
   const queryUserScope =
@@ -37,6 +37,22 @@ export default function UserStatsSelector() {
   const availableGuilds = (session?.guilds ?? []).filter((g) =>
     (botGuildIds ?? []).includes(g.id),
   );
+
+  // If session reports no guilds but the bot has guild data, try a forced
+  // session refresh once so localStorage gets renewed.
+  const _triedSessionRefresh = React.useRef(false);
+  React.useEffect(() => {
+    if (
+      !_triedSessionRefresh.current &&
+      session &&
+      (session.guilds ?? []).length === 0 &&
+      !botGuildsLoading &&
+      (botGuildIds ?? []).length > 0
+    ) {
+      _triedSessionRefresh.current = true;
+      void refresh(true);
+    }
+  }, [session, botGuildIds, botGuildsLoading, refresh]);
 
   const submitUserScope = React.useCallback(
     (e?: React.FormEvent) => {
