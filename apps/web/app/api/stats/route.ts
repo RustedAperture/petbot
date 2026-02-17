@@ -152,8 +152,22 @@ export async function GET(req: Request) {
   if (userId && userId === session.user.id && guildId && !userScoped) {
     const presenceCheckUrl = `${targetBase}?userId=${encodeURIComponent(session.user.id)}&guildId=${encodeURIComponent(guildId)}`;
     const presenceResp = await fetch(presenceCheckUrl, { headers });
+
+    // If presence check explicitly returns 404, treat as not found.
     if (presenceResp.status === 404) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    // For any other non-OK status, propagate the error instead of
+    // treating it as a successful presence check (avoid accidental disclosure).
+    if (!presenceResp.ok) {
+      const text = await presenceResp.text();
+      try {
+        const json = JSON.parse(text);
+        return NextResponse.json(json, { status: presenceResp.status });
+      } catch {
+        return new NextResponse(text, { status: presenceResp.status });
+      }
     }
 
     // presence exists — forward the guild-only request (legacy cumulative stats)

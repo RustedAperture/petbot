@@ -113,4 +113,31 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
     expect(firstUrl).toContain("userId=123");
     expect(firstUrl).toContain("guildId=456");
   });
+
+  it("presence-check error: non-404 presence-check errors are propagated and do not forward guild request", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
+
+    // presence check -> 500
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "internal" }), { status: 500 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request(
+      "http://localhost/api/stats?userId=123&guildId=456",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await GET(req as any);
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: "internal" });
+
+    // only the presence check was attempted — no forward
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });
