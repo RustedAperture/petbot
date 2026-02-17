@@ -1,3 +1,13 @@
+## v8.2.2 - Feb 17, 2026
+
+### Enhancements
+
+- Split Dockerfile into separate build stages and targets for bot and web images
+- Created separate entrypoint scripts for bot and web containers
+- Updated GitHub Actions workflows to build and publish both images separately
+- Updated docker-compose.yml to use the new split images with proper service configuration
+- Updated readme.md with new build and run instructions for both images
+
 ## v8.2.0 - Feb 16, 2026
 
 ### New Features
