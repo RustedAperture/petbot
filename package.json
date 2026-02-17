@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "engines": {
-    "node": ">=25"
+    "node": ">=24"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -44,7 +44,7 @@
     "umzug": "^3.8.2"
   },
   "devDependencies": {
-    "@types/node": "^25.0.2",
+    "@types/node": "^24",
     "@types/node-fetch": "^2.6.13",
     "@types/react": "^19.2.7",
     "eslint": "^9.33.0",

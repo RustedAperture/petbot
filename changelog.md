@@ -2,7 +2,7 @@
 
 ### Enhancement
 
-- Update node version from 20 to 25
+- Update node version from 20 to 24
 
 ## v8.2.2 - Feb 17, 2026
 

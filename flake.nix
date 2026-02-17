@@ -20,7 +20,7 @@
 
           # Tools needed to develop and build node modules (e.g., sqlite3)
           packages = with pkgs; [
-            nodejs_25 # Node.js 25
+            nodejs_24 # Node.js 24 (LTS)
             pnpm # Package manager (uses existing pnpm-lock.yaml)
             sqlite # libsqlite3 and headers for native builds
             pkg-config # Helps node-gyp find libraries
