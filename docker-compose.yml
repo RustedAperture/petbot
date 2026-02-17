@@ -5,8 +5,8 @@ version: "3.8"
 services:
   petbot:
     container_name: petbot-bot
-    # Image to pull by default; will be used as the tag if you build locally
-    image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
+    # Bot image (server-only)
+    image: "${BOT_IMAGE:-ghcr.io/rustedaperture/petbot-bot:latest}"
     restart: unless-stopped
     working_dir: /home/node/app
     env_file:
@@ -32,43 +32,28 @@ services:
 
       # Ensure the runtime runs in production mode by default
       - NODE_ENV=${NODE_ENV:-production}
-      # When splitting UI into its own service, prevent entrypoint from auto-starting Next.js
-      - SKIP_WEB=1
     volumes:
       # Persist runtime data (sqlite DB, migrations, etc.)
       - ./data:/home/node/app/data
-      # Legacy: you may still mount a `config.json` for backward compatibility, but
-      # using env vars / a `.env` file is preferred and config.json is deprecated.
-      # - ./config.json:/home/node/app/config.json:ro
-    # The container will start both the bot and (if present) the Next.js server on port 3000.
 
   petbot-web:
     container_name: petbot-web
-    image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
+    # Web image (Next.js only)
+    image: "${WEB_IMAGE:-ghcr.io/rustedaperture/petbot-web:latest}"
     restart: unless-stopped
-    working_dir: /home/node/app
+    working_dir: /home/node/app/apps/web
     env_file:
       - .env
     environment:
-      - SKIP_WEB=1
-      - SKIP_DEPLOY_COMMANDS=1
       - NODE_ENV=${NODE_ENV:-production}
       # Ensure Next.js uses HTTP for the bot internal API inside Docker
       - INTERNAL_API_URL=http://petbot-bot:3001
-      # Internal API secret (optional) — recommended in production
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-}
-
-      # Discord OAuth (set these for the web UI to allow Sign in with Discord)
       - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID:-}
       - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
       - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-}
-
-      # Optional / runtime config
       - DEFAULT_GUILD_ID=${DEFAULT_GUILD_ID:-}
-      # Example: ALLOWED_IMAGE_HOSTS is optional and should not be committed
-      # - ALLOWED_IMAGE_HOSTS=${ALLOWED_IMAGE_HOSTS:-}
-    command: sh -c "cd /home/node/app/apps/web && npm run start --silent"
     ports:
       - "3000:3000"
     volumes:

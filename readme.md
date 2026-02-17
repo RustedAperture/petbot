@@ -44,24 +44,33 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 - Build locally (tested):
 
 ```bash
-docker buildx build --load --platform linux/amd64 -t petbot:local .
+# Build bot-only image (sqlite3 will be rebuilt)
+docker build --target bot -t petbot-bot:local .
+
+# Build web-only image
+docker build --target web -t petbot-web:local .
 ```
 
-- Run with mounted data & config (web UI exposed on port 3000):
+- Run with mounted data & config (web UI exposed on port 3000) using docker-compose:
 
 ```bash
-docker run --rm --name petbot \
-  -p 3000:3000 \
-  -v "$(pwd)/data":/home/node/app/data \
-  -e DISCORD_TOKEN="$DISCORD_TOKEN" \
-  -e DISCORD_CLIENT_ID="$DISCORD_CLIENT_ID" \
-  -e NEXT_PUBLIC_SITE_URL="http://localhost:3000" \
-  petbot:local
+# start both services (uses local images if tagged appropriately)
+docker compose up --build
 ```
 
-After the container starts, open `http://localhost:3000` to access the web UI.
+Or run a single service directly:
 
-> The image's `entrypoint.sh` ensures `data/` permissions and will warn if required environment variables are not set.
+```bash
+# Run bot container (internal API on 3001)
+docker run --rm --name petbot-bot -v "$(pwd)/data":/home/node/app/data -e DISCORD_TOKEN="$DISCORD_TOKEN" petbot-bot:local
+
+# Run web container (serves UI on 3000)
+docker run --rm --name petbot-web -p 3000:3000 -v "$(pwd)/data":/home/node/app/data -e NEXT_PUBLIC_SITE_URL="http://localhost:3000" petbot-web:local
+```
+
+After the containers start, open `http://localhost:3000` to access the web UI.
+
+> The image's `entrypoint` script ensures `data/` permissions and will warn if required environment variables are not set.
 
 ### Pulling the published image
 

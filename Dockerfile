@@ -26,57 +26,73 @@ RUN --mount=type=cache,id=npm,target=/root/.npm \
     --mount=type=cache,id=node-gyp,target=/root/.cache/node-gyp \
     npm ci --no-audit --no-fund --ignore-scripts
 
+# Optionally rebuild sqlite3 (only required for the bot/server image).
+
 # Rebuild sqlite3 in its own layer so the native build can be cached independently
 # (parallelized with MAKEFLAGS and using the node-gyp cache).
 RUN --mount=type=cache,id=npm,target=/root/.npm \
     --mount=type=cache,id=node-gyp,target=/root/.cache/node-gyp \
     MAKEFLAGS="-j$(nproc)" npm rebuild sqlite3 --build-from-source
 
-# Install frontend deps (cached separately)
-RUN --mount=type=cache,target=/root/.npm \
-    if [ -f apps/web/package.json ]; then npm --prefix apps/web ci --no-audit --no-fund --ignore-scripts; fi
-
-# Copy the rest of the source
+# Copy the rest of the source (server build only in this stage)
 COPY . .
 
-# Build backend and prune dev deps. If the Next.js app was prebuilt in CI
-# (i.e. `apps/web/.next` exists in the build context) skip the expensive
-# Next.js build and only run TypeScript compilation for the server.
-RUN if [ -d apps/web/.next ]; then \
-      echo "Found prebuilt apps/web/.next — skipping Next.js build"; \
-      ./node_modules/.bin/tsc; \
-    else \
-      npm run build; \
-    fi && npm prune --production
+# Build backend and prune dev deps. The web app is now built in a separate
+# `web-builder` stage so `bot`/server-only builds do not run Next.js.
+RUN ./node_modules/.bin/tsc && npm prune --production
 
-# Stage: runtime
-FROM node:20-bullseye-slim
+
+# Web builder — builds only the Next.js app and its web dependencies so
+# `bot` builds are not affected by the expensive frontend build.
+FROM node:20-bullseye-slim AS web-builder
+WORKDIR /app
+
+# Install only web dependencies (cached). This keeps web build isolated.
+COPY apps/web/package*.json ./apps/web/
+
+# Make root package.json available to the web build (some client code imports it)
+COPY package*.json ./
+
+RUN --mount=type=cache,target=/root/.npm npm --prefix apps/web ci --no-audit --no-fund --ignore-scripts
+
+# Copy web sources and build
+COPY apps/web ./apps/web
+RUN npm --prefix apps/web run build
+
+
+
+# --- Split targets ---------------------------------------------------------
+# Bot-only runtime (server only)
+FROM node:20-bullseye-slim AS bot
 ENV NODE_ENV=production
 WORKDIR /home/node/app
 
-# Copy only runtime artifacts from the builder (avoid copying source/tests/etc.)
-# - compiled server (`dist`)
-# - production `node_modules`
-# - Next.js build output + web node_modules/public assets
-# - migrations (umzug needs these at runtime)
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/apps/web/.next ./apps/web/.next
-COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
-COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=builder /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/migrations ./migrations
-
-# Create a non-root user and fix perms (only owned files are present now)
-RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
-
-# Copy entrypoint and set permissions
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY entrypoint-bot.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
+RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
 USER app
 VOLUME ["/home/node/app/data"]
-EXPOSE 3000
+EXPOSE 3001
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["node", "dist/src/index.js"]
+
+# Web-only runtime (Next.js only)
+FROM node:20-bullseye-slim AS web
+ENV NODE_ENV=production
+WORKDIR /home/node/app
+
+# Web needs its own node_modules and the built .next output — copy from web-builder
+COPY --from=web-builder /app/apps/web/.next ./apps/web/.next
+COPY --from=web-builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=web-builder /app/apps/web/package.json ./apps/web/package.json
+COPY --from=web-builder /app/apps/web/public ./apps/web/public
+
+RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
+USER app
+EXPOSE 3000
+WORKDIR /home/node/app/apps/web
+CMD ["npm", "run", "start"]
