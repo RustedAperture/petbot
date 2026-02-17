@@ -1,5 +1,6 @@
 #!/bin/sh
-# Run linting (root + web) and Bearer security scan before allowing a commit.
+# Run linting (root + web) before allowing a commit.
+# Heavy security scans (Bearer) are run in CI to avoid slowing local commits.
 # Exit non-zero to block the commit if any check fails.
 
 # fast fail
@@ -7,6 +8,3 @@ set -e
 
 # lint repo
 npm run lint
-
-# security scan
-npm run bearer:scan

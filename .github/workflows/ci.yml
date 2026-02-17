@@ -17,6 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Detect changed paths
+        id: paths
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'apps/web/package.json'
+              - 'apps/web/package-lock.json'
+            server:
+              - 'src/**'
+              - 'package.json'
+              - 'package-lock.json'
+            docker:
+              - 'Dockerfile'
+              - 'src/**'
+              - 'apps/**'
+
       - name: Run Bearer security scan
         uses: bearer/bearer-action@v2
         with:
@@ -33,9 +51,11 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Install dependencies (apps/web)
+        if: steps.paths.outputs.web == 'true'
         run: npm ci --prefix apps/web --no-audit --no-fund
 
       - name: Restore Next.js build cache
+        if: steps.paths.outputs.web == 'true'
         uses: actions/cache@v4
         with:
           path: apps/web/.next
@@ -44,6 +64,7 @@ jobs:
             ${{ runner.os }}-nextjs-
 
       - name: Prebuild frontend (apps/web)
+        if: steps.paths.outputs.web == 'true'
         run: npm --prefix apps/web run build
 
       - name: Build (server-only)
