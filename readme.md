@@ -44,7 +44,7 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 - Build locally (tested):
 
 ```bash
-# Build bot-only image (sqlite3 will be rebuilt)
+- Build bot-only image (sqlite3 will be rebuilt)
 docker buildx --target bot -t petbot-bot:local .
 
 # Build web-only image

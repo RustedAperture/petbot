@@ -1,5 +1,5 @@
 {
-  description = "Dev shell for petbot (Node + pnpm + sqlite3 build deps)";
+  description = "Dev shell for petbot (Node + pnpm)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -20,7 +20,7 @@
 
           # Tools needed to develop and build node modules (e.g., sqlite3)
           packages = with pkgs; [
-            nodejs_20 # LTS Node.js compatible with discord.js v14
+            nodejs_25 # Node.js 25
             pnpm # Package manager (uses existing pnpm-lock.yaml)
             sqlite # libsqlite3 and headers for native builds
             pkg-config # Helps node-gyp find libraries

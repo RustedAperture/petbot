@@ -3,6 +3,9 @@
   "version": "8.2.2",
   "description": "",
   "type": "module",
+  "engines": {
+    "node": ">=25"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && cd apps/web && npm run build",
