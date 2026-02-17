@@ -22,32 +22,37 @@ export default async function statsHandler(req: any, res: any) {
 
     const actionKinds = Object.keys(ACTIONS);
 
-    // If both userId + guildId are supplied, only return guild/location-level aggregates
-    // when the requesting user actually has a DB row for that location. This allows the
-    // front-end to request `/api/stats?userId=...&locationId=...` and receive full
-    // location stats if the user has any presence at that location.
-    let effectiveUserId: string | null = userId;
+    // If both userId + guildId are supplied, interpret this as a user-scoped
+    // request restricted to that location (e.g. "user X at location Y").
+    // - If the user has no rows for that location, return 404.
+    // - Otherwise continue and keep `effectiveUserId` set so subsequent queries
+    //   apply both `user_id` and `location_id` filters.
+    const effectiveUserId: string | null = userId;
     if (userId && guildId) {
       const userRowCount = await ActionData.count({
         where: { user_id: userId, location_id: guildId },
       });
-      if (userRowCount > 0) {
-        // user is present at the location — treat this request as a guild/location query
-        effectiveUserId = null;
-      } else {
+      if (userRowCount === 0) {
         // user has no rows for that location — do not disclose location stats
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "not_found" }));
         return;
       }
+      // leave `effectiveUserId` as `userId` so we return user-scoped data for that location
     }
 
     // Helper to build where-clauses depending on filters
     const baseWhere = (actionType?: string) => {
       const where: any = {};
-      if (actionType) where.action_type = actionType;
-      if (effectiveUserId) where.user_id = effectiveUserId;
-      if (guildId) where.location_id = guildId;
+      if (actionType) {
+        where.action_type = actionType;
+      }
+      if (effectiveUserId) {
+        where.user_id = effectiveUserId;
+      }
+      if (guildId) {
+        where.location_id = guildId;
+      }
       return where;
     };
 
@@ -89,10 +94,21 @@ export default async function statsHandler(req: any, res: any) {
         0,
       );
 
-      // total unique users for a guild filter = distinct user_id where location_id = guildId
-      // for a user filter, totalUniqueUsers is either 1 (user exists) or 0
+      // total unique users and total locations should reflect whether this is a
+      // user-scoped request (userId present) or a guild-scoped request.
       let totalUniqueUsers = 0;
-      if (guildId) {
+      if (effectiveUserId) {
+        // user-scoped: check presence for the user (optionally restricted to a guild)
+        const userPresence = await ActionData.count({
+          where: {
+            user_id: effectiveUserId,
+            ...(guildId ? { location_id: guildId } : {}),
+            has_performed: { [Op.gt]: 0 },
+          },
+        });
+        totalUniqueUsers = userPresence > 0 ? 1 : 0;
+      } else if (guildId) {
+        // guild-scoped: distinct users at the location
         totalUniqueUsers = Number(
           await ActionData.count({
             distinct: true,
@@ -100,28 +116,35 @@ export default async function statsHandler(req: any, res: any) {
             where: { location_id: guildId, has_performed: { [Op.gt]: 0 } },
           }),
         );
-      } else if (effectiveUserId) {
-        const userPresence = await ActionData.count({
-          where: { user_id: effectiveUserId, has_performed: { [Op.gt]: 0 } },
-        });
-        totalUniqueUsers = userPresence > 0 ? 1 : 0;
       }
 
-      // totalLocations for a filtered query: if filtering by guild -> 1; if by user -> number of distinct locations the user has records in
+      // totalLocations for a filtered query:
+      // - user-scoped (with guild filter): 1 if the user has presence at that location
+      // - user-scoped (no guild filter): distinct locations the user has records in
+      // - guild-scoped: 1 if the location exists
       let totalLocations = 0;
-      if (guildId) {
+      if (effectiveUserId) {
+        if (guildId) {
+          totalLocations =
+            (await ActionData.count({
+              where: { user_id: effectiveUserId, location_id: guildId },
+            })) > 0
+              ? 1
+              : 0;
+        } else {
+          totalLocations = Number(
+            await ActionData.count({
+              distinct: true,
+              col: "location_id",
+              where: { user_id: effectiveUserId },
+            }),
+          );
+        }
+      } else if (guildId) {
         totalLocations =
           (await ActionData.count({ where: { location_id: guildId } })) > 0
             ? 1
             : 0;
-      } else if (effectiveUserId) {
-        totalLocations = Number(
-          await ActionData.count({
-            distinct: true,
-            col: "location_id",
-            where: { user_id: effectiveUserId },
-          }),
-        );
       }
 
       const body = {

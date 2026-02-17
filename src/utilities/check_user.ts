@@ -1,6 +1,5 @@
 import { ActionData, BotData } from "./db.js";
 import logger from "../logger.js";
-import { Op } from "sequelize";
 import { ACTIONS, ActionType } from "../types/constants.js";
 
 export const checkUser = async (

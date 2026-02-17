@@ -14,23 +14,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare, Palette } from "lucide-react";
+import { BotMessageSquare } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo } from "react";
+import { ThemeToggle } from "./ui/theme-toggle";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  version,
+  ...props
+}: { version?: string } & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
 
   const activeClass =
     "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear";
 
   const matchPath = (href: string) => {
-    if (!href) return false;
-    if (href === "/") return pathname === "/";
+    if (!href) {
+      return false;
+    }
+    if (href === "/") {
+      return pathname === "/";
+    }
     return pathname === href || pathname.startsWith(href + "/");
   };
 
@@ -89,18 +96,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem className="flex items-center gap-2">
-                <SidebarMenuButton
-                  disabled
-                  className="group-data-[collapsible=icon]:hidden"
-                >
-                  <Palette />
-                  Theme
-                </SidebarMenuButton>
-                <div className="ml-auto group-data-[collapsible=icon]:mx-auto">
-                  <ThemeToggle />
-                </div>
-              </SidebarMenuItem>
+              {version ? (
+                <SidebarMenuItem>
+                  <SidebarMenuButton className="flex justify-between cursor-default group-data-[collapsible=icon]:hidden">
+                    <span>Version</span>
+                    <div className="text-xs text-muted-foreground">
+                      v{version}
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ) : null}
+
+              <ThemeToggle />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -128,8 +135,9 @@ const SessionAccountInner = () => {
     return <AppUser user={userProp} onSignOut={signOut} />;
   }
 
-  if (loading)
+  if (loading) {
     return <div className="text-sm text-muted-foreground">Loading…</div>;
+  }
 
   return (
     <SidebarMenu>

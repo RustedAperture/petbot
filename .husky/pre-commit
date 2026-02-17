@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run linting (root + web) and Bearer security scan before allowing a commit.
+# Exit non-zero to block the commit if any check fails.
+
+# fast fail
+set -e
+
+# lint repo
+npm run lint
+
+# security scan
+npm run bearer:scan

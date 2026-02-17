@@ -4,7 +4,6 @@ import { mockInteraction } from "../helpers/mockInteraction.js";
 vi.mock("../../src/utilities/check_user.js", () => ({ checkUser: vi.fn() }));
 vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
 
-import { checkUser } from "../../src/utilities/check_user.js";
 import { resetAction } from "../../src/utilities/resetAction.js";
 import { command } from "../../src/commands/slash/reset.js";
 

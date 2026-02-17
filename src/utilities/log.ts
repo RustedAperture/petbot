@@ -4,8 +4,6 @@ import {
   MediaGalleryBuilder,
   MessageFlags,
   ActionRowBuilder,
-  APIActionRowComponent,
-  APIButtonComponent,
 } from "discord.js";
 
 export const log = async (

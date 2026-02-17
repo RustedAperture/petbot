@@ -4,7 +4,7 @@ version: "3.8"
 
 services:
   petbot:
-    container_name: petbot
+    container_name: petbot-bot
     # Image to pull by default; will be used as the tag if you build locally
     image: "${IMAGE:-ghcr.io/rustedaperture/petbot:latest}"
     restart: unless-stopped
@@ -34,8 +34,6 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       # When splitting UI into its own service, prevent entrypoint from auto-starting Next.js
       - SKIP_WEB=1
-    ports:
-      - "3001:3001"
     volumes:
       # Persist runtime data (sqlite DB, migrations, etc.)
       - ./data:/home/node/app/data
@@ -55,7 +53,7 @@ services:
       - SKIP_WEB=1
       - NODE_ENV=${NODE_ENV:-production}
       # Ensure Next.js uses HTTP for the bot internal API inside Docker
-      - INTERNAL_API_URL=http://petbot:3001
+      - INTERNAL_API_URL=http://petbot-bot:3001
       # Internal API secret (optional) — recommended in production
       - INTERNAL_API_SECRET=${INTERNAL_API_SECRET:-}
 
@@ -64,10 +62,6 @@ services:
       - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET:-}
       - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       - DISCORD_TOKEN=${DISCORD_TOKEN:-}
-
-      # HTTP API bind settings (the bot's internal HTTP API)
-      - HTTP_HOST=${HTTP_HOST:-127.0.0.1}
-      - HTTP_PORT=${HTTP_PORT:-3001}
 
       # Optional / runtime config
       - DEFAULT_GUILD_ID=${DEFAULT_GUILD_ID:-}

@@ -1,11 +1,13 @@
 {
   "name": "petbot",
-  "version": "8.1.4",
+  "version": "8.2.0",
   "description": "",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && cd apps/web && npm run build",
+    "build:server": "tsc",
+    "build:ci": "npm --prefix apps/web run build && npm run build:server",
     "test": "vitest --run",
     "test:ci": "vitest --run --silent",
     "test:watch": "vitest",
@@ -20,6 +22,8 @@
     "format:check": "prettier --check \"**/*.{js,json,md}\"",
     "tag": "git tag v$(node -p \"require('./package.json').version\") && git push origin v$(node -p \"require('./package.json').version\")",
     "release": "npm run build && npm run test && npm run tag",
+    "prepare": "node ./scripts/prepare.js",
+    "lint:web": "cd apps/web && npm run lint",
     "bearer:scan": "bearer scan . --severity critical,high,medium"
   },
   "author": "",
@@ -27,13 +31,13 @@
   "dependencies": {
     "discord.js": "^14.21.0",
     "dotenv": "^16.1.4",
+    "node-fetch": "^3.3.1",
     "pino": "^10.1.0",
     "pino-pretty": "^11.3.0",
     "prettier": "^3.7.4",
     "react": "^19.2.3",
     "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7",
-    "node-fetch": "^3.3.1",
     "umzug": "^3.8.2"
   },
   "devDependencies": {
@@ -41,6 +45,9 @@
     "@types/node-fetch": "^2.6.13",
     "@types/react": "^19.2.7",
     "eslint": "^9.33.0",
+    "husky": "^9.1.7",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.0.5",

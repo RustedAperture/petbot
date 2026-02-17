@@ -27,8 +27,9 @@ export function getAccentColor(user: User | GuildMember) {
       ? hexToRGBTuple(user.displayHexColor)
       : user.accentColor;
 
-  if (accentColor === null || accentColor === undefined)
+  if (accentColor === null || accentColor === undefined) {
     accentColor = hexToRGBTuple("#000000");
+  }
 
   return accentColor;
 }
@@ -62,7 +63,7 @@ async function fetchStatsInternal(locationId?: string) {
       uniqueGuilds = presence > 0 ? 1 : 0;
     } else {
       const uniqueGuildsResult: any = await sequelize.query(
-        `SELECT COUNT(DISTINCT location_id) as uniqueGuilds FROM actionData`,
+        "SELECT COUNT(DISTINCT location_id) as uniqueGuilds FROM actionData",
         { type: QueryTypes.SELECT },
       );
       uniqueGuilds = uniqueGuildsResult[0].uniqueGuilds;

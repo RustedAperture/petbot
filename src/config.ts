@@ -12,7 +12,7 @@ try {
     "utf8",
   );
   fileConfig = JSON.parse(raw) as Record<string, unknown>;
-} catch (err) {
+} catch (_err) {
   // no-op — legacy config.json is optional now
 }
 
@@ -36,7 +36,7 @@ const guildId =
 if (!token) {
   // warn early — token is required at runtime but we don't throw here to keep startup messages readable
   // tests and CI can assert absence if they need to.
-  // eslint-disable-next-line no-console
+
   console.warn(
     "[DEPRECATION] config.json is deprecated — please set DISCORD_TOKEN and other config via environment variables or a .env file.",
   );

@@ -1,6 +1,6 @@
 async function up({ context: queryInterface }) {
   const rows = await queryInterface.sequelize.query(
-    `SELECT id, default_images, default_pet_image, default_bite_image FROM botData`,
+    "SELECT id, default_images, default_pet_image, default_bite_image FROM botData",
     { type: queryInterface.sequelize.QueryTypes.SELECT },
   );
 
@@ -10,7 +10,7 @@ async function up({ context: queryInterface }) {
       if (row.default_images) {
         map = typeof row.default_images === "string" ? JSON.parse(row.default_images) : row.default_images;
       }
-    } catch (err) {
+    } catch {
       // if parsing fails, just start fresh
       map = {};
     }
@@ -44,7 +44,7 @@ async function up({ context: queryInterface }) {
 
 async function down({ context: queryInterface }) {
   const rows = await queryInterface.sequelize.query(
-    `SELECT id, default_images, default_pet_image, default_bite_image FROM botData`,
+    "SELECT id, default_images, default_pet_image, default_bite_image FROM botData",
     { type: queryInterface.sequelize.QueryTypes.SELECT },
   );
 
@@ -54,7 +54,7 @@ async function down({ context: queryInterface }) {
       if (row.default_images) {
         map = typeof row.default_images === "string" ? JSON.parse(row.default_images) : row.default_images;
       }
-    } catch (err) {
+    } catch {
       map = {};
     }
 

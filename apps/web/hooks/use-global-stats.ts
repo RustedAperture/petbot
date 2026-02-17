@@ -9,6 +9,15 @@ type UseGlobalStatsOptions = {
   /** optional filters */
   userId?: string | null;
   guildId?: string | null;
+  /** alias for guildId when callers pass a locationId */
+  locationId?: string | null;
+  /**
+   * When true, request user-scoped aggregates for `userId` + `guildId`.
+   * When false/omitted and `userId === session.user.id && guildId` is present,
+   * the proxy will treat `userId` as a validation-only parameter and return
+   * legacy guild/location aggregates (DM behavior).
+   */
+  userScoped?: boolean;
 };
 
 type UseGlobalStatsResult = {
@@ -17,7 +26,6 @@ type UseGlobalStatsResult = {
   error: Error | null;
   refresh: () => void;
 };
-
 /**
  * Fetches `/api/stats` (proxied to the bot on :3001 in dev) and returns loading / error state + a refresh function.
  * - Call from client components.
@@ -29,6 +37,8 @@ export function useGlobalStats({
   initialData,
   userId = null,
   guildId = null,
+  locationId = null,
+  userScoped = false,
 }: UseGlobalStatsOptions = {}): UseGlobalStatsResult {
   const [data, setData] = React.useState<GlobalStats | null>(
     initialData ?? null,
@@ -44,23 +54,35 @@ export function useGlobalStats({
 
       try {
         const qs = new URLSearchParams();
-        if (userId) qs.set("userId", userId);
-        if (guildId) qs.set("guildId", guildId);
+        if (userId) {
+          qs.set("userId", userId);
+        }
+        const effectiveGuildId = guildId ?? locationId ?? null;
+        if (effectiveGuildId) {
+          qs.set("guildId", effectiveGuildId);
+        }
+        if (userScoped) {
+          qs.set("userScoped", "true");
+        }
         const url = "/api/stats" + (qs.toString() ? `?${qs.toString()}` : "");
 
         // use the frontend proxy `/api/*` which is configured to forward to :3001
         const res = await fetch(url, { signal, cache: "no-store" });
-        if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch stats (${res.status})`);
+        }
         const json = (await res.json()) as GlobalStats;
         setData(json);
       } catch (err: any) {
-        if (err?.name === "AbortError") return;
+        if (err?.name === "AbortError") {
+          return;
+        }
         setError(err instanceof Error ? err : new Error(String(err)));
       } finally {
         setIsLoading(false);
       }
     },
-    [userId, guildId],
+    [userId, guildId, locationId, userScoped],
   );
 
   const refresh = React.useCallback(() => {
@@ -76,7 +98,9 @@ export function useGlobalStats({
   }, [refresh]);
 
   React.useEffect(() => {
-    if (!refreshIntervalMs || refreshIntervalMs <= 0) return;
+    if (!refreshIntervalMs || refreshIntervalMs <= 0) {
+      return;
+    }
     const id = window.setInterval(() => refresh(), refreshIntervalMs);
     return () => clearInterval(id);
   }, [refreshIntervalMs, refresh]);

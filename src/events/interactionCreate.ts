@@ -25,7 +25,9 @@ function findCommandByAlias(
   commands: Map<string, Executable> | undefined,
   alias: string,
 ): Executable | undefined {
-  if (!commands) return undefined;
+  if (!commands) {
+    return undefined;
+  }
 
   for (const command of commands.values()) {
     if (command.aliases && command.aliases.includes(alias)) {
@@ -157,7 +159,7 @@ const interactionCreate = {
         const action = select.values?.[0];
         const guild = select.guildId ?? select.channelId!;
         // Normalize author to a User-like object (ensure .id exists)
-        let authorRaw = select.member ?? select.user;
+        const authorRaw = select.member ?? select.user;
         const author =
           authorRaw && (authorRaw as any).user
             ? (authorRaw as any).user
@@ -242,7 +244,7 @@ const interactionCreate = {
         const [, targetId] = custom.split(":");
         const guild = modal.guildId ?? modal.channelId!;
         // Normalize author to a User-like object (ensure .id exists)
-        let authorRaw = modal.member ?? modal.user;
+        const authorRaw = modal.member ?? modal.user;
         const author =
           authorRaw && (authorRaw as any).user
             ? (authorRaw as any).user

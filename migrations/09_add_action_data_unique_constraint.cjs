@@ -1,5 +1,3 @@
-const { Sequelize } = require("sequelize");
-
 async function up({ context: queryInterface }) {
   // Check for duplicate combinations of (user_id, location_id, action_type)
   const duplicates = await queryInterface.sequelize.query(

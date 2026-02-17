@@ -21,7 +21,7 @@ export default async function userSessionsHandler(req: any, res: any) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ guilds }));
       return;
-    } catch (err) {
+    } catch (_err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "server_error" }));
       return;
@@ -53,13 +53,13 @@ export default async function userSessionsHandler(req: any, res: any) {
 
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true }));
-        } catch (err) {
+        } catch (_err) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "invalid_json" }));
         }
       });
       return;
-    } catch (err) {
+    } catch (_err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "server_error" }));
       return;
@@ -83,7 +83,7 @@ export default async function userSessionsHandler(req: any, res: any) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
       return;
-    } catch (err) {
+    } catch (_err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "server_error" }));
       return;

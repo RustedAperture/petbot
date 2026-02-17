@@ -25,7 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state";
+const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
@@ -92,15 +92,19 @@ function SidebarProvider({
   // Read persisted sidebar state from cookie on mount (client-only).
   React.useEffect(() => {
     // don't override controlled `open` prop
-    if (openProp !== undefined) return;
+    if (openProp !== undefined) {
+      return;
+    }
 
     try {
       const match = document.cookie
         .split("; ")
         .find((c) => c.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-      if (!match) return;
+      if (!match) {
+        return;
+      }
       _setOpen(match.split("=")[1] === "true");
-    } catch (e) {
+    } catch (_e) {
       // ignore
     }
   }, [openProp]);
@@ -281,7 +285,7 @@ function SidebarTrigger({
     <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghost"
+      variant="secondary"
       size="icon"
       className={cn("size-7", className)}
       onClick={(event) => {

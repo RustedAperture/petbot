@@ -22,8 +22,9 @@ export function useBotGuilds(userId?: string | null) {
     try {
       const qs = `?userId=${encodeURIComponent(userId)}`;
       const res = await fetch(`/api/guilds${qs}`, { cache: "no-store" });
-      if (!res.ok)
+      if (!res.ok) {
         throw new Error(`Failed to fetch bot guilds (${res.status})`);
+      }
       const json = await res.json();
       setData(Array.isArray(json.guildIds) ? json.guildIds : []);
     } catch (err: any) {

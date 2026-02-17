@@ -28,7 +28,7 @@ function GuildSelect({
   placeholder = "Choose a guild",
 }: Props) {
   const router = useRouter();
-  const { session } = useSession();
+  const { session, refresh } = useSession();
   const { data: botGuildIds, isLoading: botGuildsLoading } = useBotGuilds(
     session?.user.id ?? null,
   );
@@ -37,9 +37,28 @@ function GuildSelect({
     (botGuildIds ?? []).includes(g.id),
   );
 
+  // If the client session reports no guilds but the bot has guild data,
+  // the short-lived localStorage cache may have expired — force a single
+  // refresh to re-fetch guilds and renew the local cache.
+  const _triedSessionRefresh = React.useRef(false);
+  React.useEffect(() => {
+    if (
+      !_triedSessionRefresh.current &&
+      session &&
+      (session.guilds ?? []).length === 0 &&
+      !botGuildsLoading &&
+      (botGuildIds ?? []).length > 0
+    ) {
+      _triedSessionRefresh.current = true;
+      void refresh(true);
+    }
+  }, [session, botGuildIds, botGuildsLoading, refresh]);
+
   const handleChange = React.useCallback(
     (v: string) => {
-      if (onChange) return onChange(v);
+      if (onChange) {
+        return onChange(v);
+      }
       router.push(`/guildStats?guildId=${v}`);
     },
     [onChange, router],
@@ -48,8 +67,6 @@ function GuildSelect({
   return (
     <div className={className}>
       <div className="flex items-center gap-3">
-        <label className="text-sm text-muted-foreground">Guild</label>
-
         {botGuildsLoading ? (
           <div className="text-sm text-muted-foreground">Loading guilds…</div>
         ) : session ? (

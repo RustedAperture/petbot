@@ -15,7 +15,7 @@ vi.mock("@logger", () => ({
 }));
 
 import { updateAction } from "@utils/updateAction.js";
-import { ActionData, BotData } from "@utils/db.js";
+import { ActionData } from "@utils/db.js";
 
 describe("updateAction", () => {
   beforeEach(() => {

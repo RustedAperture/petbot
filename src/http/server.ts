@@ -16,7 +16,9 @@ function sha256buf(s: string) {
 }
 
 function secureEqual(a?: string, b?: string) {
-  if (!a || !b) return false;
+  if (!a || !b) {
+    return false;
+  }
   try {
     const ah = sha256buf(a);
     const bh = sha256buf(b);
