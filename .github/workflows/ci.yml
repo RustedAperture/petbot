@@ -75,6 +75,7 @@ jobs:
 
   docker-build:
     name: Validate Docker build (bot + web)
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     needs: test
     strategy:
