@@ -1,10 +1,10 @@
 export interface GuildData {
   id: number;
-  guild_id: string;
-  default_images?: Record<string, string> | null;
-  log_channel: string;
+  guildId: string;
+  defaultImages?: Record<string, string> | null;
+  logChannel: string;
   nickname: string;
-  sleep_image: string;
-  createdAt: Date;
-  updatedAt: Date;
+  sleepImage: string;
+  createdAt: string;
+  updatedAt: string;
 }

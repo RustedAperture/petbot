@@ -4,11 +4,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { Client, Collection, GatewayIntentBits } from "discord.js";
 
 import config from "./config.js";
-import { Sequelize } from "sequelize";
-import { Umzug, SequelizeStorage } from "umzug";
 import logger from "./logger.js";
 import { startHttpServer } from "./http/server.js";
-
+import { migrate } from "drizzle-orm/libsql/migrator";
+import { drizzleDb } from "./db/connector.js";
+import { bootstrapDb } from "./db/bootstrap.js";
 // Static commands manifest (prevents runtime file-path imports flagged by scanners)
 import { slashCommands, contextCommands } from "./commands/index.js";
 
@@ -23,37 +23,10 @@ declare module "discord.js" {
   }
 }
 
-const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: "./data/database.sqlite",
-});
-
-const umzug = new Umzug({
-  migrations: {
-    glob: "migrations/*.cjs",
-
-    resolve: ({ name, path: mPath, context }) => {
-      return {
-        name: name.replace(/\.cjs$/, ".js"),
-        up: async () => {
-          const mod = await import(pathToFileURL(mPath!).href);
-          const fn = (mod as any).up || (mod as any).default?.up;
-          return fn?.({ context });
-        },
-        down: async () => {
-          const mod = await import(pathToFileURL(mPath!).href);
-          const fn = (mod as any).down || (mod as any).default?.down;
-          return fn?.({ context });
-        },
-      };
-    },
-  },
-  context: sequelize.getQueryInterface(),
-  storage: new SequelizeStorage({ sequelize }),
-  logger: console,
-});
-
-await umzug.up();
+// Run database migrations on every launch
+await bootstrapDb(); // stamps legacy DBs so migrate() doesn't re-run existing DDL
+await migrate(drizzleDb, { migrationsFolder: "./drizzle" });
+logger.info("Database migrations applied");
 
 // start the HTTP API for the web UI (runs on 3001 by default)
 startHttpServer(Number(process.env.HTTP_PORT) || 3001);
@@ -85,7 +58,7 @@ for (const mod of slashCommands) {
     );
   } else {
     logger.warn(
-      "A static slash command is missing a required \"data\" or \"execute\" property.",
+      'A static slash command is missing a required "data" or "execute" property.',
     );
   }
 }
@@ -101,7 +74,7 @@ for (const mod of contextCommands) {
     );
   } else {
     logger.warn(
-      "A static context command is missing a required \"data\" or \"execute\" property.",
+      'A static context command is missing a required "data" or "execute" property.',
     );
   }
 }

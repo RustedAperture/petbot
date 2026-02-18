@@ -1,6 +1,6 @@
 {
   "name": "petbot",
-  "version": "8.2.3",
+  "version": "8.2.4",
   "description": "",
   "type": "module",
   "engines": {
@@ -27,30 +27,32 @@
     "release": "npm run build && npm run test && npm run tag",
     "prepare": "node ./scripts/prepare.js",
     "lint:web": "cd apps/web && npm run lint",
+    "migrate:drizzle": "drizzle-kit migrate",
+    "migrate:drizzle:status": "drizzle-kit status",
     "bearer:scan": "bearer scan . --severity critical,high,medium"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "discord.js": "^14.21.0",
     "dotenv": "^16.1.4",
+    "drizzle-orm": "^1.0.0-beta.15-859cf75",
     "node-fetch": "^3.3.1",
     "pino": "^10.1.0",
     "pino-pretty": "^11.3.0",
     "prettier": "^3.7.4",
-    "react": "^19.2.3",
-    "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7",
-    "umzug": "^3.8.2"
+    "react": "^19.2.3"
   },
   "devDependencies": {
     "@types/node": "^24",
     "@types/node-fetch": "^2.6.13",
     "@types/react": "^19.2.7",
-    "eslint": "^9.33.0",
-    "husky": "^9.1.7",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
+    "drizzle-kit": "^1.0.0-beta.15-859cf75",
+    "eslint": "^9.33.0",
+    "husky": "^9.1.7",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.0.5",

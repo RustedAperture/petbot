@@ -26,14 +26,6 @@ RUN --mount=type=cache,id=npm,target=/root/.npm \
     --mount=type=cache,id=node-gyp,target=/root/.cache/node-gyp \
     npm ci --no-audit --no-fund --ignore-scripts
 
-# Optionally rebuild sqlite3 (only required for the bot/server image).
-
-# Rebuild sqlite3 in its own layer so the native build can be cached independently
-# (parallelized with MAKEFLAGS and using the node-gyp cache).
-RUN --mount=type=cache,id=npm,target=/root/.npm \
-    --mount=type=cache,id=node-gyp,target=/root/.cache/node-gyp \
-    MAKEFLAGS="-j$(nproc)" npm rebuild sqlite3 --build-from-source
-
 # Copy the rest of the source (server build only in this stage)
 COPY . .
 
@@ -70,7 +62,7 @@ WORKDIR /home/node/app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/drizzle ./drizzle
 COPY entrypoint-bot.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app

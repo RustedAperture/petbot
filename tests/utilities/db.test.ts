@@ -1,42 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Mock sqlite3 native bindings just in case
-vi.mock("sqlite3", () => ({
-  Database: vi.fn(),
-  verbose: () => ({ Database: vi.fn() }),
+// Mock @libsql/client
+vi.mock("@libsql/client", () => ({
+  createClient: () => ({
+    // minimal shape used by these tests / drizzle initialization
+    execute: async () => ({ rows: [], columns: [] }),
+    request: async () => ({ rows: [], columns: [] }),
+  }),
 }));
 
-// Mock sequelize to avoid loading native DB bindings during tests
-vi.mock("sequelize", () => {
-  class FakeSequelize {
-    constructor() {}
-    query() {
-      return Promise.resolve([]);
-    }
-  }
-  const DataTypes = {
-    INTEGER: "INTEGER",
-    STRING: "STRING",
-    DATE: "DATE",
-    TEXT: "TEXT",
-    JSON: "JSON",
-  };
-  class FakeModel {
-    static init() {}
-  }
-  return { Sequelize: FakeSequelize, DataTypes, Model: FakeModel };
-});
+import { drizzleDb, client } from "../../src/db/connector.js";
+import { actionData, botData, userSessions } from "../../src/db/schema.js";
 
-import { ActionData, BotData, sequelize } from "../../src/utilities/db.js";
-
-describe("db exports", () => {
-  it("exports models and sequelize instance", () => {
-    expect(ActionData).toBeDefined();
-    expect(BotData).toBeDefined();
-    expect(sequelize).toBeDefined();
-
-    // Basic sanity: models were initialized (we mock sequelize in tests)
-    expect(typeof (ActionData as any).init).toBe("function");
-    expect(typeof (BotData as any).init).toBe("function");
+describe("db exports (drizzle)", () => {
+  it("exports drizzle instance and table schemas", () => {
+    expect(drizzleDb).toBeDefined();
+    expect(actionData).toBeDefined();
+    expect(botData).toBeDefined();
+    expect(userSessions).toBeDefined();
+    expect(client).toBeDefined();
   });
 });

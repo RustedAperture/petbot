@@ -31,9 +31,9 @@ export function buildStatsReply(
   targetText.setContent(
     [
       `# ${targetName} ${actionObj.noun} stats`,
-      `**Times ${actionObj.past} here**: ${data.get("has_received")}x`,
+      `**Times ${actionObj.past} here**: ${data.hasReceived}x`,
       `**Total times ${actionObj.past}**: ${totalCount}x`,
-      `**Used ${actionObj.noun}**: ${data.get("has_performed")}x`,
+      `**Used ${actionObj.noun}**: ${data.hasPerformed}x`,
     ].join("\n"),
   );
 

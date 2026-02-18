@@ -1,4 +1,6 @@
-import { UserSession } from "../../utilities/db.js";
+import { userSessions } from "../../db/schema.js";
+import { drizzleDb } from "../../db/connector.js";
+import { eq } from "drizzle-orm";
 
 export default async function userSessionsHandler(req: any, res: any) {
   if (req.method === "GET") {
@@ -14,10 +16,12 @@ export default async function userSessionsHandler(req: any, res: any) {
         return;
       }
 
-      const row = await (UserSession as any).findOne({
-        where: { user_id: userId },
-      });
-      const guilds = row ? row.get("guilds") : null;
+      const rows: any = await drizzleDb
+        .select()
+        .from(userSessions)
+        .where(eq(userSessions.userId, userId))
+        .limit(1);
+      const guilds = rows?.[0]?.guilds ? rows[0].guilds : null;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ guilds }));
       return;
@@ -44,12 +48,21 @@ export default async function userSessionsHandler(req: any, res: any) {
           }
 
           // Upsert (create or update)
-          await (UserSession as any).upsert({
-            user_id: userId,
-            guilds,
-            updatedAt: new Date(),
-            createdAt: new Date(),
-          });
+          await drizzleDb
+            .insert(userSessions)
+            .values({
+              userId: userId,
+              guilds: guilds,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .onConflictDoUpdate({
+              target: userSessions.userId,
+              set: {
+                guilds: guilds,
+                updatedAt: new Date().toISOString(),
+              },
+            });
 
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ ok: true }));
@@ -79,7 +92,10 @@ export default async function userSessionsHandler(req: any, res: any) {
         return;
       }
 
-      await (UserSession as any).destroy({ where: { user_id: userId } });
+      await drizzleDb
+        .delete(userSessions)
+        .where(eq(userSessions.userId, userId));
+
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
       return;

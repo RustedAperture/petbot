@@ -17,7 +17,7 @@ import {
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare } from "lucide-react";
+import { BotMessageSquare, LogIn } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
@@ -144,10 +144,13 @@ const SessionAccountInner = () => {
       <SidebarMenuItem>
         <SidebarMenuButton
           size="lg"
-          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center"
           onClick={signIn}
         >
-          Sign in with Discord
+          <span className="group-data-[collapsible=icon]:hidden">
+            Sign in with Discord
+          </span>
+          <LogIn className="ml-auto group-data-[collapsible=icon]:ml-0" />
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

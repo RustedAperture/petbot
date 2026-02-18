@@ -1,11 +1,25 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
 
-vi.mock("../../src/utilities/db", () => ({
-  BotData: { findOne: vi.fn(), create: vi.fn(), update: vi.fn() },
-}));
+vi.mock("../../src/db/connector.js", () => {
+  const makeResult = (rows: any[]) => ({
+    then: (resolve: any) => resolve(rows),
+    limit: () => Promise.resolve(rows),
+  });
+  const select = vi.fn(() => ({
+    from: (_table: any) => ({ where: (_cond: any) => makeResult([]) }),
+  }));
+  const insert = vi.fn(() => ({
+    values: vi.fn().mockResolvedValue(undefined),
+  }));
+  const update = vi.fn(() => ({
+    set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+  }));
+  return { drizzleDb: { select, insert, update } };
+});
+vi.mock("../../src/db/schema.js", () => ({ botData: {} }));
 
-import { BotData } from "../../src/utilities/db.js";
+import { drizzleDb } from "../../src/db/connector.js";
 import { command } from "../../src/commands/slash/serverSetup.js";
 
 beforeEach(() => {
@@ -14,10 +28,7 @@ beforeEach(() => {
 
 describe("/setup command", () => {
   it("creates guild settings when none exist and replies with fallback (no log channel)", async () => {
-    (BotData.findOne as any).mockResolvedValue(null);
-    (BotData.create as any).mockResolvedValue({});
-    (BotData.update as any).mockResolvedValue([1]);
-
+    // default mock returns no guild row
     const interaction = mockInteraction({
       options: {
         nickname: "bot",
@@ -32,7 +43,7 @@ describe("/setup command", () => {
 
     await command.execute(interaction as any);
 
-    expect(BotData.create as any).toHaveBeenCalled();
+    expect((drizzleDb as any).insert).toHaveBeenCalled();
     expect(interaction.__calls.replies.length).toBe(1);
     expect(interaction.__calls.replies[0].content).toBe(
       "No log channel has been set yet.",
@@ -40,8 +51,19 @@ describe("/setup command", () => {
   });
 
   it("replies and logs when log channel exists and send succeeds", async () => {
-    (BotData.findOne as any).mockResolvedValue({ get: () => "channel-1" });
-    (BotData.update as any).mockResolvedValue([1]);
+    // make select return a bot row with log_channel
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_cond: any) => ({
+          then: (r: any) =>
+            r({ default_images: null, log_channel: "channel-1" }),
+          limit: () =>
+            Promise.resolve([
+              { default_images: null, log_channel: "channel-1" },
+            ]),
+        }),
+      }),
+    }));
 
     const fakeLog = { id: "channel-1", send: vi.fn() };
     const interaction = mockInteraction({
@@ -59,7 +81,7 @@ describe("/setup command", () => {
 
     await command.execute(interaction as any);
 
-    expect(BotData.create as any).not.toHaveBeenCalled();
+    expect((drizzleDb as any).insert).not.toHaveBeenCalled();
     expect(fakeLog.send).toHaveBeenCalled();
     expect(interaction.__calls.replies.length).toBe(1);
     expect(interaction.__calls.replies[0].content).toBe(
@@ -68,10 +90,19 @@ describe("/setup command", () => {
   });
 
   it("replies with fallback when log channel not set or send fails", async () => {
-    (BotData.findOne as any).mockResolvedValue({
-      get: () => "non-existent-channel",
-    });
-    (BotData.update as any).mockResolvedValue([0]);
+    // make select return a bot row with a non-existent channel id
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_cond: any) => ({
+          then: (r: any) =>
+            r({ default_images: null, log_channel: "non-existent-channel" }),
+          limit: () =>
+            Promise.resolve([
+              { default_images: null, log_channel: "non-existent-channel" },
+            ]),
+        }),
+      }),
+    }));
 
     const interaction = mockInteraction({
       options: {

@@ -1,6 +1,7 @@
-import { ActionData, BotData } from "../../utilities/db.js";
-import { Op } from "sequelize";
+import { drizzleDb } from "../../db/connector.js";
+import { actionData, botData } from "../../db/schema.js";
 import { ACTIONS } from "../../types/constants.js";
+import { sql, eq, and } from "drizzle-orm";
 import logger from "../../logger.js";
 
 export default async function statsHandler(req: any, res: any) {
@@ -29,52 +30,61 @@ export default async function statsHandler(req: any, res: any) {
     //   apply both `user_id` and `location_id` filters.
     const effectiveUserId: string | null = userId;
     if (userId && guildId) {
-      const userRowCount = await ActionData.count({
-        where: { user_id: userId, location_id: guildId },
-      });
+      const r: any = await drizzleDb
+        .select({ c: sql`COUNT(*)` })
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.locationId, guildId),
+          ),
+        );
+      const userRowCount = Number(r?.[0]?.c ?? 0);
+
       if (userRowCount === 0) {
         // user has no rows for that location — do not disclose location stats
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "not_found" }));
         return;
       }
-      // leave `effectiveUserId` as `userId` so we return user-scoped data for that location
     }
-
-    // Helper to build where-clauses depending on filters
-    const baseWhere = (actionType?: string) => {
-      const where: any = {};
-      if (actionType) {
-        where.action_type = actionType;
-      }
-      if (effectiveUserId) {
-        where.user_id = effectiveUserId;
-      }
-      if (guildId) {
-        where.location_id = guildId;
-      }
-      return where;
-    };
 
     if (userId || guildId) {
       // Filtered response (user or guild specific)
-      const sumsPromise = Promise.all(
-        actionKinds.map((k) =>
-          ActionData.sum("has_performed", { where: baseWhere(k) }),
-        ),
+      const sums: number[] = await Promise.all(
+        actionKinds.map(async (k) => {
+          const whereClauses: any[] = [eq(actionData.actionType, k)];
+          if (effectiveUserId) {
+            whereClauses.push(eq(actionData.userId, effectiveUserId));
+          }
+          if (guildId) {
+            whereClauses.push(eq(actionData.locationId, guildId));
+          }
+          const r: any = await drizzleDb
+            .select({ s: sql`SUM(${actionData.hasPerformed})` })
+            .from(actionData)
+            .where(and(...whereClauses));
+          return Number(r?.[0]?.s ?? 0);
+        }),
       );
 
-      const usersPromise = Promise.all(
-        actionKinds.map((k) =>
-          ActionData.count({
-            distinct: true,
-            col: "user_id",
-            where: { ...baseWhere(k), has_performed: { [Op.gt]: 0 } },
-          }),
-        ),
+      const users: number[] = await Promise.all(
+        actionKinds.map(async (k) => {
+          const whereClauses: any[] = [eq(actionData.actionType, k)];
+          if (effectiveUserId) {
+            whereClauses.push(eq(actionData.userId, effectiveUserId));
+          }
+          if (guildId) {
+            whereClauses.push(eq(actionData.locationId, guildId));
+          }
+          whereClauses.push(sql`${actionData.hasPerformed} > 0`);
+          const r: any = await drizzleDb
+            .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
+            .from(actionData)
+            .where(and(...whereClauses));
+          return Number(r?.[0]?.cnt ?? 0);
+        }),
       );
-
-      const [sums, users] = await Promise.all([sumsPromise, usersPromise]);
 
       const totalsByAction: Record<
         string,
@@ -99,23 +109,30 @@ export default async function statsHandler(req: any, res: any) {
       let totalUniqueUsers = 0;
       if (effectiveUserId) {
         // user-scoped: check presence for the user (optionally restricted to a guild)
-        const userPresence = await ActionData.count({
-          where: {
-            user_id: effectiveUserId,
-            ...(guildId ? { location_id: guildId } : {}),
-            has_performed: { [Op.gt]: 0 },
-          },
-        });
+        const r: any = await drizzleDb
+          .select({ c: sql`COUNT(*)` })
+          .from(actionData)
+          .where(
+            and(
+              eq(actionData.userId, effectiveUserId),
+              ...(guildId ? [eq(actionData.locationId, guildId)] : []),
+              sql`${actionData.hasPerformed} > 0`,
+            ),
+          );
+        const userPresence = Number(r?.[0]?.c ?? 0);
         totalUniqueUsers = userPresence > 0 ? 1 : 0;
       } else if (guildId) {
         // guild-scoped: distinct users at the location
-        totalUniqueUsers = Number(
-          await ActionData.count({
-            distinct: true,
-            col: "user_id",
-            where: { location_id: guildId, has_performed: { [Op.gt]: 0 } },
-          }),
-        );
+        const r: any = await drizzleDb
+          .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
+          .from(actionData)
+          .where(
+            and(
+              eq(actionData.locationId, guildId),
+              sql`${actionData.hasPerformed} > 0`,
+            ),
+          );
+        totalUniqueUsers = Number(r?.[0]?.cnt ?? 0);
       }
 
       // totalLocations for a filtered query:
@@ -125,26 +142,29 @@ export default async function statsHandler(req: any, res: any) {
       let totalLocations = 0;
       if (effectiveUserId) {
         if (guildId) {
-          totalLocations =
-            (await ActionData.count({
-              where: { user_id: effectiveUserId, location_id: guildId },
-            })) > 0
-              ? 1
-              : 0;
+          const r: any = await drizzleDb
+            .select({ c: sql`COUNT(*)` })
+            .from(actionData)
+            .where(
+              and(
+                eq(actionData.userId, effectiveUserId),
+                eq(actionData.locationId, guildId),
+              ),
+            );
+          totalLocations = Number(r?.[0]?.c ?? 0) > 0 ? 1 : 0;
         } else {
-          totalLocations = Number(
-            await ActionData.count({
-              distinct: true,
-              col: "location_id",
-              where: { user_id: effectiveUserId },
-            }),
-          );
+          const r: any = await drizzleDb
+            .select({ cnt: sql`COUNT(DISTINCT ${actionData.locationId})` })
+            .from(actionData)
+            .where(eq(actionData.userId, effectiveUserId));
+          totalLocations = Number(r?.[0]?.cnt ?? 0);
         }
       } else if (guildId) {
-        totalLocations =
-          (await ActionData.count({ where: { location_id: guildId } })) > 0
-            ? 1
-            : 0;
+        const r: any = await drizzleDb
+          .select({ c: sql`COUNT(*)` })
+          .from(actionData)
+          .where(eq(actionData.locationId, guildId));
+        totalLocations = Number(r?.[0]?.c ?? 0) > 0 ? 1 : 0;
       }
 
       const body = {
@@ -161,35 +181,46 @@ export default async function statsHandler(req: any, res: any) {
     }
 
     // Unfiltered (global) response — existing behavior
-    const sumsPromise = Promise.all(
-      actionKinds.map((k) =>
-        ActionData.sum("has_performed", { where: { action_type: k } }),
-      ),
+    const sums: number[] = await Promise.all(
+      actionKinds.map(async (k) => {
+        const r: any = await drizzleDb
+          .select({ s: sql`SUM(${actionData.hasPerformed})` })
+          .from(actionData)
+          .where(eq(actionData.actionType, k));
+        return Number(r?.[0]?.s ?? 0);
+      }),
     );
 
-    const usersPromise = Promise.all(
-      actionKinds.map((k) =>
-        ActionData.count({
-          distinct: true,
-          col: "user_id",
-          where: { action_type: k, has_performed: { [Op.gt]: 0 } },
-        }),
-      ),
+    const users: number[] = await Promise.all(
+      actionKinds.map(async (k) => {
+        const r: any = await drizzleDb
+          .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
+          .from(actionData)
+          .where(
+            and(
+              eq(actionData.actionType, k),
+              sql`${actionData.hasPerformed} > 0`,
+            ),
+          );
+        return Number(r?.[0]?.cnt ?? 0);
+      }),
     );
 
-    const [sums, users, totalLocations, guildCount, totalUniqueUsers] =
-      await Promise.all([
-        sumsPromise,
-        usersPromise,
-        ActionData.count({ distinct: true, col: "location_id" }),
-        BotData.count(),
-        // count only users who have performed at least one action
-        ActionData.count({
-          distinct: true,
-          col: "user_id",
-          where: { has_performed: { [Op.gt]: 0 } },
-        }),
-      ]);
+    const rl: any = await drizzleDb
+      .select({ cnt: sql`COUNT(DISTINCT ${actionData.locationId})` })
+      .from(actionData);
+    const totalLocations = Number(rl?.[0]?.cnt ?? 0);
+
+    const gc: any = await drizzleDb
+      .select({ cnt: sql`COUNT(*)` })
+      .from(botData);
+    const guildCount = Number(gc?.[0]?.cnt ?? 0);
+
+    const ru: any = await drizzleDb
+      .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
+      .from(actionData)
+      .where(sql`${actionData.hasPerformed} > 0`);
+    const totalUniqueUsers = Number(ru?.[0]?.cnt ?? 0);
 
     const totalsByAction: Record<
       string,

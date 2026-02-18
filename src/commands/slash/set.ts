@@ -8,7 +8,9 @@ import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import logger from "../../logger.js";
-import { ActionData, BotData } from "../../utilities/db.js";
+import { drizzleDb } from "../../db/connector.js";
+import { actionData, botData } from "../../db/schema.js";
+import { eq, and } from "drizzle-orm";
 import { updateAction } from "../../utilities/updateAction.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
@@ -85,22 +87,30 @@ export const command = {
     const url = normalizeUrl(uncleanUrl);
 
     if (slot >= 2) {
-      const guildSettings = await BotData.findOne({
-        where: {
-          guild_id: guild,
-        },
-      });
-      const defaultBase = ACTIONS[action].defaultImage;
-      const actionData = await ActionData.findOne({
-        where: {
-          user_id: target.id,
-          location_id: guild,
-          action_type: action,
-        },
-      });
+      const gsRows: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, guild))
+        .limit(1);
+      const guildSettings = gsRows?.[0] ?? null;
 
-      const images = actionData!.get("images");
-      const defaultImagesRaw = guildSettings?.get("default_images");
+      const adRows: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, target.id),
+            eq(actionData.locationId, guild),
+            eq(actionData.actionType, action),
+          ),
+        )
+        .limit(1);
+      const adRow = adRows?.[0] ?? null;
+      const images: string[] = adRow ? (adRow.images as string[]) : [];
+
+      const defaultBase = ACTIONS[action].defaultImage;
+      const defaultImagesRaw =
+        guildSettings?.default_images ?? guildSettings?.get?.("default_images");
       const guildDefault =
         defaultImagesRaw && typeof defaultImagesRaw === "object"
           ? (defaultImagesRaw as Record<string, string>)[action]
