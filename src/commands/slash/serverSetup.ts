@@ -4,7 +4,9 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
-import { BotData } from "../../utilities/db.js";
+import { drizzleDb } from "../../db/connector.js";
+import { botData } from "../../db/schema.js";
+import { eq } from "drizzle-orm";
 import logger from "../../logger.js";
 
 export const command = {
@@ -77,11 +79,12 @@ export const command = {
     const defaultHug = interaction.options.getString("default_hug");
     const defaultBonk = interaction.options.getString("default_bonk");
     const defaultSquish = interaction.options.getString("default_squish");
-    const guildSettings = await BotData.findOne({
-      where: {
-        guild_id: interaction.guildId,
-      },
-    });
+    const gsRows: any[] = await drizzleDb
+      .select()
+      .from(botData)
+      .where(eq(botData.guildId, interaction.guildId))
+      .limit(1);
+    const guildSettings = gsRows?.[0] ?? null;
 
     let logChannel = interaction.options.getChannel("log_channel");
 
@@ -90,19 +93,25 @@ export const command = {
     const setupEmbed = new EmbedBuilder().setTitle("Setup");
 
     if (!guildSettings) {
-      await BotData.create({
-        guild_id: interaction.guildId,
-        default_images: null,
-        log_channel: "",
+      await drizzleDb.insert(botData).values({
+        guildId: interaction.guildId,
+        defaultImages: null,
+        logChannel: "",
         nickname: "",
-        sleep_image: "",
+        sleepImage: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       } as any);
     }
 
     if (!logChannel) {
       try {
+        const logChannelId =
+          typeof guildSettings?.get === "function"
+            ? guildSettings!.logChannel
+            : guildSettings?.logChannel;
         logChannel = await interaction.guild.channels.fetch(
-          guildSettings!.get("log_channel"),
+          logChannelId as any,
         );
       } catch {
         logger.warn("No log channel has been setup yet!");
@@ -110,44 +119,39 @@ export const command = {
     }
 
     if (nickname != null) {
-      const [affectedRows] = await BotData.update(
-        { nickname: nickname },
-        { where: { guild_id: interaction.guildId } },
-      );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated nickname of bot for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({ name: "Nickname", value: nickname });
-      }
+      await drizzleDb
+        .update(botData)
+        .set({ nickname: nickname })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(`Updated nickname of bot for guild: ${interaction.guildId}`);
+      setupEmbed.addFields({ name: "Nickname", value: nickname });
 
       const botId = interaction.client.application.id;
       const bot = await interaction.guild.members.fetch(botId);
       bot.setNickname(nickname);
     }
     if (logChannel != null) {
-      const [affectedRows] = await BotData.update(
-        { log_channel: logChannel.id },
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ logChannel: logChannel.id })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated log channel of bot for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated log channel of bot for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Log Channel",
-          value: `<#${logChannel.id}>`,
-        });
-      }
+      setupEmbed.addFields({
+        name: "Log Channel",
+        value: `<#${logChannel.id}>`,
+      });
     }
     if (defaultPet != null) {
-      // merge into the JSON map so future lookups prefer `default_images`
-      const botRow = await BotData.findOne({
-        where: { guild_id: interaction.guildId },
-      });
-      const current = botRow?.get("default_images") as any;
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const gsRows: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+      const botRow = gsRows?.[0] ?? null;
+      const current = botRow?.defaultImages as any;
       const map =
         current && typeof current === "object"
           ? { ...current }
@@ -156,28 +160,28 @@ export const command = {
             : {};
       map.pet = defaultPet;
 
-      const [affectedRows] = await BotData.update(
-        { default_images: map },
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ defaultImages: map })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated default image of bot for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated default image of bot for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Default Image",
-          value: defaultPet,
-        });
-      }
+      setupEmbed.addFields({ name: "Default Image", value: defaultPet });
     }
     if (sleepImage != null) {
-      const [affectedRows] = await BotData.update(
-        { sleep_image: sleepImage },
-        { where: { guild_id: interaction.guildId } },
-      );
+      await drizzleDb
+        .update(botData)
+        .set({ sleepImage: sleepImage })
+        .where(eq(botData.guildId, interaction.guildId));
 
-      if (affectedRows > 0) {
+      const updated = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+
+      if ((updated?.[0]?.sleepImage ?? "") === sleepImage) {
         logger.debug(
           `Updated sleep image of bot for guild: ${interaction.guildId}`,
         );
@@ -189,123 +193,111 @@ export const command = {
     }
 
     if (defaultBite != null) {
-      // merge into the JSON map so future lookups prefer `default_images`
-      const botRow = await BotData.findOne({
-        where: { guild_id: interaction.guildId },
-      });
-      const current = botRow?.get("default_images") as any;
-      const map =
-        current && typeof current === "object"
-          ? { ...current }
-          : current
-            ? JSON.parse(current)
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const gsRows2: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+      const botRow2 = gsRows2?.[0] ?? null;
+      const current2 = botRow2?.defaultImages as any;
+      const map2 =
+        current2 && typeof current2 === "object"
+          ? { ...current2 }
+          : current2
+            ? JSON.parse(current2)
             : {};
-      map.bite = defaultBite;
+      map2.bite = defaultBite;
 
-      const [affectedRows] = await (BotData.update as any)(
-        { default_images: map } as any,
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ defaultImages: map2 })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated default image of bot for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated default image of bot for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Default Image",
-          value: defaultBite,
-        });
-      }
+      setupEmbed.addFields({ name: "Default Image", value: defaultBite });
     }
 
     if (defaultHug != null) {
-      // merge into the JSON map so future lookups prefer `default_images`
-      const botRow = await BotData.findOne({
-        where: { guild_id: interaction.guildId },
-      });
-      const current = botRow?.get("default_images") as any;
-      const map =
-        current && typeof current === "object"
-          ? { ...current }
-          : current
-            ? JSON.parse(current)
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const gsRows3: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+      const botRow3 = gsRows3?.[0] ?? null;
+      const current3 = botRow3?.defaultImages as any;
+      const map3 =
+        current3 && typeof current3 === "object"
+          ? { ...current3 }
+          : current3
+            ? JSON.parse(current3)
             : {};
-      map.hug = defaultHug;
+      map3.hug = defaultHug;
 
-      const [affectedRows] = await (BotData.update as any)(
-        { default_images: map } as any,
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ defaultImages: map3 })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated default hug image for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated default hug image for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Hug Default",
-          value: defaultHug,
-        });
-      }
+      setupEmbed.addFields({ name: "Hug Default", value: defaultHug });
     }
 
     if (defaultBonk != null) {
-      // merge into the JSON map so future lookups prefer `default_images`
-      const botRow = await BotData.findOne({
-        where: { guild_id: interaction.guildId },
-      });
-      const current = botRow?.get("default_images") as any;
-      const map =
-        current && typeof current === "object"
-          ? { ...current }
-          : current
-            ? JSON.parse(current)
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const gsRows4: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+      const botRow4 = gsRows4?.[0] ?? null;
+      const current4 = botRow4?.defaultImages as any;
+      const map4 =
+        current4 && typeof current4 === "object"
+          ? { ...current4 }
+          : current4
+            ? JSON.parse(current4)
             : {};
-      map.bonk = defaultBonk;
+      map4.bonk = defaultBonk;
 
-      const [affectedRows] = await (BotData.update as any)(
-        { default_images: map } as any,
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ defaultImages: map4 })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated default bonk image for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated default bonk image for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Bonk Default",
-          value: defaultBonk,
-        });
-      }
+      setupEmbed.addFields({ name: "Bonk Default", value: defaultBonk });
     }
 
     if (defaultSquish != null) {
-      // merge into the JSON map so future lookups prefer `default_images`
-      const botRow = await BotData.findOne({
-        where: { guild_id: interaction.guildId },
-      });
-      const current = botRow?.get("default_images") as any;
-      const map =
-        current && typeof current === "object"
-          ? { ...current }
-          : current
-            ? JSON.parse(current)
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const gsRows5: any[] = await drizzleDb
+        .select()
+        .from(botData)
+        .where(eq(botData.guildId, interaction.guildId))
+        .limit(1);
+      const botRow5 = gsRows5?.[0] ?? null;
+      const current5 = botRow5?.defaultImages as any;
+      const map5 =
+        current5 && typeof current5 === "object"
+          ? { ...current5 }
+          : current5
+            ? JSON.parse(current5)
             : {};
-      map.squish = defaultSquish;
+      map5.squish = defaultSquish;
 
-      const [affectedRows] = await (BotData.update as any)(
-        { default_images: map } as any,
-        { where: { guild_id: interaction.guildId } },
+      await drizzleDb
+        .update(botData)
+        .set({ defaultImages: map5 })
+        .where(eq(botData.guildId, interaction.guildId));
+      logger.debug(
+        `Updated default squish image for guild: ${interaction.guildId}`,
       );
-
-      if (affectedRows > 0) {
-        logger.debug(
-          `Updated default squish image for guild: ${interaction.guildId}`,
-        );
-        setupEmbed.addFields({
-          name: "Squish Default",
-          value: defaultSquish,
-        });
-      }
+      setupEmbed.addFields({ name: "Squish Default", value: defaultSquish });
     }
 
     setupEmbed.addFields({

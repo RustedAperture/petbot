@@ -1,12 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@utils/db.js", () => ({
-  ActionData: {
-    sum: vi.fn(),
-    count: vi.fn(),
-  },
-  sequelize: { query: vi.fn() },
+vi.mock("../../src/db/connector.js", () => ({
+  drizzleDb: { select: vi.fn() },
 }));
+vi.mock("../../src/db/schema.js", () => ({ actionData: {} }));
 
 import {
   hexToRGBTuple,
@@ -14,7 +11,7 @@ import {
   fetchGlobalStats,
   fetchStatsForLocation,
 } from "../../src/utilities/helper.js";
-import { ActionData, sequelize } from "../../src/utilities/db.js";
+import { drizzleDb } from "../../src/db/connector.js";
 
 describe("helper util", () => {
   beforeEach(() => {
@@ -33,19 +30,28 @@ describe("helper util", () => {
   });
 
   it("fetchGlobalStats returns aggregated values", async () => {
-    (ActionData.sum as any)
-      .mockResolvedValueOnce(10)
-      .mockResolvedValueOnce(20)
-      .mockResolvedValueOnce(30)
-      .mockResolvedValueOnce(40)
-      .mockResolvedValueOnce(50);
-    (sequelize.query as any).mockResolvedValue([{ uniqueGuilds: 3 }]);
-    (ActionData.count as any)
-      .mockResolvedValueOnce(5)
-      .mockResolvedValueOnce(6)
-      .mockResolvedValueOnce(7)
-      .mockResolvedValueOnce(8)
-      .mockResolvedValueOnce(9);
+    const seq: any[] = [
+      [{ s: 10 }],
+      [{ s: 20 }],
+      [{ s: 30 }],
+      [{ s: 40 }],
+      [{ s: 50 }],
+      [{ s: 0 }],
+      [{ uniqueGuilds: 3 }],
+      [{ cnt: 5 }],
+      [{ cnt: 6 }],
+      [{ cnt: 7 }],
+      [{ cnt: 8 }],
+      [{ cnt: 9 }],
+      [{ cnt: 0 }],
+    ];
+    let call = 0;
+    (drizzleDb.select as any).mockImplementation(() => ({
+      from: () => ({
+        where: () => Promise.resolve(seq[call++] ?? [{ cnt: 0 }]),
+        then: (resolve: any) => resolve(seq[call++] ?? [{ cnt: 0 }]),
+      }),
+    }));
 
     const res = await fetchGlobalStats();
 
@@ -54,16 +60,18 @@ describe("helper util", () => {
     expect(res.totalsByAction.hug.totalHasPerformed).toBe(30);
     expect(res.totalsByAction.bonk.totalHasPerformed).toBe(40);
     expect(res.totalsByAction.squish.totalHasPerformed).toBe(50);
+    expect(res.totalsByAction.explode.totalHasPerformed).toBe(0);
     expect(res.totalLocations).toBe(3);
     expect(res.totalsByAction.pet.totalUsers).toBe(5);
     expect(res.totalsByAction.bite.totalUsers).toBe(6);
     expect(res.totalsByAction.hug.totalUsers).toBe(7);
     expect(res.totalsByAction.bonk.totalUsers).toBe(8);
     expect(res.totalsByAction.squish.totalUsers).toBe(9);
+    expect(res.totalsByAction.explode.totalUsers).toBe(0);
   });
 
   it("fetchGlobalStats handles errors and returns zeros", async () => {
-    (ActionData.sum as any).mockImplementation(() => {
+    (drizzleDb.select as any).mockImplementation(() => {
       throw new Error("boom");
     });
     const res = await fetchGlobalStats();
@@ -72,20 +80,28 @@ describe("helper util", () => {
   });
 
   it("fetchStatsForLocation returns aggregated values for a given location", async () => {
-    (ActionData.sum as any)
-      .mockResolvedValueOnce(3)
-      .mockResolvedValueOnce(4)
-      .mockResolvedValueOnce(5)
-      .mockResolvedValueOnce(6)
-      .mockResolvedValueOnce(7);
-    // presence check for location
-    (ActionData.count as any)
-      .mockResolvedValueOnce(1) // presence for location -> totalLocations = 1
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(3)
-      .mockResolvedValueOnce(4)
-      .mockResolvedValueOnce(5);
+    const seq: any[] = [
+      [{ s: 3 }],
+      [{ s: 4 }],
+      [{ s: 5 }],
+      [{ s: 6 }],
+      [{ s: 7 }],
+      [{ s: 0 }],
+      [{ c: 1 }],
+      [{ cnt: 1 }],
+      [{ cnt: 2 }],
+      [{ cnt: 3 }],
+      [{ cnt: 4 }],
+      [{ cnt: 5 }],
+      [{ cnt: 0 }],
+    ];
+    let call = 0;
+    (drizzleDb.select as any).mockImplementation(() => ({
+      from: () => ({
+        where: () => Promise.resolve(seq[call++] ?? [{ cnt: 0 }]),
+        then: (resolve: any) => resolve(seq[call++] ?? [{ cnt: 0 }]),
+      }),
+    }));
 
     const res = await fetchStatsForLocation("guild-99");
 
@@ -94,16 +110,18 @@ describe("helper util", () => {
     expect(res.totalsByAction.hug.totalHasPerformed).toBe(5);
     expect(res.totalsByAction.bonk.totalHasPerformed).toBe(6);
     expect(res.totalsByAction.squish.totalHasPerformed).toBe(7);
+    expect(res.totalsByAction.explode.totalHasPerformed).toBe(0);
     expect(res.totalLocations).toBe(1);
     expect(res.totalsByAction.pet.totalUsers).toBe(1);
     expect(res.totalsByAction.bite.totalUsers).toBe(2);
     expect(res.totalsByAction.hug.totalUsers).toBe(3);
     expect(res.totalsByAction.bonk.totalUsers).toBe(4);
     expect(res.totalsByAction.squish.totalUsers).toBe(5);
+    expect(res.totalsByAction.explode.totalUsers).toBe(0);
   });
 
   it("fetchStatsForLocation handles errors and returns zeros", async () => {
-    (ActionData.sum as any).mockImplementation(() => {
+    (drizzleDb.select as any).mockImplementation(() => {
       throw new Error("boom");
     });
 

@@ -1,7 +1,8 @@
 import { ActionUser } from "../types/user.js";
 import { GuildMember, RGBTuple, User } from "discord.js";
-import { sequelize, ActionData } from "./db.js";
-import { Op, QueryTypes } from "sequelize";
+import { drizzleDb } from "../db/connector.js";
+import { actionData } from "../db/schema.js";
+import { sql, eq, and } from "drizzle-orm";
 
 export function hexToRGBTuple(hex: string) {
   hex = hex.replace("#", "");
@@ -44,12 +45,17 @@ async function fetchStatsInternal(locationId?: string) {
 
     const sums = await Promise.all(
       actionKinds.map((k) =>
-        ActionData.sum("has_performed", {
-          where: {
-            action_type: k,
-            ...(isLocal ? { location_id: locationId } : {}),
-          },
-        }),
+        (async () => {
+          const whereClauses: any[] = [eq(actionData.actionType, k)];
+          if (isLocal && locationId) {
+            whereClauses.push(eq(actionData.locationId, locationId));
+          }
+          const r: any = await drizzleDb
+            .select({ s: sql`SUM(${actionData.hasPerformed})` })
+            .from(actionData)
+            .where(and(...whereClauses));
+          return Number(r?.[0]?.s ?? 0);
+        })(),
       ),
     );
 
@@ -57,29 +63,37 @@ async function fetchStatsInternal(locationId?: string) {
     if (isLocal) {
       // For a single location, COUNT(DISTINCT location_id) will always be 0 or 1.
       // Instead do a lightweight presence check and set totalLocations to 1 when any rows exist.
-      const presence = await ActionData.count({
-        where: { location_id: locationId },
-      });
+      const rPresence: any = await drizzleDb
+        .select({ c: sql`COUNT(*)` })
+        .from(actionData)
+        .where(eq(actionData.locationId, locationId!));
+      const presence = Number(rPresence?.[0]?.c ?? 0);
       uniqueGuilds = presence > 0 ? 1 : 0;
     } else {
-      const uniqueGuildsResult: any = await sequelize.query(
-        "SELECT COUNT(DISTINCT location_id) as uniqueGuilds FROM actionData",
-        { type: QueryTypes.SELECT },
-      );
-      uniqueGuilds = uniqueGuildsResult[0].uniqueGuilds;
+      const r: any = await drizzleDb
+        .select({
+          uniqueGuilds: sql`COUNT(DISTINCT ${actionData.locationId})`,
+        })
+        .from(actionData);
+      uniqueGuilds = Number(r?.[0]?.uniqueGuilds ?? 0);
     }
 
     const counts = await Promise.all(
       actionKinds.map((k) =>
-        ActionData.count({
-          distinct: true,
-          col: "user_id",
-          where: {
-            action_type: k,
-            has_performed: { [Op.gt]: 0 },
-            ...(isLocal ? { location_id: locationId } : {}),
-          },
-        }),
+        (async () => {
+          const whereClauses: any[] = [
+            eq(actionData.actionType, k),
+            sql`${actionData.hasPerformed} > 0`,
+          ];
+          if (isLocal && locationId) {
+            whereClauses.push(eq(actionData.locationId, locationId));
+          }
+          const r: any = await drizzleDb
+            .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
+            .from(actionData)
+            .where(and(...whereClauses));
+          return Number(r?.[0]?.cnt ?? 0);
+        })(),
       ),
     );
 

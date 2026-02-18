@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@utils/db.js", () => ({
-  ActionData: {
-    sum: vi.fn(),
-    count: vi.fn(),
+const { selectMock } = vi.hoisted(() => ({
+  selectMock: vi.fn(),
+}));
+
+vi.mock("../../../src/db/connector.js", () => ({
+  drizzleDb: { select: selectMock },
+}));
+vi.mock("../../../src/db/schema.js", () => ({
+  actionData: {
+    actionType: Symbol("action_type"),
+    hasPerformed: Symbol("has_performed"),
+    userId: Symbol("user_id"),
+    locationId: Symbol("location_id"),
   },
-  BotData: { count: vi.fn() },
+  botData: {},
 }));
 
 import statsHandler from "../../../src/http/api/stats.js";
-import { ActionData } from "../../../src/utilities/db.js";
 
 describe("/api/stats handler - DM location presence behavior", () => {
   beforeEach(() => {
@@ -18,7 +26,9 @@ describe("/api/stats handler - DM location presence behavior", () => {
 
   it("returns 404 when user has no row for the requested location", async () => {
     // presence check -> 0 rows
-    (ActionData.count as any).mockResolvedValueOnce(0);
+    (selectMock as any).mockImplementationOnce(() => ({
+      from: () => ({ where: () => Promise.resolve([{ c: 0 }]) }),
+    }));
 
     const req: any = {
       method: "GET",
@@ -39,27 +49,30 @@ describe("/api/stats handler - DM location presence behavior", () => {
   });
 
   it("when user has a row for the location, returns user-scoped aggregates for that location", async () => {
-    // presence check -> user present
-    (ActionData.count as any)
-      .mockResolvedValueOnce(1) // presence
-      // per-action distinct-user counts (user-scoped -> should be 1 for actions user performed)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(0) // explode (user hasn't performed)
-      .mockResolvedValueOnce(1) // totalUniqueUsers (user presence -> 1)
-      .mockResolvedValueOnce(1); // totalLocations (user present at the requested location)
+    // Prepare a sequence of results matching the drizzleDb.select calls made by
+    // the handler for a user+location filtered request.
+    const seq: any[] = [
+      [{ c: 1 }], // presence check
+      [{ s: 10 }], // pet sum
+      [{ s: 20 }], // bite sum
+      [{ s: 30 }], // hug sum
+      [{ s: 40 }], // bonk sum
+      [{ s: 50 }], // squish sum
+      [{ s: 0 }], // explode sum
+      [{ cnt: 1 }], // pet distinct users
+      [{ cnt: 1 }], // bite
+      [{ cnt: 1 }], // hug
+      [{ cnt: 1 }], // bonk
+      [{ cnt: 1 }], // squish
+      [{ cnt: 0 }], // explode
+      [{ c: 1 }], // totalUniqueUsers (user presence -> 1)
+      [{ c: 1 }], // totalLocations (user present at the requested location)
+    ];
 
-    // sums for each action kind (these are the user's totals at the location)
-    (ActionData.sum as any)
-      .mockResolvedValueOnce(10)
-      .mockResolvedValueOnce(20)
-      .mockResolvedValueOnce(30)
-      .mockResolvedValueOnce(40)
-      .mockResolvedValueOnce(50)
-      .mockResolvedValueOnce(0); // explode sum
+    let call = 0;
+    (selectMock as any).mockImplementation(() => ({
+      from: () => ({ where: () => Promise.resolve(seq[call++] || [{ c: 0 }]) }),
+    }));
 
     const req: any = {
       method: "GET",

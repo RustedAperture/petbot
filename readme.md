@@ -44,11 +44,11 @@ We provide a production-ready **multi-stage Dockerfile** and a GitHub Action tha
 - Build locally (tested):
 
 ```bash
-- Build bot-only image (sqlite3 will be rebuilt)
-docker buildx --target bot -t petbot-bot:local .
+- Build bot-only image (uses `libsql` now via `@libsql/client`)
+docker buildx build --target bot -t petbot-bot:local .
 
 # Build web-only image
-docker buildx --target web -t petbot-web:local .
+docker buildx build --target web -t petbot-web:local .
 ```
 
 - Run with mounted data & config (web UI exposed on port 3000) using docker-compose:
@@ -123,9 +123,25 @@ Register a Discord OAuth application and configure its redirect URI to: `https:/
 ## Notes / Troubleshooting
 
 - The web UI is served by Next.js at port `3000` when running via `npm run dev:web` or the container.
-- If sqlite3 or other native modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`). The Dockerfile now forces `sqlite3` to be built from source during image builds so cross-architecture Docker Buildx runs won't attempt to download incompatible prebuilt binaries.
+- If native DB modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`). The Dockerfile uses `libsql` (`@libsql/client`) for the embedded DB.
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
-- If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
+- If your database was created by a pre‑v8.2.4 release that used Sequelize/Umzug, first start that older release (for example `v8.2.3`) so its legacy Umzug migrations run and copy per‑action default image fields into the new `default_images` JSON map. The migration named `11_migrate_legacy_defaults` is part of the _legacy_ Sequelize/Umzug migrations and is **not** present in the consolidated Drizzle migration set. After the legacy step has run (only required for existing Sequelize databases), upgrade to v8.2.4+ and run Drizzle migrations with `npx drizzle-kit migrate` (fresh installs can skip the legacy step).
+
+### Upgrade notes — v8.2.4 (Sequelize → Drizzle)
+
+- Important: versions before `v8.2.4` used Sequelize + Umzug migrations. The project now uses a single consolidated Drizzle SQL migration for fresh installs.
+- If you have an existing database managed by an older release, first start the bot once at `v8.2.3` (or the latest pre-migration release) so Sequelize/Umzug can run legacy migrations against your DB.
+  - Example (checkout and run the older release locally):
+    ```bash
+    git checkout v8.2.3
+    npm ci
+    npm run build && npm run start    # allows Umzug/Sequelize migrations to run once
+    ```
+- After the legacy migrations have been applied, switch to `v8.2.3` (or later) and start normally. Fresh installs can skip the v8.2.2 step — Drizzle's single migration will create the correct schema.
+- To manually apply the consolidated Drizzle migration on a fresh environment, use:
+  ```bash
+  npx drizzle-kit migrate
+  ```
 
 ---
 

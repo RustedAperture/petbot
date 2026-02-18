@@ -1,5 +1,7 @@
 import { log } from "./log.js";
-import { BotData, ActionData } from "./db.js";
+import { drizzleDb } from "../db/connector.js";
+import { actionData, botData } from "../db/schema.js";
+import { eq, and } from "drizzle-orm";
 import logger from "../logger.js";
 import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
 
@@ -20,19 +22,21 @@ export const resetAction = async (
   let loggermsg = "";
 
   if (interaction.context === 0 && inServer != null) {
-    guildSettings = await (BotData.findOne as any)({
-      where: {
-        guild_id: guild,
-      },
-    });
+    const rows: any[] = await drizzleDb
+      .select()
+      .from(botData)
+      .where(eq(botData.guildId, guild))
+      .limit(1);
+    guildSettings = rows?.[0] ?? null;
 
     if (guildSettings) {
-      logChannel = await interaction.guild.channels.fetch(
-        guildSettings.get("log_channel"),
-      );
+      const logChannelId = guildSettings.logChannel;
+      logChannel = await interaction.guild.channels.fetch(logChannelId as any);
     }
 
-    const defaultImagesRaw = guildSettings?.get("default_images");
+    const defaultImagesRaw = guildSettings
+      ? guildSettings.defaultImages
+      : undefined;
     let baseImage: string;
     if (defaultImagesRaw && typeof defaultImagesRaw === "object") {
       baseImage =
@@ -44,7 +48,6 @@ export const resetAction = async (
       baseImage = config.defaultImage;
     }
     img = slot === 1 ? baseImage : null;
-
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
     > **Slot**: ${slot}${everywhere ? "\n    > **Everywhere**: true" : ""}`;
 
@@ -74,9 +77,15 @@ export const resetAction = async (
     );
 
     if (everywhere) {
-      const records = await ActionData.findAll({
-        where: { user_id: userId, action_type: actionKind },
-      });
+      const records: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.actionType, actionKind),
+          ),
+        );
 
       if (!records || records.length === 0) {
         logger.error(
@@ -85,34 +94,39 @@ export const resetAction = async (
         return;
       }
 
-      for (const record of records as any[]) {
-        const imagesArray = JSON.parse(
-          JSON.stringify((record as any).get("images") || []),
-        );
+      for (const record of records) {
+        const imagesArray: string[] = (record.images as string[]) ?? [];
         if (slot > 1) {
           imagesArray.splice(slot - 1, 1);
         } else {
-          imagesArray[slot - 1] = img;
+          imagesArray[slot - 1] = img!;
         }
         const cleanedImages = imagesArray.filter(
           (image: string) => image && image.trim() !== "",
         );
-        await ActionData.update(
-          { images: cleanedImages },
-          { where: { id: (record as any).get("id") } },
-        );
+        await drizzleDb
+          .update(actionData)
+          .set({
+            images: cleanedImages,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(actionData.id, record.id));
       }
 
       loggermsg = `Reset ${target.username} image ${slot} to the base image everywhere`;
     } else {
-      const record: any = await ActionData.findOne({
-        where: {
-          user_id: userId,
-          location_id: guild,
-          action_type: actionKind,
-        },
-      });
-
+      const rows: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.locationId, guild),
+            eq(actionData.actionType, actionKind),
+          ),
+        )
+        .limit(1);
+      const record = rows?.[0];
       if (!record) {
         logger.error(
           `No ${actionKind} record found for user ${userId} in ${guild}`,
@@ -120,32 +134,29 @@ export const resetAction = async (
         return;
       }
 
-      const imagesArray = JSON.parse(
-        JSON.stringify(record.get("images") || []),
-      );
+      const imagesArray: string[] = (record.images as string[]) ?? [];
       if (slot > 1) {
         imagesArray.splice(slot - 1, 1);
       } else {
-        imagesArray[slot - 1] = img;
+        imagesArray[slot - 1] = img!;
       }
       const cleanedImages = imagesArray.filter(
         (image: string) => image && image.trim() !== "",
       );
-      await ActionData.update(
-        { images: cleanedImages },
-        {
-          where: {
-            id: record.get("id"),
-          },
-        },
-      );
+      await drizzleDb
+        .update(actionData)
+        .set({
+          images: cleanedImages,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(actionData.id, record.id));
 
       loggermsg = `Reset ${target.username} image ${slot} to the base image for ${guild}`;
     }
   } catch (error: any) {
     logger.error(
       { error: error },
-      "Something went wrong with reseting the user image.",
+      "Something went wrong with resetting the user image.",
     );
   }
 

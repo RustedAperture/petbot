@@ -8,7 +8,6 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { checkUser } from "../../utilities/check_user.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -84,15 +83,13 @@ export const command = {
 
     const uniqueTargets = Array.from(targets);
 
-    // choose a single random action for this invocation
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
-    const action = actionKinds[Math.floor(Math.random() * actionKinds.length)];
-
-    await checkUser(action, author, guild);
-
     const containers: ContainerBuilder[] = [];
 
+    const actionKinds = Object.keys(ACTIONS) as ActionType[];
+
     for (const { user, member } of uniqueTargets) {
+      const action =
+        actionKinds[Math.floor(Math.random() * actionKinds.length)];
       const target = member ?? user;
       await target.fetch(true);
       const container = await performAction(action, target, author, guild);

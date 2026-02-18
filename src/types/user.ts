@@ -1,30 +1,30 @@
 export interface User {
   id: number;
-  user_id: string;
-  guild_id: string;
+  userId: string;
+  guildId: string;
   images: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PetUser extends User {
-  has_pet: number;
-  has_been_pet: number;
+  hasPet: number;
+  hasBeenPet: number;
 }
 
 export interface BiteUser extends User {
-  has_bitten: number;
-  has_been_bitten: number;
+  hasBitten: number;
+  hasBeenBitten: number;
 }
 
 export interface ActionUser {
   id: number;
-  user_id: string;
-  location_id: string | null;
-  action_type: string;
-  has_performed: number;
-  has_received: number;
+  userId: string;
+  locationId: string | null;
+  actionType: string;
+  hasPerformed: number;
+  hasReceived: number;
   images: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }

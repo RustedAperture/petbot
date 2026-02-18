@@ -1,5 +1,7 @@
 import { ButtonStyle, ButtonBuilder, MessageFlags } from "discord.js";
-import { BotData, ActionData } from "./db.js";
+import { drizzleDb } from "../db/connector.js";
+import { actionData, botData } from "../db/schema.js";
+import { eq, and } from "drizzle-orm";
 import { log } from "./log.js";
 import logger from "../logger.js";
 import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
@@ -24,13 +26,15 @@ export const updateAction = async (
   const guild = interaction.guildId ?? interaction.channelId;
 
   if (interaction.context === 0 && inServer != null) {
-    guildSettings = await BotData.findOne({
-      where: { guild_id: guild },
-    });
+    const rows: any = await drizzleDb
+      .select()
+      .from(botData)
+      .where(eq(botData.guildId, guild))
+      .limit(1);
+    guildSettings = rows?.[0] ?? null;
     if (guildSettings) {
-      logChannel = await interaction.guild.channels.fetch(
-        guildSettings.get("log_channel"),
-      );
+      const logId = guildSettings.logChannel;
+      logChannel = await interaction.guild.channels.fetch(logId as any);
     }
   }
 
@@ -38,36 +42,51 @@ export const updateAction = async (
 
   try {
     if (everywhere) {
-      const records = await ActionData.findAll({
-        where: { user_id: userId, action_type: actionKind },
-      });
+      const rows: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.actionType, actionKind),
+          ),
+        );
 
-      for (const record of records as any[]) {
-        const imagesArray = JSON.parse(
-          JSON.stringify((record as any).get("images") || []),
-        );
+      for (const r of rows) {
+        const imagesArray = r.images ? r.images : [];
         imagesArray[imageIndex] = url;
-        await ActionData.update(
-          { images: imagesArray },
-          { where: { id: (record as any).get("id") } },
-        );
+        await drizzleDb
+          .update(actionData)
+          .set({
+            images: imagesArray,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(actionData.id, r.id));
       }
     } else {
-      const record: any = await ActionData.findOne({
-        where: {
-          user_id: userId,
-          location_id: guild,
-          action_type: actionKind,
-        },
-      });
-      const imagesArray = JSON.parse(
-        JSON.stringify(record.get("images") || []),
-      );
+      const rows: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.locationId, guild),
+            eq(actionData.actionType, actionKind),
+          ),
+        )
+        .limit(1);
+      const record = rows[0];
+      const imagesArray: string[] = (record?.images ?? []) as string[];
       imagesArray[imageIndex] = url;
-      await ActionData.update(
-        { images: imagesArray },
-        { where: { id: record.get("id") } },
-      );
+      if (record) {
+        await drizzleDb
+          .update(actionData)
+          .set({
+            images: imagesArray,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(actionData.id, record.id));
+      }
     }
   } catch (error: any) {
     logger.error(
@@ -75,7 +94,6 @@ export const updateAction = async (
       "Something went wrong with updating the user image.",
     );
   }
-
   if (interaction.context === 0 && inServer != null) {
     if (cmd === `change-${actionKind}`) {
       await interaction.editReply({

@@ -1,21 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock DB & logger modules
-vi.mock("@utils/db.js", () => ({
-  ActionData: {
-    findOne: vi.fn(),
-    findAll: vi.fn(),
-    update: vi.fn(),
-  },
-  BotData: { findOne: vi.fn() },
-}));
+// Mock DB & logger modules (drizzle-only)
+vi.mock("../../src/db/connector.js", () => {
+  const makeResult = (rows: any[]) => ({
+    then: (resolve: any) => resolve(rows),
+    limit: () => Promise.resolve(rows),
+  });
+  const select = vi.fn(() => ({
+    from: (_table: any) => ({ where: (_: any) => makeResult([]) }),
+  }));
+  const updateSet = vi.fn(() => ({
+    where: vi.fn().mockResolvedValue(undefined),
+  }));
+  const update = vi.fn(() => ({ set: updateSet }));
+  return { drizzleDb: { select, update } };
+});
+vi.mock("../../src/db/schema.js", () => ({ actionData: {}, botData: {} }));
 vi.mock("@utils/log.js", () => ({ log: vi.fn() }));
 vi.mock("@logger", () => ({
   default: { debug: vi.fn(), error: vi.fn() },
 }));
 
-import { updateAction } from "@utils/updateAction.js";
-import { ActionData } from "@utils/db.js";
+import { updateAction } from "../../src/utilities/updateAction.js";
+import { drizzleDb } from "../../src/db/connector.js";
 
 describe("updateAction", () => {
   beforeEach(() => {
@@ -23,19 +30,23 @@ describe("updateAction", () => {
   });
 
   it("updates the slot for a single record (per-location)", async () => {
-    const mockRecord = {
-      get: vi
-        .fn()
-        .mockImplementation((k: string) =>
-          k === "images" ? ["old1", "old2"] : 1,
-        ),
-    };
-    (ActionData.findOne as any).mockResolvedValue(mockRecord);
+    const mockRecord = { id: 1, images: ["old1", "old2"] };
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_: any) => ({
+          then: (r: any) => r([mockRecord]),
+          limit: () => Promise.resolve([mockRecord]),
+        }),
+      }),
+    }));
 
     const interaction = {
       context: 0,
       commandName: "set-pet",
-      guild: { name: "G" },
+      guild: {
+        name: "G",
+        channels: { fetch: vi.fn().mockResolvedValue(null) },
+      },
       guildId: "g1",
       channelId: "c1",
       user: { id: "u1", username: "u", displayName: "User" },
@@ -52,28 +63,37 @@ describe("updateAction", () => {
       1,
     );
 
-    expect(ActionData.update).toHaveBeenCalledWith(
-      { images: ["new-url", "old2"] },
-      { where: { id: 1 } },
-    );
+    expect((drizzleDb as any).update).toHaveBeenCalled();
+    const setMock = (drizzleDb as any).update.mock.results[0].value.set;
+    const firstArg = (setMock.mock.calls[0] as any)[0];
+    expect(firstArg.images).toEqual(["new-url", "old2"]);
   });
 
   it("updates the slot for all records when everywhere is true", async () => {
-    const record1 = {
-      get: vi
-        .fn()
-        .mockImplementation((k: string) => (k === "images" ? ["a", "b"] : 1)),
-    };
-    const record2 = {
-      get: vi
-        .fn()
-        .mockImplementation((k: string) => (k === "images" ? ["x", "y"] : 2)),
-    };
-    (ActionData.findAll as any).mockResolvedValue([record1, record2]);
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_: any) => ({
+          then: (r: any) =>
+            r([
+              { id: 1, images: ["a", "b"] },
+              { id: 2, images: ["x", "y"] },
+            ]),
+          limit: () =>
+            Promise.resolve([
+              { id: 1, images: ["a", "b"] },
+              { id: 2, images: ["x", "y"] },
+            ]),
+        }),
+      }),
+    }));
 
     const interaction = {
       context: 0,
-      guild: { name: "G" },
+      commandName: "set-pet",
+      guild: {
+        name: "G",
+        channels: { fetch: vi.fn().mockResolvedValue(null) },
+      },
       guildId: "g1",
       channelId: "c1",
       user: { id: "u1", username: "u", displayName: "User" },
@@ -90,30 +110,32 @@ describe("updateAction", () => {
       2,
     );
 
-    expect(ActionData.update).toHaveBeenNthCalledWith(
-      1,
-      { images: ["a", "everywhere-url"] },
-      { where: { id: 1 } },
-    );
-    expect(ActionData.update).toHaveBeenNthCalledWith(
-      2,
-      { images: ["x", "everywhere-url"] },
-      { where: { id: 2 } },
-    );
+    expect((drizzleDb as any).update).toHaveBeenCalled();
+    const setMock = (drizzleDb as any).update.mock.results[0].value.set;
+    const call0 = (setMock.mock.calls[0] as any)[0];
+    const call1 = (setMock.mock.calls[1] as any)[0];
+    expect(call0.images).toEqual(["a", "everywhere-url"]);
+    expect(call1.images).toEqual(["x", "everywhere-url"]);
   });
 
   it("edits reply with personal message for change-<action> command", async () => {
-    const mockRecord = {
-      get: vi
-        .fn()
-        .mockImplementation((k: string) => (k === "images" ? ["old"] : 1)),
-    };
-    (ActionData.findOne as any).mockResolvedValue(mockRecord);
+    const mockRecord = { id: 1, images: ["old"] };
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_: any) => ({
+          then: (r: any) => r([mockRecord]),
+          limit: () => Promise.resolve([mockRecord]),
+        }),
+      }),
+    }));
 
     const interaction = {
       context: 0,
       commandName: "change-pet",
-      guild: { name: "G" },
+      guild: {
+        name: "G",
+        channels: { fetch: vi.fn().mockResolvedValue(null) },
+      },
       guildId: "g1",
       channelId: "c1",
       user: { id: "u1", username: "u", displayName: "User" },
