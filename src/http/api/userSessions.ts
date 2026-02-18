@@ -21,7 +21,9 @@ export default async function userSessionsHandler(req: any, res: any) {
         .from(userSessions)
         .where(eq(userSessions.userId, userId))
         .limit(1);
-      const guilds = rows?.[0]?.guilds ? rows[0].guilds : null;
+      // Preserve an empty array ([]) returned by the DB — only fall back to
+      // `null` when there is no session row at all.
+      const guilds = rows?.[0]?.guilds ?? null;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ guilds }));
       return;

@@ -41,7 +41,7 @@ export const botData = sqliteTable("botData", {
   sleepImage: text("sleep_image"),
   defaultImages: text("default_images", { mode: "json" })
     .default("[]")
-    .$type<string[]>(),
+    .$type<Record<string, string>>(),
 });
 
 export const userSessions = sqliteTable("userSessions", {

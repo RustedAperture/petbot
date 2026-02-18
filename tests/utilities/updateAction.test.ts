@@ -64,7 +64,7 @@ describe("updateAction", () => {
     );
 
     expect((drizzleDb as any).update).toHaveBeenCalled();
-    const setMock = (drizzleDb as any).update().set;
+    const setMock = (drizzleDb as any).update.mock.results[0].value.set;
     const firstArg = (setMock.mock.calls[0] as any)[0];
     expect(firstArg.images).toEqual(["new-url", "old2"]);
   });
@@ -111,7 +111,7 @@ describe("updateAction", () => {
     );
 
     expect((drizzleDb as any).update).toHaveBeenCalled();
-    const setMock = (drizzleDb as any).update().set;
+    const setMock = (drizzleDb as any).update.mock.results[0].value.set;
     const call0 = (setMock.mock.calls[0] as any)[0];
     const call1 = (setMock.mock.calls[1] as any)[0];
     expect(call0.images).toEqual(["a", "everywhere-url"]);
@@ -119,7 +119,7 @@ describe("updateAction", () => {
   });
 
   it("edits reply with personal message for change-<action> command", async () => {
-    const mockRecord = { id: 1, images: JSON.stringify(["old"]) };
+    const mockRecord = { id: 1, images: ["old"] };
     (drizzleDb as any).select.mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_: any) => ({

@@ -156,7 +156,7 @@ export const resetAction = async (
   } catch (error: any) {
     logger.error(
       { error: error },
-      "Something went wrong with reseting the user image.",
+      "Something went wrong with resetting the user image.",
     );
   }
 

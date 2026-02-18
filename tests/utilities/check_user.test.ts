@@ -19,6 +19,7 @@ vi.mock("@logger", () => ({
 }));
 import { checkUser } from "../../src/utilities/check_user.js";
 import { drizzleDb } from "../../src/db/connector.js";
+import { ACTIONS } from "../../src/types/constants.js";
 
 describe("checkUser", () => {
   beforeEach(() => {
@@ -54,10 +55,19 @@ describe("checkUser", () => {
 
     await checkUser("pet" as any, user, "g1");
 
-    expect((drizzleDb as any).insert).toHaveBeenCalled();
-    const created = ((drizzleDb as any).insert as any).mock.calls[0][0];
-    // inserted values are provided to .values(), not to insert() itself — verify via values mock if necessary
-    expect(created).toBeDefined();
+    const insertMock = (drizzleDb as any).insert as any;
+    expect(insertMock).toHaveBeenCalled();
+    const valuesMock = insertMock.mock.results[0].value.values;
+    expect(valuesMock).toHaveBeenCalled();
+    const inserted = valuesMock.mock.calls[0][0];
+
+    expect(inserted).toMatchObject({
+      userId: user.id,
+      locationId: "g1",
+      actionType: "pet",
+      images: expect.any(Array),
+    });
+    expect(inserted.images[0]).toBe(ACTIONS.pet.defaultImage);
   });
 
   it("uses guild default image when guild settings exist", async () => {
@@ -105,8 +115,8 @@ describe("checkUser", () => {
       .mockImplementationOnce(() => ({
         from: (_: any) => ({
           where: (_: any) => ({
-            then: (r: any) => r([{ images: JSON.stringify(["x"]) }]),
-            limit: () => Promise.resolve([{ images: JSON.stringify(["x"]) }]),
+            then: (r: any) => r([{ images: ["x"] }]),
+            limit: () => Promise.resolve([{ images: ["x"] }]),
           }),
         }),
       }))

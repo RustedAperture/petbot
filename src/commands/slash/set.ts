@@ -109,14 +109,11 @@ export const command = {
       const images: string[] = adRow ? (adRow.images as string[]) : [];
 
       const defaultBase = ACTIONS[action].defaultImage;
-      const defaultImagesRaw =
-        guildSettings?.default_images ?? guildSettings?.get?.("default_images");
+      const defaultImagesRaw = guildSettings?.defaultImages;
       const guildDefault =
         defaultImagesRaw && typeof defaultImagesRaw === "object"
           ? (defaultImagesRaw as Record<string, string>)[action]
-          : typeof defaultImagesRaw === "string"
-            ? defaultImagesRaw
-            : undefined;
+          : undefined;
 
       if (images[0] === defaultBase || images[0] === guildDefault) {
         logger.debug("setting image while slot 1 is default");

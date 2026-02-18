@@ -125,7 +125,7 @@ Register a Discord OAuth application and configure its redirect URI to: `https:/
 - The web UI is served by Next.js at port `3000` when running via `npm run dev:web` or the container.
 - If native DB modules fail, ensure you build the image on the target architecture or use multi-arch images (we publish `linux/amd64` and `linux/arm64`). The Dockerfile uses `libsql` (`@libsql/client`) for the embedded DB.
 - The Dockerfile installs build deps in the builder stage so native modules are compiled for the image.
-- If you are upgrading from an older version, run the new migration `11_migrate_legacy_defaults` to copy legacy per-action default image fields (e.g., `default_pet_image`, `default_bite_image`) into the newer `default_images` JSON map. This preserves existing guild defaults and prefers the JSON map for future lookups.
+- If your database was created by a pre‑v8.2.4 release that used Sequelize/Umzug, first start that older release (for example `v8.2.3`) so its legacy Umzug migrations run and copy per‑action default image fields into the new `default_images` JSON map. The migration named `11_migrate_legacy_defaults` is part of the _legacy_ Sequelize/Umzug migrations and is **not** present in the consolidated Drizzle migration set. After the legacy step has run (only required for existing Sequelize databases), upgrade to v8.2.4+ and run Drizzle migrations with `npx drizzle-kit migrate` (fresh installs can skip the legacy step).
 
 ### Upgrade notes — v8.2.4 (Sequelize → Drizzle)
 

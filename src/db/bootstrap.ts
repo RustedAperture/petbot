@@ -6,7 +6,7 @@
  * `__drizzle_migrations` tracking table.
  *
  * If the app tables already exist but the migrations table is empty we stamp
- * every on-disk migration as already applied so that `migrate()` becomes a
+ * the initial on-disk migration as already applied so that `migrate()` becomes a
  * no-op and does not attempt to re-run DDL statements against a live schema.
  */
 

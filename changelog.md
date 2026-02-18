@@ -1,12 +1,18 @@
+## v8.2.4 - Feb 17, 2026
+
+### Enhancements (under the hood)
+
+- Refactor code to use drizzle ORM (speed up deployment by allowing use of libsql)
+
 ## v8.2.3 - Feb 17, 2026
 
-### Enhancement
+### Enhancements (under the hood)
 
 - Update node version from 20 to 24
 
 ## v8.2.2 - Feb 17, 2026
 
-### Enhancements
+### Enhancements (under the hood)
 
 - Split Dockerfile into separate build stages and targets for bot and web images
 - Created separate entrypoint scripts for bot and web containers

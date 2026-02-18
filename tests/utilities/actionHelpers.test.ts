@@ -40,13 +40,13 @@ describe("actionHelpers", () => {
   it("performAction increments counters and returns built reply", async () => {
     const targetRow = {
       id: 11,
-      images: JSON.stringify(["img"]),
-      has_received: 1,
+      images: ["img"],
+      hasReceived: 1,
     };
     const authorRow = {
       id: 22,
-      images: JSON.stringify(["img"]),
-      has_performed: 2,
+      images: ["img"],
+      hasPerformed: 2,
     };
 
     (drizzleDb as any).select
@@ -95,7 +95,7 @@ describe("actionHelpers", () => {
   });
 
   it("getActionStatsContainer returns built stats reply when row exists", async () => {
-    const row = { id: 99, images: JSON.stringify(["img"]), has_received: 7 };
+    const row = { id: 99, images: ["img"], hasReceived: 7 };
     (drizzleDb as any).select
       .mockImplementationOnce(() => ({
         from: (_: any) => ({
