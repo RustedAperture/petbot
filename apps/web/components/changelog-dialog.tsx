@@ -50,16 +50,32 @@ function parseChangelog(text: string): ChangelogSection[] {
 export function ChangelogDialog({ version }: ChangelogDialogProps) {
   const [open, setOpen] = useState(false);
   const [changelog, setChangelog] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>("all");
 
   useEffect(() => {
-    if (open && changelog === null) {
-      fetch("/api/changelog")
-        .then((r) => r.text())
-        .then((text) => setChangelog(text))
-        .catch(() => setChangelog("Failed to load changelog"));
+    if (!open) {
+      // Reset error on close so the user can retry after a transient failure.
+      // Successful changelog content is preserved to avoid redundant fetches.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFetchError(null);
+      return;
     }
-  }, [open, changelog]);
+    if (changelog !== null || fetchError !== null) {
+      return;
+    }
+    fetch("/api/changelog")
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}`);
+        }
+        return r.text();
+      })
+      .then((text) => setChangelog(text))
+      .catch(() =>
+        setFetchError("Failed to load changelog. Please try again."),
+      );
+  }, [open, changelog, fetchError]);
 
   const sections = useMemo(
     () => (changelog ? parseChangelog(changelog) : []),
@@ -115,7 +131,9 @@ export function ChangelogDialog({ version }: ChangelogDialogProps) {
         )}
 
         <div className="overflow-auto max-h-[60vh] prose prose-sm dark:prose-invert">
-          {displayedContent ? (
+          {fetchError ? (
+            <p className="text-destructive">{fetchError}</p>
+          ) : displayedContent ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {displayedContent}
             </ReactMarkdown>

@@ -12,8 +12,6 @@ export const checkUser = async (
   const config = ACTIONS[actionType];
   let recordWithHighestPerformed: any;
 
-  // eslint-disable-next-line no-useless-assignment
-  let highestValue: number | null = null;
   const rv: any = await drizzleDb
     .select({ m: sql`MAX(${actionData.hasPerformed})` })
     .from(actionData)
@@ -23,7 +21,7 @@ export const checkUser = async (
         eq(actionData.actionType, actionType),
       ),
     );
-  highestValue = rv?.[0]?.m ?? null;
+  const highestValue: number | null = rv?.[0]?.m ?? null;
 
   if (highestValue !== null) {
     const rows: any[] = await drizzleDb

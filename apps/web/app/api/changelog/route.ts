@@ -31,6 +31,10 @@ export async function GET(_req: Request) {
     });
   } catch (err) {
     console.error("/api/changelog error", err);
-    return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

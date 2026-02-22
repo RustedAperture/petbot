@@ -31,6 +31,7 @@ export default function StatsCard({
         alt={displayName}
         width={400}
         height={400}
+        sizes="(min-width: 768px) 384px, 100vw"
         className="block w-full aspect-square object-cover rounded-t-xl"
       />
       <CardHeader>

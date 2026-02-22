@@ -4,6 +4,7 @@ import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
 import { useGlobalStats } from "@/hooks/use-global-stats";
+import { type ActionTotals } from "@/types/stats";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 
@@ -48,7 +49,7 @@ export default function UserStatsPage() {
   }
 
   const entries = Object.entries(data.totalsByAction) as Array<
-    [string, number]
+    [string, ActionTotals]
   >;
 
   return (

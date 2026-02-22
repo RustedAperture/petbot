@@ -122,6 +122,7 @@ const SessionAccountInner = () => {
   const { session, loading, signIn, signOut } = useSession();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
