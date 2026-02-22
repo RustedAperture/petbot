@@ -70,7 +70,9 @@ export default function GuildStatsPage() {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
   }
 
-  const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
+  const entries = Object.entries(data.totalsByAction) as Array<
+    [string, number]
+  >;
 
   return (
     <main>

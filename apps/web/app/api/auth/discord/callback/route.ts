@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const COOKIE_NAME = "petbot_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
-function makeCookieValue(obj: any) {
+function makeCookieValue(obj: unknown) {
   return encodeURIComponent(JSON.stringify(obj));
 }
 
@@ -98,7 +98,7 @@ export async function GET(req: Request) {
   if (!tokenRes.ok) {
     const bodyText = await tokenRes.text();
     console.error("Discord token exchange failed:", tokenRes.status, bodyText);
-    let details: any = bodyText;
+    let details: unknown = bodyText;
     try {
       details = JSON.parse(bodyText);
     } catch (_) {
@@ -132,7 +132,7 @@ export async function GET(req: Request) {
   }
   const userJson = await userRes.json();
 
-  let guildsJson: any[] = [];
+  let guildsJson: unknown[] = [];
   if (guildsRes.ok) {
     guildsJson = (await guildsRes.json()) || [];
   }

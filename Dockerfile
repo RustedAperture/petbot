@@ -82,6 +82,7 @@ COPY --from=web-builder /app/apps/web/.next ./apps/web/.next
 COPY --from=web-builder /app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=web-builder /app/apps/web/package.json ./apps/web/package.json
 COPY --from=web-builder /app/apps/web/public ./apps/web/public
+COPY changelog.md ./changelog.md
 
 RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
 USER app

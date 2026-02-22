@@ -93,7 +93,9 @@ export async function GET(req: Request) {
         { headers },
       );
       if (res.ok) {
-        const json: any = await res.json();
+        const json = (await res.json()) as {
+          guilds?: Array<{ id: string; name: string }>;
+        };
         if (Array.isArray(json.guilds)) {
           session.guilds = json.guilds;
         }

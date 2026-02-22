@@ -19,8 +19,9 @@ import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
 import { BotMessageSquare, LogIn } from "lucide-react";
 import { Separator } from "./ui/separator";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { ChangelogDialog } from "@/components/changelog-dialog";
 
 export function AppSidebar({
   version,
@@ -98,12 +99,7 @@ export function AppSidebar({
             <SidebarMenu>
               {version ? (
                 <SidebarMenuItem>
-                  <SidebarMenuButton className="flex justify-between cursor-default group-data-[collapsible=icon]:hidden">
-                    <span>Version</span>
-                    <div className="text-xs text-muted-foreground">
-                      v{version}
-                    </div>
-                  </SidebarMenuButton>
+                  <ChangelogDialog version={version} />
                 </SidebarMenuItem>
               ) : null}
 
@@ -122,7 +118,18 @@ export function AppSidebar({
 
 // small client-only wrapper that uses the shared AppUser component
 const SessionAccountInner = () => {
+  const [mounted, setMounted] = useState(false);
   const { session, loading, signIn, signOut } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Render a consistent placeholder until the client has mounted to avoid
+  // server/client HTML mismatches (hydration errors).
+  if (!mounted) {
+    return <div className="text-sm text-muted-foreground" />;
+  }
 
   // If we already have a session, render it immediately so a background
   // `refresh()` doesn't replace the UI with a transient loading state.

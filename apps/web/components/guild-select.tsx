@@ -89,8 +89,8 @@ function GuildSelect({
             </Select>
           ) : (
             <div className="text-sm text-muted-foreground">
-              You don't share any guilds with the bot (or the bot has no data
-              for your guilds).
+              You don&apos;t share any guilds with the bot (or the bot has no
+              data for your guilds).
             </div>
           )
         ) : (

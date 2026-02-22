@@ -1,3 +1,9 @@
+## v8.2.5 - Feb 22, 2026
+
+### Enhancements
+
+- Add Changelog to the website, clicking on the version in the sidebar now opens a changelog modal
+
 ## v8.2.4 - Feb 17, 2026
 
 ### Enhancements (under the hood)
@@ -33,3 +39,14 @@
 ### Fixes
 
 - Tooling/maintenance updates: TypeScript ESLint unused-vars rule, Husky pre-commit hook, dependency bumps, and widespread formatting/unused-var cleanup.
+
+## v8.1.4 - Feb 16, 2026
+
+### Fixes
+
+- Fixed a bug preventing some users from logging in
+
+## Special Thanks
+
+- Zimbi (Default Images)
+- Ace (Bug Report)

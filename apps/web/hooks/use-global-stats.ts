@@ -73,8 +73,8 @@ export function useGlobalStats({
         }
         const json = (await res.json()) as GlobalStats;
         setData(json);
-      } catch (err: any) {
-        if (err?.name === "AbortError") {
+      } catch (err) {
+        if ((err as { name?: string })?.name === "AbortError") {
           return;
         }
         setError(err instanceof Error ? err : new Error(String(err)));

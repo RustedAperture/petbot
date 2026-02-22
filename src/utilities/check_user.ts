@@ -12,6 +12,7 @@ export const checkUser = async (
   const config = ACTIONS[actionType];
   let recordWithHighestPerformed: any;
 
+  // eslint-disable-next-line no-useless-assignment
   let highestValue: number | null = null;
   const rv: any = await drizzleDb
     .select({ m: sql`MAX(${actionData.hasPerformed})` })

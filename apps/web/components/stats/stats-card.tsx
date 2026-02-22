@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Badge } from "../ui/badge";
 import { Card, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { formatNumber, formatPercentage } from "@/lib/format";
@@ -25,9 +26,11 @@ export default function StatsCard({
 
   return (
     <Card className="relative mx-auto w-full md:max-w-sm pt-0">
-      <img
+      <Image
         src={actionImageUrl}
         alt={displayName}
+        width={400}
+        height={400}
         className="block w-full aspect-square object-cover rounded-t-xl"
       />
       <CardHeader>

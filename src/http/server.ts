@@ -61,7 +61,7 @@ export function startHttpServer(
 
   const handler = async (req: any, res: any) => {
     const start = Date.now();
-    let pathname = "/";
+    let pathname: string;
     try {
       const url = new URL(
         req.url || "",
