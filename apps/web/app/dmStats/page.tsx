@@ -4,6 +4,7 @@ import * as React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
 import { useGlobalStats } from "@/hooks/use-global-stats";
+import { type ActionTotals } from "@/types/stats";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { Input } from "@/components/ui/input";
@@ -270,7 +271,9 @@ export default function DmStatsPage() {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
   }
 
-  const entries = Object.entries(data.totalsByAction) as Array<[string, any]>;
+  const entries = Object.entries(data.totalsByAction) as Array<
+    [string, ActionTotals]
+  >;
 
   return (
     <main>

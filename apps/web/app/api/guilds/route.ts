@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   }
 
   // Parse session from cookie and extract userId
-  let session: any = null;
+  let session: { user?: { id?: string } } | null = null;
   try {
     session = JSON.parse(raw);
   } catch {

@@ -1,7 +1,6 @@
 import js from "@eslint/js";
 import globals from "globals";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
+import { baseRules, tsConfig } from "./eslint.config.base.js";
 
 export default [
   js.configs.recommended,
@@ -29,22 +28,7 @@ export default [
         Response: "readonly",
       },
     },
-    rules: {
-      "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
-      "no-console": "off",
-      "prefer-const": "warn",
-      "no-var": "error",
-      eqeqeq: ["error", "always", { null: "ignore" }],
-      curly: ["error", "all"],
-      "brace-style": ["error", "1tbs"],
-      indent: ["error", 2],
-      quotes: ["error", "double", { avoidEscape: true }],
-      semi: ["error", "always"],
-      "no-trailing-spaces": "error",
-      "comma-dangle": ["error", "always-multiline"],
-      "object-curly-spacing": ["error", "always"],
-      "array-bracket-spacing": ["error", "never"],
-    },
+    rules: baseRules,
   },
   {
     files: ["migrations/*.cjs"],
@@ -61,35 +45,15 @@ export default [
     rules: {},
   },
   // TypeScript-specific rules: prefer @typescript-eslint for unused vars
-  {
-    files: ["**/*.{ts,tsx}"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: "module",
-      },
-    },
-    plugins: {
-      "@typescript-eslint": tsPlugin,
-    },
-    rules: {
-      "no-undef": "off",
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
-      ],
-    },
-  },
+  tsConfig,
   {
     ignores: [
       "node_modules/**",
+      "apps/web/**",
       "data/**",
       ".idea/**",
       ".vscode/**",
       ".next/**",
-      "apps/web/.next/**",
       "dist/**",
       "coverage/**",
     ],

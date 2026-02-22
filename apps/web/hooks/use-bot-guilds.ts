@@ -27,7 +27,7 @@ export function useBotGuilds(userId?: string | null) {
       }
       const json = await res.json();
       setData(Array.isArray(json.guildIds) ? json.guildIds : []);
-    } catch (err: any) {
+    } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
       setData([]);
     } finally {
