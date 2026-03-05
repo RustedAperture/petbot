@@ -25,7 +25,7 @@ export default function StatsCard({
     : actionName;
 
   return (
-    <Card className="relative mx-auto w-full md:max-w-sm pt-0">
+    <Card>
       <Image
         src={actionImageUrl}
         alt={displayName}

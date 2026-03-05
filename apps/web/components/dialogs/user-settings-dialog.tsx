@@ -120,7 +120,6 @@ export function UserSettingsDialog({
             This will delete <strong>all</strong> of your Petbot data and cannot
             be undone. Please confirm that you want to proceed.
           </p>
-          <Separator />
           <div className="flex flex-col gap-2">
             <p className="text-sm">
               Type <code className="font-mono">DELETE</code> to continue.
