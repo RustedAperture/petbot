@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
+import { Separator } from "../ui/separator";
 
 interface ChangelogDialogProps {
   version: string;
@@ -141,6 +142,7 @@ export function ChangelogDialog({ version }: ChangelogDialogProps) {
             "Loading..."
           )}
         </div>
+        <Separator />
         <DialogFooter showCloseButton />
       </DialogContent>
     </Dialog>

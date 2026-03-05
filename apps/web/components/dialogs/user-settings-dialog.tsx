@@ -105,6 +105,7 @@ export function UserSettingsDialog({
               )}
             </FieldSet>
           </FieldGroup>
+          <Separator />
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
@@ -134,6 +135,7 @@ export function UserSettingsDialog({
           {deleteError && (
             <p className="text-sm font-medium mt-1">{deleteError}</p>
           )}
+          <Separator />
           <DialogFooter>
             <Button
               variant="outline"
