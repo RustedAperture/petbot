@@ -1,3 +1,10 @@
+## v8.2.6 - Mar 04, 2026
+
+### Enhancements
+
+- Update wording on homepage to be login aware
+- Fix bug in user stats that was showing the guild ID instead of the name
+
 ## v8.2.5 - Feb 22, 2026
 
 ### Enhancements

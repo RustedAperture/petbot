@@ -1,6 +1,6 @@
 {
   "name": "petbot",
-  "version": "8.2.5",
+  "version": "8.2.6",
   "description": "",
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc && cd apps/web && npm run build",
-    "build:server": "tsc",
+    "build:server": "tsc -p tsconfig.server.json",
     "build:ci": "npm --prefix apps/web run build && npm run build:server",
     "test": "vitest --run",
     "test:ci": "vitest --run --silent",
