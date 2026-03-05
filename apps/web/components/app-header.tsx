@@ -60,10 +60,7 @@ export function AppHeader() {
     <header className="flex h-16 shrink-0 items-center gap-4 px-4">
       <div className="flex items-center gap-4 w-full">
         <SidebarTrigger />
-        <Separator
-          orientation="vertical"
-          className="data-[orientation=vertical]:h-4"
-        />
+        <Separator orientation="vertical" />
         <h1 className="text-base font-medium">{title}</h1>
 
         {active?.href === "/guildStats" && (
