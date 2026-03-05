@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import pkg from "../../../package.json";
 import { AppHeader } from "@/components/app-header";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: "PetBot Dashboard",
@@ -29,21 +30,23 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider
-            defaultOpen={defaultOpen}
-            style={
-              {
-                "--sidebar-width": "calc(var(--spacing) * 72)",
-                "--header-height": "calc(var(--spacing) * 12)",
-              } as React.CSSProperties
-            }
-          >
-            <AppSidebar variant="floating" version={pkg.version} />
-            <SidebarInset>
-              <AppHeader />
-              <div className="flex justify-center p-4 pt-0">{children}</div>
-            </SidebarInset>
-          </SidebarProvider>
+          <TooltipProvider>
+            <SidebarProvider
+              defaultOpen={defaultOpen}
+              style={
+                {
+                  "--sidebar-width": "calc(var(--spacing) * 72)",
+                  "--header-height": "calc(var(--spacing) * 12)",
+                } as React.CSSProperties
+              }
+            >
+              <AppSidebar variant="floating" version={pkg.version} />
+              <SidebarInset>
+                <AppHeader />
+                <div className="flex justify-center p-4 pt-0">{children}</div>
+              </SidebarInset>
+            </SidebarProvider>
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

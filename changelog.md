@@ -1,9 +1,10 @@
-## v8.2.6 - Mar 04, 2026
+## v8.2.7 - Mar 05, 2026
 
 ### Enhancements
 
 - Update wording on homepage to be login aware
 - Fix bug in user stats that was showing the guild ID instead of the name
+- Added option for GDPR data deletions in the user settings page
 
 ## v8.2.5 - Feb 22, 2026
 
