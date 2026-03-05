@@ -21,7 +21,7 @@ import { BotMessageSquare, LogIn } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
-import { ChangelogDialog } from "@/components/changelog-dialog";
+import { ChangelogDialog } from "./dialogs/changelog-dialog";
 
 export function AppSidebar({
   version,
