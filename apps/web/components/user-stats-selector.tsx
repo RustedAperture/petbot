@@ -40,7 +40,7 @@ export default function UserStatsSelector() {
     queryUserScope ?? "",
   );
   const [userScopeValue, setUserScopeValue] = React.useState<string | null>(
-    queryUserScope ?? null,
+    queryUserScope || null,
   );
 
   // (effect relocated below after availableGuilds definition)
@@ -49,8 +49,11 @@ export default function UserStatsSelector() {
     session?.user.id ?? null,
   );
 
-  const availableGuilds = (session?.guilds ?? []).filter((g) =>
-    (botGuildIds ?? []).includes(g.id),
+  // Memoize the filtered list so downstream hooks don't fire on every render.
+  const availableGuilds = React.useMemo(
+    () =>
+      (session?.guilds ?? []).filter((g) => (botGuildIds ?? []).includes(g.id)),
+    [session?.guilds, botGuildIds],
   );
 
   // sync state with query params & available guilds; convert id->name for the
@@ -60,7 +63,7 @@ export default function UserStatsSelector() {
     const val = queryUserScope ?? "";
     setUserScopeValue(val || null);
     setUserScopeInput(getScopeDisplay(val, availableGuilds));
-  }, [queryUserScope, availableGuilds]);
+  }, [queryUserScope, availableGuilds]); // availableGuilds is memoized above
 
   // If session reports no guilds but the bot has guild data, try a forced
   // session refresh once so localStorage gets renewed.
@@ -135,7 +138,7 @@ export default function UserStatsSelector() {
       }
 
       const guild = availableGuilds.find((g) => g.id === val);
-      const display = getScopeDisplay(val, availableGuilds);
+      const display = guild ? guild.name : val;
       setUserScopeValue(val);
       setUserScopeInput(display);
 

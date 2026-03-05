@@ -3,11 +3,11 @@
 import { useSession } from "@/hooks/use-session";
 
 export default function Home() {
-  const { session } = useSession();
+  const { session, loading } = useSession();
 
   let message =
     "PetBot is a fun Discord bot for interacting with other users. Use the sidebar to explore stats for the global bot, a specific guild, or your own personal stats!";
-  if (!session) {
+  if (!session && !loading) {
     message +=
       " You will need to sign in with Discord to view guild or user stats.";
   }
