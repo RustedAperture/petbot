@@ -65,12 +65,12 @@ export function UserSettingsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-xl p-0 pt-6">
+          <DialogHeader className="px-6">
             <DialogTitle>User Settings</DialogTitle>
           </DialogHeader>
           <Separator />
-          <FieldGroup>
+          <FieldGroup className="px-6">
             <FieldSet>
               <FieldLegend className="text-destructive">
                 Delete My Data
@@ -105,38 +105,41 @@ export function UserSettingsDialog({
               )}
             </FieldSet>
           </FieldGroup>
-          <Separator />
-          <DialogFooter showCloseButton />
+          <DialogFooter
+            showCloseButton
+            className="bg-muted/50 p-6 border-t rounded-b-4xl"
+          />
         </DialogContent>
       </Dialog>
 
       {/* confirmation dialog shown after the id check passes */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-sm bg-destructive text-destructive-foreground">
-          <DialogHeader>
+        <DialogContent className="max-w-sm bg-destructive text-destructive-foreground p-0 pt-6">
+          <DialogHeader className="px-6">
             <DialogTitle>Are you absolutely sure?</DialogTitle>
           </DialogHeader>
           <Separator />
-          <p>
-            This will delete <strong>all</strong> of your Petbot data and cannot
-            be undone. Please confirm that you want to proceed.
-          </p>
-          <div className="flex flex-col gap-2">
-            <p className="text-sm">
-              Type <code className="font-mono">DELETE</code> to continue.
+          <div className="px-6 flex flex-col gap-6">
+            <p>
+              This will delete <strong>all</strong> of your Petbot data and
+              cannot be undone. Please confirm that you want to proceed.
             </p>
-            <Input
-              type="text"
-              placeholder="DELETE"
-              value={finalText}
-              onChange={(e) => setFinalText(e.target.value)}
-            />
+            <div className="flex flex-col gap-2">
+              <p className="text-sm">
+                Type <code className="font-mono">DELETE</code> to continue.
+              </p>
+              <Input
+                type="text"
+                placeholder="DELETE"
+                value={finalText}
+                onChange={(e) => setFinalText(e.target.value)}
+              />
+            </div>
+            {deleteError && (
+              <p className="text-sm font-medium mt-1">{deleteError}</p>
+            )}
           </div>
-          {deleteError && (
-            <p className="text-sm font-medium mt-1">{deleteError}</p>
-          )}
-          <Separator />
-          <DialogFooter>
+          <DialogFooter className="bg-muted/50 p-6 border-t rounded-b-4xl">
             <Button
               variant="outline"
               onClick={() => setConfirmOpen(false)}

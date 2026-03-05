@@ -110,40 +110,45 @@ export function ChangelogDialog({ version }: ChangelogDialogProps) {
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl p-0 pt-6">
+        <DialogHeader className="px-6">
           <DialogTitle>Changelog</DialogTitle>
         </DialogHeader>
-
-        {sections.length > 0 && (
-          <Select value={selectedVersion} onValueChange={setSelectedVersion}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select version" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All versions</SelectItem>
-              {sections.map((s) => (
-                <SelectItem key={s.version} value={s.version}>
-                  {s.version}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
-        <div className="overflow-auto max-h-[60vh] prose prose-sm dark:prose-invert max-w-none">
-          {fetchError ? (
-            <p className="text-destructive">{fetchError}</p>
-          ) : displayedContent ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {displayedContent}
-            </ReactMarkdown>
-          ) : (
-            "Loading..."
-          )}
-        </div>
         <Separator />
-        <DialogFooter showCloseButton />
+
+        <div className="px-6 flex flex-col gap-6">
+          {sections.length > 0 && (
+            <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select version" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All versions</SelectItem>
+                {sections.map((s) => (
+                  <SelectItem key={s.version} value={s.version}>
+                    {s.version}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <div className="overflow-auto max-h-[60vh] prose prose-sm dark:prose-invert max-w-none">
+            {fetchError ? (
+              <p className="text-destructive">{fetchError}</p>
+            ) : displayedContent ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {displayedContent}
+              </ReactMarkdown>
+            ) : (
+              "Loading..."
+            )}
+          </div>
+        </div>
+        <DialogFooter
+          showCloseButton
+          className="bg-muted/50 p-6 border-t rounded-b-4xl"
+        />
       </DialogContent>
     </Dialog>
   );
