@@ -65,7 +65,7 @@ export function UserSettingsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>User Settings</DialogTitle>
           </DialogHeader>
@@ -105,7 +105,6 @@ export function UserSettingsDialog({
               )}
             </FieldSet>
           </FieldGroup>
-          <Separator />
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
@@ -117,7 +116,7 @@ export function UserSettingsDialog({
             <DialogTitle>Are you absolutely sure?</DialogTitle>
           </DialogHeader>
           <Separator />
-          <p className="py-2">
+          <p>
             This will delete <strong>all</strong> of your Petbot data and cannot
             be undone. Please confirm that you want to proceed.
           </p>
@@ -133,7 +132,6 @@ export function UserSettingsDialog({
               onChange={(e) => setFinalText(e.target.value)}
             />
           </div>
-          <Separator />
           {deleteError && (
             <p className="text-sm font-medium mt-1">{deleteError}</p>
           )}

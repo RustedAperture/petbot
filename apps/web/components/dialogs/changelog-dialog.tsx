@@ -109,7 +109,7 @@ export function ChangelogDialog({ version }: ChangelogDialogProps) {
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Changelog</DialogTitle>
         </DialogHeader>
