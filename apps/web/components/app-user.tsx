@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -68,7 +69,7 @@ export function AppUser({
                 <Settings />
                 Settings
               </DropdownMenuItem>
-              <Separator />
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() =>
                   void (onSignOut
@@ -90,13 +91,12 @@ export function AppUser({
         onDelete={async () => {
           const id = session?.user.id;
           if (!id) return;
-          try {
-            await deleteUserData(id);
-            await deleteUserSessions(id);
-            window.location.assign("/api/auth/logout");
-          } catch (err) {
-            console.error("error deleting user data", err);
+          const dataOk = await deleteUserData(id);
+          const sessionsOk = await deleteUserSessions(id);
+          if (!dataOk || !sessionsOk) {
+            throw new Error("Failed to delete account data. Please try again.");
           }
+          window.location.assign("/api/auth/logout");
         }}
       />
     </>

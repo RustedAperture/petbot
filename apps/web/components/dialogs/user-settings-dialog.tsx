@@ -25,13 +25,15 @@ export function UserSettingsDialog({
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
-  onDelete: () => void;
+  onDelete: () => Promise<void>;
 }) {
   const { session } = useSession();
   const [typedId, setTypedId] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteClick = () => {
     if (typedId.trim() !== session?.user.id) {
@@ -42,10 +44,22 @@ export function UserSettingsDialog({
     setConfirmOpen(true);
   };
 
-  const handleFinalConfirm = () => {
-    setConfirmOpen(false);
-    onDelete();
-    onOpenChange(false);
+  const handleFinalConfirm = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDelete();
+      setConfirmOpen(false);
+      onOpenChange(false);
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred. Please try again.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -120,17 +134,24 @@ export function UserSettingsDialog({
             />
           </div>
           <Separator />
+          {deleteError && (
+            <p className="text-sm font-medium mt-1">{deleteError}</p>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleFinalConfirm}
-              disabled={finalText !== "DELETE"}
+              onClick={() => void handleFinalConfirm()}
+              disabled={finalText !== "DELETE" || isDeleting}
               className="bg-background text-destructive-foreground hover:bg-background/90 border ring"
             >
-              Yes, delete everything
+              {isDeleting ? "Deleting…" : "Yes, delete everything"}
             </Button>
           </DialogFooter>
         </DialogContent>

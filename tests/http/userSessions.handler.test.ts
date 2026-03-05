@@ -39,7 +39,7 @@ describe("userSessionsHandler DELETE", () => {
     vi.clearAllMocks();
   });
 
-  it("removes both session and action data rows", async () => {
+  it("removes both session data rows", async () => {
     const req = makeReq("DELETE", "/api/userSessions?userId=abc123");
     const res = makeRes();
 
