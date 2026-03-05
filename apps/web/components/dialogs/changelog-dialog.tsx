@@ -130,7 +130,7 @@ export function ChangelogDialog({ version }: ChangelogDialogProps) {
           </Select>
         )}
 
-        <div className="overflow-auto max-h-[60vh] prose prose-sm dark:prose-invert">
+        <div className="overflow-auto max-h-[60vh] prose prose-sm dark:prose-invert max-w-none">
           {fetchError ? (
             <p className="text-destructive">{fetchError}</p>
           ) : displayedContent ? (
