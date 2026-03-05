@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // The server build only needs to emit JS from the `src` directory.  We
+    // override a few options to ensure the output lands in `dist` and we
+    // don't accidentally try to compile Next/react files.
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "**/*.tsx",
+    "tests",
+    "apps/web",
+    "node_modules",
+    "dist"
+  ]
+}
