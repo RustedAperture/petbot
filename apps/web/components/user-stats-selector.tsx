@@ -13,6 +13,17 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
 import { useBotGuilds } from "@/hooks/use-bot-guilds";
 
+// helper used by the component and exported for testing.  Given a raw
+// scope value (guild id or location id) and the list of guilds the session
+// knows about, return the text that should be shown to the user.
+export function getScopeDisplay(
+  value: string,
+  availableGuilds: Array<{ id: string; name: string }>,
+): string {
+  const guild = availableGuilds.find((g) => g.id === value);
+  return guild ? guild.name : value;
+}
+
 export default function UserStatsSelector() {
   const params = useSearchParams();
   const router = useRouter();
@@ -22,13 +33,17 @@ export default function UserStatsSelector() {
   const queryUserScope =
     params.get("guildId") ?? params.get("locationId") ?? "";
 
+  // text shown in the input; may be a guild name while the underlying
+  // value is still the id.  We keep the raw value separately so we can build
+  // routes correctly.
   const [userScopeInput, setUserScopeInput] = React.useState<string>(
     queryUserScope ?? "",
   );
-  React.useEffect(
-    () => setUserScopeInput(queryUserScope ?? ""),
-    [queryUserScope],
+  const [userScopeValue, setUserScopeValue] = React.useState<string | null>(
+    queryUserScope ?? null,
   );
+
+  // (effect relocated below after availableGuilds definition)
 
   const { data: botGuildIds, isLoading: botGuildsLoading } = useBotGuilds(
     session?.user.id ?? null,
@@ -37,6 +52,15 @@ export default function UserStatsSelector() {
   const availableGuilds = (session?.guilds ?? []).filter((g) =>
     (botGuildIds ?? []).includes(g.id),
   );
+
+  // sync state with query params & available guilds; convert id->name for the
+  // display when appropriate.  This has to live after availableGuilds is
+  // defined otherwise we'd reference it too early.
+  React.useEffect(() => {
+    const val = queryUserScope ?? "";
+    setUserScopeValue(val || null);
+    setUserScopeInput(getScopeDisplay(val, availableGuilds));
+  }, [queryUserScope, availableGuilds]);
 
   // If session reports no guilds but the bot has guild data, try a forced
   // session refresh once so localStorage gets renewed.
@@ -57,31 +81,41 @@ export default function UserStatsSelector() {
   const submitUserScope = React.useCallback(
     (e?: React.FormEvent) => {
       e?.preventDefault();
-      const trimmed = (userScopeInput ?? "").trim();
+      const trimmedInput = (userScopeInput ?? "").trim();
       const resolvedUserId = queryUserId ?? session?.user.id ?? null;
       if (!resolvedUserId) {
         return;
       }
 
-      if (!trimmed) {
+      if (!trimmedInput) {
         router.push(
           `/userStats?userId=${encodeURIComponent(resolvedUserId)}&userScoped=true`,
         );
         return;
       }
 
-      const isGuild = availableGuilds.some((g) => g.id === trimmed);
+      // use the explicit selected value when available else fall back to
+      // whatever the user typed
+      const valueToUse = userScopeValue ?? trimmedInput;
+      const isGuild = availableGuilds.some((g) => g.id === valueToUse);
       if (isGuild) {
         router.push(
-          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(trimmed)}&userScoped=true`,
+          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(valueToUse)}&userScoped=true`,
         );
       } else {
         router.push(
-          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&locationId=${encodeURIComponent(trimmed)}&userScoped=true`,
+          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&locationId=${encodeURIComponent(valueToUse)}&userScoped=true`,
         );
       }
     },
-    [userScopeInput, queryUserId, session, availableGuilds, router],
+    [
+      userScopeInput,
+      userScopeValue,
+      queryUserId,
+      session,
+      availableGuilds,
+      router,
+    ],
   );
 
   const handleUserScopeSelect = React.useCallback(
@@ -90,15 +124,22 @@ export default function UserStatsSelector() {
       if (!resolvedUserId) {
         return;
       }
-      setUserScopeInput(val ?? "");
+
       if (!val) {
+        setUserScopeValue(null);
+        setUserScopeInput("");
         router.push(
           `/userStats?userId=${encodeURIComponent(resolvedUserId)}&userScoped=true`,
         );
         return;
       }
-      const isGuild = availableGuilds.some((g) => g.id === val);
-      if (isGuild) {
+
+      const guild = availableGuilds.find((g) => g.id === val);
+      const display = getScopeDisplay(val, availableGuilds);
+      setUserScopeValue(val);
+      setUserScopeInput(display);
+
+      if (guild) {
         router.push(
           `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(val)}&userScoped=true`,
         );
@@ -119,9 +160,10 @@ export default function UserStatsSelector() {
           placeholder="Global / guild / location id"
           aria-label="user stats scope"
           value={userScopeInput}
-          onInput={(e: React.FormEvent<HTMLInputElement>) =>
-            setUserScopeInput((e.target as HTMLInputElement).value)
-          }
+          onInput={(e: React.FormEvent<HTMLInputElement>) => {
+            setUserScopeInput((e.target as HTMLInputElement).value);
+            setUserScopeValue(null);
+          }}
           showClear
           className="min-w-[8rem] md:min-w-[12rem]"
         />
