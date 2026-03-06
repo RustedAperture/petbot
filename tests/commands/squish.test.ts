@@ -4,7 +4,10 @@ import { mockInteraction } from "../helpers/mockInteraction.js";
 vi.mock("../../src/utilities/actionHelpers", () => ({
   performAction: vi.fn(),
 }));
-vi.mock("../../src/utilities/check_user", () => ({ checkUser: vi.fn() }));
+vi.mock("../../src/utilities/check_user", () => ({
+  checkUser: vi.fn(),
+  isOptedOut: vi.fn().mockResolvedValue(false),
+}));
 
 import { performAction } from "../../src/utilities/actionHelpers.js";
 import { command } from "../../src/commands/slash/squish.js";
