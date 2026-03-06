@@ -1,6 +1,12 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
 
+// stub out user opt-out checks so the test doesn't hit a missing table
+vi.mock("../../src/utilities/check_user", () => ({
+  checkUser: vi.fn(),
+  isOptedOut: vi.fn().mockResolvedValue(false),
+}));
+
 import { command } from "../../src/commands/context/performContext.js";
 import { ACTIONS } from "../../src/types/constants.js";
 

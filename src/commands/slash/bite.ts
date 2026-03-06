@@ -3,10 +3,11 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
-  User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { checkUser, isOptedOut } from "../../utilities/check_user.js";
+import { checkUser } from "../../utilities/check_user.js";
+import { collectUniqueUsers } from "../../utilities/targetCollection.js";
+import { checkOptOuts } from "../../utilities/optOutHelper.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -44,26 +45,12 @@ export const command = {
     const rawUser2 = interaction.options.getUser("target2");
     const rawUser3 = interaction.options.getUser("target3");
 
-    const rawTargetUsers = [rawUser1, rawUser2, rawUser3].filter(
-      (u): u is User => u != null,
-    );
-    const uniqueRawTargets = [
-      ...new Map(rawTargetUsers.map((u) => [u.id, u])).values(),
-    ];
-
-    const optOutChecks = await Promise.all(
-      uniqueRawTargets.map((u) => isOptedOut(u.id)),
-    );
-    const optedOutUserIds = new Set(
-      uniqueRawTargets.filter((_, i) => optOutChecks[i]).map((u) => u.id),
-    );
-
-    if (optedOutUserIds.size === uniqueRawTargets.length) {
-      await interaction.reply({
-        content:
-          "The target user(s) have opted out of PetBot and cannot be interacted with.",
-        flags: MessageFlags.Ephemeral,
-      });
+    const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [
+      rawUser1,
+      rawUser2,
+      rawUser3,
+    ]);
+    if (allOptedOut) {
       return;
     }
 
@@ -86,22 +73,18 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId;
 
-    const targets = new Set([target1]);
-    if (target2) {
-      targets.add(target2);
-    }
-    if (target3) {
-      targets.add(target3);
-    }
-
-    const uniqueTargets = [...targets];
+    // dedupe by user id using shared helper
+    // convert the pair objects back into the raw member/user values
+    const uniqueTargets = collectUniqueUsers(target1, target2, target3).map(
+      ({ user, member }) => member ?? user,
+    );
 
     await checkUser("bite", author, guild);
 
     let firstReply = true;
     for (const target of uniqueTargets) {
       const userId = (target as any).user?.id ?? (target as any).id;
-      if (optedOutUserIds.has(userId)) {
+      if (optedOutIds.has(userId)) {
         await interaction.followUp({
           content: `<@${userId}> has opted out of PetBot and cannot be interacted with.`,
           flags: MessageFlags.Ephemeral,

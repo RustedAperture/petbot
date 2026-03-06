@@ -153,7 +153,14 @@ const interactionCreate = {
       const custom = select.customId || "";
 
       if (custom.startsWith("perform-select:")) {
-        const [, targetId] = custom.split(":");
+        const targetId = custom.slice("perform-select:".length);
+        if (!targetId) {
+          await select.reply({
+            content: "Invalid target specified.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
 
         const { isOptedOut } = await import("../utilities/check_user.js");
         if (await isOptedOut(targetId)) {
@@ -244,7 +251,14 @@ const interactionCreate = {
       const modal = interaction;
       const custom = modal.customId || "";
       if (custom.startsWith("perform-modal:")) {
-        const [, targetId] = custom.split(":");
+        const targetId = custom.slice("perform-modal:".length);
+        if (!targetId) {
+          await modal.reply({
+            content: "Invalid target specified.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
 
         const { isOptedOut } = await import("../utilities/check_user.js");
         if (await isOptedOut(targetId)) {

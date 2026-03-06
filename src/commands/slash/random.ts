@@ -7,8 +7,10 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { isOptedOut } from "../../utilities/check_user.js";
+// isOptedOut no longer needed; opt-out logic handled by helper
 import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { collectUniqueUsers } from "../../utilities/targetCollection.js";
+import { checkOptOuts } from "../../utilities/optOutHelper.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -46,26 +48,12 @@ export const command = {
     const rawUser2 = interaction.options.getUser("target2");
     const rawUser3 = interaction.options.getUser("target3");
 
-    const rawTargetUsers = [rawUser1, rawUser2, rawUser3].filter(
-      (u): u is User => u != null,
-    );
-    const uniqueRawTargets = [
-      ...new Map(rawTargetUsers.map((u) => [u.id, u])).values(),
-    ];
-
-    const optOutChecks = await Promise.all(
-      uniqueRawTargets.map((u) => isOptedOut(u.id)),
-    );
-    const optedOutUserIds = new Set(
-      uniqueRawTargets.filter((_, i) => optOutChecks[i]).map((u) => u.id),
-    );
-
-    if (optedOutUserIds.size === uniqueRawTargets.length) {
-      await interaction.reply({
-        content:
-          "The target user(s) have opted out of PetBot and cannot be interacted with.",
-        flags: MessageFlags.Ephemeral,
-      });
+    const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [
+      rawUser1,
+      rawUser2,
+      rawUser3,
+    ]);
+    if (allOptedOut) {
       return;
     }
 
@@ -91,30 +79,13 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId!;
 
-    const targets = new Set<{ user: User; member?: GuildMember }>();
-    const addTarget = (t: GuildMember | User | null) => {
-      if (t) {
-        const user = t instanceof GuildMember ? t.user : t;
-        const member = t instanceof GuildMember ? t : undefined;
-        if (
-          !Array.from(targets).some((existing) => existing.user.id === user.id)
-        ) {
-          targets.add({ user, member });
-        }
-      }
-    };
-
-    addTarget(target1);
-    addTarget(target2);
-    addTarget(target3);
-
-    const uniqueTargets = Array.from(targets);
+    const uniqueTargets = collectUniqueUsers(target1, target2, target3);
 
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
 
     let firstReply = true;
     for (const { user, member } of uniqueTargets) {
-      if (optedOutUserIds.has(user.id)) {
+      if (optedOutIds.has(user.id)) {
         await interaction.followUp({
           content: `<@${user.id}> has opted out of PetBot and cannot be interacted with.`,
           flags: MessageFlags.Ephemeral,

@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 function readCookie(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
-    cookieHeader
-      .split(";")
-      .map((c) => c.split("=").map((s) => s.trim()))
-      .map(([k, v]) => [k, decodeURIComponent(v || "")]),
+    cookieHeader.split(";").map((c) => {
+      const [k, ...v] = c.split("=");
+      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
+    }),
   );
   return cookies["petbot_session"];
 }

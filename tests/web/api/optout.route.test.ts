@@ -81,4 +81,23 @@ describe("/api/optout proxy", () => {
     expect(res.status).toBe(200);
     expect(mockFetch.mock.calls[0][1].method).toBe("DELETE");
   });
+
+  it("correctly parses a cookie value containing '=' characters", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ optedOut: false }), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    // value includes '=' inside JSON string
+    const sessionStr = '{"user":{"id":"999"},"foo":"a=b"}';
+    const req = new Request("http://localhost/api/optout", {
+      headers: { cookie: `petbot_session=${sessionStr}` },
+    });
+
+    const res = await GET(req as any);
+    expect(res.status).toBe(200);
+    expect(String(mockFetch.mock.calls[0][0])).toContain("userId=999");
+  });
 });
