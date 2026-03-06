@@ -8,6 +8,7 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { isOptedOut } from "../../utilities/check_user.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -24,6 +25,16 @@ export const command = {
     ]),
   aliases: ["pet-user"],
   async execute(interaction) {
+    const targetUserId = interaction.targetUser?.id;
+    if (targetUserId && (await isOptedOut(targetUserId))) {
+      await interaction.reply({
+        content:
+          "That user has opted out of PetBot and cannot be interacted with.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let target: GuildMember | User;

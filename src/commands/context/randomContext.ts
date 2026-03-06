@@ -6,6 +6,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { isOptedOut } from "../../utilities/check_user.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -23,6 +24,16 @@ export const command = {
     ]),
   aliases: ["random-user"],
   async execute(interaction) {
+    const targetUserId = interaction.targetUser?.id;
+    if (targetUserId && (await isOptedOut(targetUserId))) {
+      await interaction.reply({
+        content:
+          "That user has opted out of PetBot and cannot be interacted with.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let target, author;

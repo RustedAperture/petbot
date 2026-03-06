@@ -1,4 +1,4 @@
-import { actionData } from "../../db/schema.js";
+import { actionData, optOut } from "../../db/schema.js";
 import { drizzleDb } from "../../db/connector.js";
 import { eq } from "drizzle-orm";
 
@@ -17,6 +17,7 @@ export default async function userDataHandler(req: any, res: any) {
       }
 
       await drizzleDb.delete(actionData).where(eq(actionData.userId, userId));
+      await drizzleDb.delete(optOut).where(eq(optOut.userId, userId));
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));

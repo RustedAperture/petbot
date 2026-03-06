@@ -3,11 +3,11 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
-  ContainerBuilder,
   GuildMember,
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { isOptedOut } from "../../utilities/check_user.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -42,6 +42,33 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
+    const rawUser1 = interaction.options.getUser("target1");
+    const rawUser2 = interaction.options.getUser("target2");
+    const rawUser3 = interaction.options.getUser("target3");
+
+    const rawTargetUsers = [rawUser1, rawUser2, rawUser3].filter(
+      (u): u is User => u != null,
+    );
+    const uniqueRawTargets = [
+      ...new Map(rawTargetUsers.map((u) => [u.id, u])).values(),
+    ];
+
+    const optOutChecks = await Promise.all(
+      uniqueRawTargets.map((u) => isOptedOut(u.id)),
+    );
+    const optedOutUserIds = new Set(
+      uniqueRawTargets.filter((_, i) => optOutChecks[i]).map((u) => u.id),
+    );
+
+    if (optedOutUserIds.size === uniqueRawTargets.length) {
+      await interaction.reply({
+        content:
+          "The target user(s) have opted out of PetBot and cannot be interacted with.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     let target1: GuildMember | User | null;
@@ -83,28 +110,31 @@ export const command = {
 
     const uniqueTargets = Array.from(targets);
 
-    const containers: ContainerBuilder[] = [];
-
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
 
+    let firstReply = true;
     for (const { user, member } of uniqueTargets) {
+      if (optedOutUserIds.has(user.id)) {
+        await interaction.followUp({
+          content: `<@${user.id}> has opted out of PetBot and cannot be interacted with.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        continue;
+      }
       const action =
         actionKinds[Math.floor(Math.random() * actionKinds.length)];
       const target = member ?? user;
       await target.fetch(true);
       const container = await performAction(action, target, author, guild);
-      containers.push(container);
-    }
-
-    for (let i = 0; i < uniqueTargets.length; i++) {
-      const options = {
-        components: [containers[i]],
+      const replyOptions = {
+        components: [container],
         flags: MessageFlags.IsComponentsV2,
       };
-      if (i === 0) {
-        await interaction.editReply(options);
+      if (firstReply) {
+        await interaction.editReply(replyOptions);
+        firstReply = false;
       } else {
-        await interaction.followUp(options);
+        await interaction.followUp(replyOptions);
       }
     }
   },

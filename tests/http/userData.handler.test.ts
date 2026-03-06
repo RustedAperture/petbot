@@ -7,11 +7,12 @@ vi.mock("../../src/db/connector.js", () => ({
 }));
 vi.mock("../../src/db/schema.js", () => ({
   actionData: {},
+  optOut: {},
 }));
 
 import userDataHandler from "../../src/http/api/userData.js";
 import { drizzleDb } from "../../src/db/connector.js";
-import { actionData } from "../../src/db/schema.js";
+import { actionData, optOut } from "../../src/db/schema.js";
 
 function makeReq(method: string, url: string) {
   return {
@@ -48,14 +49,15 @@ describe("userDataHandler DELETE", () => {
     );
   });
 
-  it("deletes actionData rows for user", async () => {
+  it("deletes actionData and optOut rows for user", async () => {
     const req = makeReq("DELETE", "/api/userData?userId=u1");
     const res = makeRes();
 
     await userDataHandler(req, res);
 
-    expect(drizzleDb.delete as any).toHaveBeenCalledTimes(1);
+    expect(drizzleDb.delete as any).toHaveBeenCalledTimes(2);
     expect((drizzleDb.delete as any).mock.calls[0][0]).toBe(actionData);
+    expect((drizzleDb.delete as any).mock.calls[1][0]).toBe(optOut);
     expect(res.writeHead).toHaveBeenCalledWith(200, {
       "Content-Type": "application/json",
     });
