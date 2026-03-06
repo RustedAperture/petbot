@@ -98,7 +98,11 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Privacy policy">
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Privacy policy"
+                  className={matchPath("/privacy") ? activeClass : undefined}
+                >
                   <Link href="/privacy">
                     <span className="group-data-[collapsible=icon]:hidden">
                       Privacy

@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
-import path from "path";
+import { findFileUpward } from "@/lib/fs";
 
 export async function GET(_req: Request) {
-  // same path-walking logic as the changelog route, but for privacy.md
-  let policyPath: string | null = null;
-  let dir = process.cwd();
-  for (let i = 0; i < 5; i++) {
-    const candidate = path.join(dir, "privacy.md");
-    try {
-      await fs.access(candidate);
-      policyPath = candidate;
-      break;
-    } catch {
-      dir = path.dirname(dir);
-    }
-  }
+  const policyPath = await findFileUpward("privacy.md");
 
   if (!policyPath) {
     console.error("/api/privacy error: privacy.md not found");
