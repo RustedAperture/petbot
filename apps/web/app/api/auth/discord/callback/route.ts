@@ -23,10 +23,10 @@ export async function GET(req: Request) {
   // Validate state cookie matches state param to protect against CSRF / session-fixation
   const cookieHeader = req.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
-    cookieHeader
-      .split(";")
-      .map((c) => c.split("=").map((s) => s.trim()))
-      .map(([k, v]) => [k, decodeURIComponent(v || "")]),
+    cookieHeader.split(";").map((c) => {
+      const [k, ...v] = c.split("=");
+      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
+    }),
   );
   const savedState = cookies["petbot_oauth_state"] as string | undefined;
 

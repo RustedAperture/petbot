@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "@/hooks/use-session";
+import { useOptOut } from "@/hooks/use-opt-out";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,13 @@ export function UserSettingsDialog({
   onDelete: () => Promise<void>;
 }) {
   const { session } = useSession();
+  const {
+    optedOut,
+    isLoading,
+    error: optOutError,
+    fetchStatus,
+    toggle,
+  } = useOptOut();
   const [typedId, setTypedId] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +43,11 @@ export function UserSettingsDialog({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  useEffect(() => {
+    if (open) void fetchStatus();
+  }, [open, fetchStatus]);
+
+  // load initial opt-out state when dialog opens
   const handleDeleteClick = () => {
     if (typedId.trim() !== session?.user.id) {
       setError("IDs do not match");
@@ -72,14 +85,45 @@ export function UserSettingsDialog({
           <Separator />
           <FieldGroup className="px-6">
             <FieldSet>
+              <FieldLegend>Opt-Out of PetBot</FieldLegend>
+              <FieldDescription>
+                If you wish to opt-out of PetBot, please click the button below.
+                This will prevent PetBot from interacting with your user on
+                Discord. You can opt back in at any time by clicking the button
+                again.
+              </FieldDescription>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  // toggle opt-out status via hook
+                  await toggle();
+                }}
+                disabled={isLoading}
+              >
+                {optedOut === null
+                  ? "Loading…"
+                  : optedOut
+                    ? "Opt In"
+                    : "Opt Out"}
+              </Button>
+              {optOutError && (
+                <p className="text-sm text-destructive mt-1">
+                  {optOutError.message}
+                </p>
+              )}
+            </FieldSet>
+          </FieldGroup>
+          <Separator />
+          <FieldGroup className="px-6">
+            <FieldSet>
               <FieldLegend className="text-destructive">
                 Delete My Data
               </FieldLegend>
               <FieldDescription>
                 Deleting your data will permanently remove all Petbot
-                information tied to your account, including your personal stats
-                and any guild statistics. This cannot be undone. To confirm,
-                please type your Discord user ID (
+                information tied to your account, including your personal stats,
+                any guild statistics and your opt-out status. This cannot be
+                undone. To confirm, please type your Discord user ID (
                 <code className="font-mono">{session?.user.id}</code>) in the
                 field below.
               </FieldDescription>

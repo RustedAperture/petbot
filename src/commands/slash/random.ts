@@ -3,12 +3,14 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
-  ContainerBuilder,
   GuildMember,
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+// isOptedOut no longer needed; opt-out logic handled by helper
 import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { collectUniqueUsers } from "../../utilities/targetCollection.js";
+import { checkOptOuts } from "../../utilities/optOutHelper.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -42,6 +44,19 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
+    const rawUser1 = interaction.options.getUser("target1");
+    const rawUser2 = interaction.options.getUser("target2");
+    const rawUser3 = interaction.options.getUser("target3");
+
+    const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [
+      rawUser1,
+      rawUser2,
+      rawUser3,
+    ]);
+    if (allOptedOut) {
+      return;
+    }
+
     await interaction.deferReply();
 
     let target1: GuildMember | User | null;
@@ -64,47 +79,33 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId!;
 
-    const targets = new Set<{ user: User; member?: GuildMember }>();
-    const addTarget = (t: GuildMember | User | null) => {
-      if (t) {
-        const user = t instanceof GuildMember ? t.user : t;
-        const member = t instanceof GuildMember ? t : undefined;
-        if (
-          !Array.from(targets).some((existing) => existing.user.id === user.id)
-        ) {
-          targets.add({ user, member });
-        }
-      }
-    };
-
-    addTarget(target1);
-    addTarget(target2);
-    addTarget(target3);
-
-    const uniqueTargets = Array.from(targets);
-
-    const containers: ContainerBuilder[] = [];
+    const uniqueTargets = collectUniqueUsers(target1, target2, target3);
 
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
 
+    let firstReply = true;
     for (const { user, member } of uniqueTargets) {
+      if (optedOutIds.has(user.id)) {
+        await interaction.followUp({
+          content: `<@${user.id}> has opted out of PetBot and cannot be interacted with.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        continue;
+      }
       const action =
         actionKinds[Math.floor(Math.random() * actionKinds.length)];
       const target = member ?? user;
       await target.fetch(true);
       const container = await performAction(action, target, author, guild);
-      containers.push(container);
-    }
-
-    for (let i = 0; i < uniqueTargets.length; i++) {
-      const options = {
-        components: [containers[i]],
+      const replyOptions = {
+        components: [container],
         flags: MessageFlags.IsComponentsV2,
       };
-      if (i === 0) {
-        await interaction.editReply(options);
+      if (firstReply) {
+        await interaction.editReply(replyOptions);
+        firstReply = false;
       } else {
-        await interaction.followUp(options);
+        await interaction.followUp(replyOptions);
       }
     }
   },

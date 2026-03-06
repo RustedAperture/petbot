@@ -3,10 +3,11 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
-  ContainerBuilder,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
 import { checkUser } from "../../utilities/check_user.js";
+import { collectUniqueUsers } from "../../utilities/targetCollection.js";
+import { checkOptOuts } from "../../utilities/optOutHelper.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -40,6 +41,19 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction) {
+    const rawUser1 = interaction.options.getUser("target1");
+    const rawUser2 = interaction.options.getUser("target2");
+    const rawUser3 = interaction.options.getUser("target3");
+
+    const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [
+      rawUser1,
+      rawUser2,
+      rawUser3,
+    ]);
+    if (allOptedOut) {
+      return;
+    }
+
     await interaction.deferReply();
 
     let target1, target2, target3, author;
@@ -59,35 +73,35 @@ export const command = {
 
     const guild = interaction.guildId ?? interaction.channelId;
 
-    const targets = new Set([target1]);
-    if (target2) {
-      targets.add(target2);
-    }
-    if (target3) {
-      targets.add(target3);
-    }
-
-    const uniqueTargets = [...targets];
+    // dedupe by user id using shared helper
+    // convert the pair objects back into the raw member/user values
+    const uniqueTargets = collectUniqueUsers(target1, target2, target3).map(
+      ({ user, member }) => member ?? user,
+    );
 
     await checkUser("bite", author, guild);
 
-    const containers: ContainerBuilder[] = [];
-
+    let firstReply = true;
     for (const target of uniqueTargets) {
+      const userId = (target as any).user?.id ?? (target as any).id;
+      if (optedOutIds.has(userId)) {
+        await interaction.followUp({
+          content: `<@${userId}> has opted out of PetBot and cannot be interacted with.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        continue;
+      }
       await target.fetch(true);
       const container = await performAction("bite", target, author, guild);
-      containers.push(container);
-    }
-
-    for (let i = 0; i < uniqueTargets.length; i++) {
-      const options = {
-        components: [containers[i]],
+      const replyOptions = {
+        components: [container],
         flags: MessageFlags.IsComponentsV2,
       };
-      if (i === 0) {
-        await interaction.editReply(options);
+      if (firstReply) {
+        await interaction.editReply(replyOptions);
+        firstReply = false;
       } else {
-        await interaction.followUp(options);
+        await interaction.followUp(replyOptions);
       }
     }
   },

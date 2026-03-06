@@ -50,3 +50,9 @@ export const userSessions = sqliteTable("userSessions", {
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });
+
+export const optOut = sqliteTable("optOut", {
+  userId: text("user_id").primaryKey(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+});
