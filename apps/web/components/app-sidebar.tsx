@@ -17,7 +17,7 @@ import {
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare, LogIn } from "lucide-react";
+import { BotMessageSquare, LogIn, Shield } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
@@ -97,6 +97,17 @@ export function AppSidebar({
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Privacy policy">
+                  <Link href="/privacy">
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Privacy
+                    </span>
+                    <Shield className="ml-auto" />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {version ? (
                 <SidebarMenuItem>
                   <ChangelogDialog version={version} />
