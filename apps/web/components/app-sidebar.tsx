@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History } from "lucide-react";
+import {
+  History,
+  BotMessageSquare,
+  Handshake,
+  LogIn,
+  Shield,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +24,6 @@ import {
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare, Handshake, LogIn, Shield } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";

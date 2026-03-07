@@ -12,7 +12,7 @@ const sample = `
 `;
 
 describe("parseChangelog", () => {
-  it("splits into sections and strips headers", () => {
+  it("splits into sections", () => {
     const sections = parseChangelog(sample);
     expect(sections.length).toBe(2);
     expect(sections[0].version).toBe("v1.0.0 - Initial release");

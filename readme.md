@@ -15,10 +15,6 @@
 
 A Discord bot by RustedAperture.
 
-> **Privacy policy:** the web UI exposes a `/privacy` page that renders a
-> `privacy.md` file in the repo root. Update that markdown with your
-> actual policy before deploying.
-
 ---
 
 ## Setup

@@ -6,16 +6,16 @@ import { findFileUpward } from "@/lib/fs";
 // Similar to the privacy page; avoid a network call so the page works even
 // when the frontend and API ports differ.
 async function loadTerms(): Promise<string> {
-  const policyPath = await findFileUpward("terms.md");
+  const termsPath = await findFileUpward("terms.md");
 
-  if (!policyPath) {
+  if (!termsPath) {
     console.error("TermsPage: terms.md not found");
     return "Unable to load terms of service.";
   }
 
   try {
     const fs = await import("fs").then((m) => m.promises);
-    return await fs.readFile(policyPath, "utf-8");
+    return await fs.readFile(termsPath, "utf-8");
   } catch (err) {
     console.error("TermsPage: failed to read terms file", err);
     return "Unable to load terms of service.";

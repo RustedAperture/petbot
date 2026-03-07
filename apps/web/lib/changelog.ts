@@ -7,7 +7,7 @@ export interface ChangelogSection {
 
 export function parseChangelog(text: string): ChangelogSection[] {
   const sections: ChangelogSection[] = [];
-  // Split on level-2 headings that start a version block (## vX.Y.Z ...)
+  // Split on any level-2 heading (`## `), which we treat as starting a version block
   const parts = text.split(/^(?=## )/m);
   for (const part of parts) {
     const trimmed = part.trim();
