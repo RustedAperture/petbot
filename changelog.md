@@ -1,4 +1,4 @@
-## v8.2.9 - Mar 05, 2026
+## v8.3.0 - Mar 07, 2026
 
 ### Enhancements
 
@@ -7,6 +7,7 @@
 - Added option for GDPR data deletions in the user settings page
 - Added an option to opt out of interactions via the user settings
 - Added a very basic privacy policy
+- Added a very basic terms of service
 
 ## v8.2.5 - Feb 22, 2026
 
