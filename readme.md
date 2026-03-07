@@ -1,5 +1,18 @@
 # Petbot
 
+> **Privacy policy:** the web UI exposes a `/privacy` page that renders a
+> `privacy.md` file in the repo root. Update that markdown with your
+> actual policy before deploying.
+>
+> **Terms of service:** a similar `/terms` page reads `terms.md` in the
+> repository root. Create or edit that file to communicate any legal or
+> usage terms.
+>
+> **Changelog:** the UI now exposes a `/changelog` page that displays the
+> contents of `changelog.md` with version filtering. The previous dialog
+> component has been removed, so updating the page is the only way to
+> display changelog content now.
+
 A Discord bot by RustedAperture.
 
 ---

@@ -153,9 +153,27 @@ const interactionCreate = {
       const custom = select.customId || "";
 
       if (custom.startsWith("perform-select:")) {
+        const targetId = custom.slice("perform-select:".length);
+        if (!targetId) {
+          await select.reply({
+            content: "Invalid target specified.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        const { isOptedOut } = await import("../utilities/check_user.js");
+        if (await isOptedOut(targetId)) {
+          await select.reply({
+            content:
+              "That user has opted out of PetBot and cannot be interacted with.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
         await select.deferReply();
 
-        const [, targetId] = custom.split(":");
         const action = select.values?.[0];
         const guild = select.guildId ?? select.channelId!;
         // Normalize author to a User-like object (ensure .id exists)
@@ -233,6 +251,25 @@ const interactionCreate = {
       const modal = interaction;
       const custom = modal.customId || "";
       if (custom.startsWith("perform-modal:")) {
+        const targetId = custom.slice("perform-modal:".length);
+        if (!targetId) {
+          await modal.reply({
+            content: "Invalid target specified.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
+        const { isOptedOut } = await import("../utilities/check_user.js");
+        if (await isOptedOut(targetId)) {
+          await modal.reply({
+            content:
+              "That user has opted out of PetBot and cannot be interacted with.",
+            flags: MessageFlags.Ephemeral,
+          });
+          return;
+        }
+
         await modal.deferReply();
         let action: string | null = null;
         try {
@@ -241,7 +278,6 @@ const interactionCreate = {
           // not a text input modal
         }
 
-        const [, targetId] = custom.split(":");
         const guild = modal.guildId ?? modal.channelId!;
         // Normalize author to a User-like object (ensure .id exists)
         const authorRaw = modal.member ?? modal.user;

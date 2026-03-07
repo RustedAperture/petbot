@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  History,
+  BotMessageSquare,
+  Handshake,
+  LogIn,
+  Shield,
+} from "lucide-react";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -17,11 +24,9 @@ import {
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
-import { BotMessageSquare, LogIn } from "lucide-react";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
-import { ChangelogDialog } from "@/components/changelog-dialog";
 
 export function AppSidebar({
   version,
@@ -97,9 +102,52 @@ export function AppSidebar({
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Terms of service"
+                  className={matchPath("/terms") ? activeClass : undefined}
+                >
+                  <Link href="/terms">
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Terms
+                    </span>
+                    <Handshake className="ml-auto" />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Privacy policy"
+                  className={matchPath("/privacy") ? activeClass : undefined}
+                >
+                  <Link href="/privacy">
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Privacy
+                    </span>
+                    <Shield className="ml-auto" />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
               {version ? (
                 <SidebarMenuItem>
-                  <ChangelogDialog version={version} />
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={"Version: v" + version}
+                    className={
+                      matchPath("/changelog") ? activeClass : undefined
+                    }
+                  >
+                    <Link href="/changelog">
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        Version v{version}
+                      </span>
+                      <History className="ml-auto" />
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ) : null}
 

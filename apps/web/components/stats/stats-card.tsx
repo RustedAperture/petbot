@@ -25,7 +25,7 @@ export default function StatsCard({
     : actionName;
 
   return (
-    <Card className="relative mx-auto w-full md:max-w-sm pt-0">
+    <Card className="pb-0">
       <Image
         src={actionImageUrl}
         alt={displayName}
@@ -37,7 +37,7 @@ export default function StatsCard({
       <CardHeader>
         <CardTitle>{displayName}</CardTitle>
       </CardHeader>
-      <CardFooter>
+      <CardFooter className="border-t bg-muted/50 pb-6">
         <div className="flex flex-col gap-2 w-full">
           <div className="flex gap-1 flex-wrap">
             <p className="shrink">

@@ -12,6 +12,22 @@ import UserStatsSelector from "@/components/user-stats-selector";
 import { useSession } from "@/hooks/use-session";
 import { Github } from "lucide-react";
 
+export function computeTitle(pathname: string, activeTitle?: string) {
+  if (pathname === "/privacy") {
+    return "Privacy Policy";
+  }
+  if (pathname === "/terms") {
+    return "Terms of Service";
+  }
+  if (pathname === "/changelog") {
+    return "Changelog";
+  }
+  if (activeTitle) {
+    return activeTitle;
+  }
+  return "PetBot";
+}
+
 export function AppHeader() {
   const pathname = usePathname();
   const params = useSearchParams();
@@ -21,7 +37,7 @@ export function AppHeader() {
   const active = STATS_MENU.find(
     (m) => m.href === pathname || pathname.startsWith(m.href + "/"),
   );
-  const title = active?.title ?? "PetBot";
+  const title = computeTitle(pathname, active?.title);
   const queryGuildId = params.get("guildId") ?? null;
   const queryLocationId =
     params.get("locationId") ?? params.get("guildId") ?? "";
@@ -60,10 +76,7 @@ export function AppHeader() {
     <header className="flex h-16 shrink-0 items-center gap-4 px-4">
       <div className="flex items-center gap-4 w-full">
         <SidebarTrigger />
-        <Separator
-          orientation="vertical"
-          className="data-[orientation=vertical]:h-4"
-        />
+        <Separator orientation="vertical" />
         <h1 className="text-base font-medium">{title}</h1>
 
         {active?.href === "/guildStats" && (

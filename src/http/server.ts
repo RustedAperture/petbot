@@ -10,6 +10,8 @@ import healthHandler from "./api/health.js";
 import statsHandler from "./api/stats.js";
 import guildsHandler from "./api/guilds.js";
 import userSessionsHandler from "./api/userSessions.js";
+import userDataHandler from "./api/userData.js";
+import optOutHandler from "./api/optOut.js";
 
 function sha256buf(s: string) {
   return crypto.createHash("sha256").update(String(s)).digest();
@@ -102,6 +104,8 @@ export function startHttpServer(
           "/api/stats": statsHandler,
           "/api/guilds": guildsHandler,
           "/api/userSessions": userSessionsHandler,
+          "/api/userData": userDataHandler,
+          "/api/optOut": optOutHandler,
         };
 
         const handlerFn = apiRouter[pathname];

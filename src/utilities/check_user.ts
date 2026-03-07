@@ -1,5 +1,5 @@
 import { drizzleDb } from "../db/connector.js";
-import { actionData, botData } from "../db/schema.js";
+import { actionData, botData, optOut } from "../db/schema.js";
 import { sql, eq, and } from "drizzle-orm";
 import logger from "../logger.js";
 import { ACTIONS, ActionType } from "../types/constants.js";
@@ -125,4 +125,13 @@ export const checkUser = async (
   }
 };
 
-export default { checkUser };
+export const isOptedOut = async (userId: string): Promise<boolean> => {
+  const rows = await drizzleDb
+    .select({ userId: optOut.userId })
+    .from(optOut)
+    .where(eq(optOut.userId, userId))
+    .limit(1);
+  return rows.length > 0;
+};
+
+export default { checkUser, isOptedOut };

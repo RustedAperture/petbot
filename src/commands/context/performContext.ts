@@ -10,6 +10,8 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 import { ACTIONS } from "../../types/constants.js";
+import { isOptedOut } from "../../utilities/check_user.js";
+import { MessageFlags } from "discord.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -26,6 +28,16 @@ export const command = {
     ]),
   aliases: ["perform-user"],
   async execute(interaction: any) {
+    const targetUserId: string | undefined = interaction.targetUser?.id;
+    if (targetUserId && (await isOptedOut(targetUserId))) {
+      await interaction.reply({
+        content:
+          "That user has opted out of PetBot and cannot be interacted with.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     const inServer = interaction.guild;
     let target: GuildMember | User;
 
