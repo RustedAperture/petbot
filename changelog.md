@@ -1,3 +1,9 @@
+## v8.3.1 - Mar 08, 2026
+
+### Enhancement
+
+- Added how to support text to the homepage of the website
+
 ## v8.3.0 - Mar 07, 2026
 
 ### Enhancements
