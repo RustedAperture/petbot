@@ -29,7 +29,7 @@ export default function Home() {
           </p>
           <Separator />
           <h2 className="scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0">
-            How to support PetBot
+            How to Support PetBot
           </h2>
           <p className="max-w-xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
             If you enjoy using PetBot, you can support the project by donating
