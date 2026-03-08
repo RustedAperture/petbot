@@ -15,7 +15,9 @@ import {
 export default function ChangelogPage() {
   const [changelog, setChangelog] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [selectedVersion, setSelectedVersion] = useState<string>("all");
+  // Base UI Select may pass `null` when nothing is selected, so our state
+  // accepts string or null. We default to "all" for showing everything.
+  const [selectedVersion, setSelectedVersion] = useState<string | null>("all");
 
   useEffect(() => {
     if (changelog !== null || fetchError !== null) return;
@@ -49,7 +51,12 @@ export default function ChangelogPage() {
 
       {sections.length > 0 && (
         <div className="mb-4">
-          <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+          <Select
+            value={selectedVersion}
+            onValueChange={(value) => {
+              setSelectedVersion(value ?? "all");
+            }}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All versions" />
             </SelectTrigger>

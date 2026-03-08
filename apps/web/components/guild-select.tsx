@@ -14,7 +14,7 @@ import {
 
 type Props = {
   value?: string | null;
-  onChange?: (value: string) => void;
+  onChange?: (value: string | null) => void;
   size?: "sm" | "default";
   className?: string;
   placeholder?: string;
@@ -55,7 +55,14 @@ function GuildSelect({
   }, [session, botGuildIds, botGuildsLoading, refresh]);
 
   const handleChange = React.useCallback(
-    (v: string) => {
+    (v: string | null) => {
+      if (v === null) {
+        if (onChange) {
+          return onChange(null);
+        }
+        return;
+      }
+
       if (onChange) {
         return onChange(v);
       }
