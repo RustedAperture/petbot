@@ -4,15 +4,15 @@ These Terms of Service ("Terms") govern your use of PetBot, a Discord bot provid
 
 ## Acceptable Use
 
-- Do not use PetBot for any unlawful purpose or in violation of Discord’s Terms of Service.
+- Do not use PetBot for any unlawful purpose or in violation of Discord's Terms of Service.
 
 ## Data and Privacy
 
-Use of PetBot may involve collection of minimal data (Discord IDs, usage counts, image URLs) as explained in the [privacy policy](/privacy). The bot’s maintainers reserve the right to delete or modify stored data at their discretion.
+Use of PetBot may involve collection of minimal data (Discord IDs, usage counts, image URLs) as explained in the [privacy policy](/privacy). The bot's maintainers reserve the right to delete or modify stored data at their discretion.
 
 ## Disclaimers
 
-PetBot is provided "as is" without warranties of any kind. The authors are not responsible for any damage or loss resulting from use of the bot. You are solely responsible for complying with Discord’s rules and any applicable laws.
+PetBot is provided "as is" without warranties of any kind. The authors are not responsible for any damage or loss resulting from use of the bot. You are solely responsible for complying with Discord's rules and any applicable laws.
 
 ## Termination
 
@@ -24,4 +24,4 @@ These Terms may be updated from time to time. Continued use of PetBot after the 
 
 ## Contact
 
-Questions about these Terms can be sent to the project repository or the maintainer’s contact information found in the `README.md`.
+Questions about these Terms can be sent to the project repository or the maintainer's contact information found in the `README.md`.
