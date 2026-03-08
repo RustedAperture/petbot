@@ -19,19 +19,21 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <SidebarMenuItem>
-        <DropdownMenuTrigger asChild>
-          <SidebarMenuButton
-            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            tooltip={"Toggle theme"}
-            aria-label={"Toggle theme"}
-          >
-            <span className="group-data-[collapsible=icon]:hidden">
-              Toggle theme
-            </span>
-            <Sun className="ml-auto block dark:hidden" />
-            <Moon className="ml-auto hidden dark:block" />
-          </SidebarMenuButton>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <SidebarMenuButton
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              tooltip={"Toggle theme"}
+              aria-label={"Toggle theme"}
+            >
+              <span className="group-data-[collapsible=icon]:hidden">
+                Toggle theme
+              </span>
+              <Sun className="ml-auto block dark:hidden" />
+              <Moon className="ml-auto hidden dark:block" />
+            </SidebarMenuButton>
+          }
+        />
         <DropdownMenuContent
           side={isMobile ? "bottom" : "right"}
           align={isMobile ? "end" : "start"}

@@ -107,16 +107,21 @@ export function AppHeader() {
 
       {/* right group */}
       <div className="hidden ml-auto md:flex items-center gap-2">
-        <Button variant="outline" asChild size="sm" className="hidden sm:flex">
-          <a
-            href="https://github.com/RustedAperture/petbot"
-            rel="noopener noreferrer"
-            target="_blank"
-            className="dark:text-foreground"
-          >
-            <Github /> GitHub
-          </a>
-        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="hidden sm:flex"
+          render={
+            <a
+              href="https://github.com/RustedAperture/petbot"
+              rel="noopener noreferrer"
+              target="_blank"
+              className="dark:text-foreground"
+            >
+              <Github /> GitHub
+            </a>
+          }
+        />
       </div>
     </header>
   );

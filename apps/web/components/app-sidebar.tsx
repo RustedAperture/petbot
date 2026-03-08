@@ -53,23 +53,23 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <Link
-                href="/"
-                aria-label="PetBot"
-                className="flex items-center gap-2 group-data-[collapsible=icon]:mx-auto"
-              >
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-200 text-stone-900">
-                  <BotMessageSquare />
-                </div>
-                <span className="group-data-[collapsible=icon]:hidden text-xl">
-                  PetBot
-                </span>
-              </Link>
-            </SidebarMenuButton>
+              render={
+                <Link
+                  href="/"
+                  aria-label="PetBot"
+                  className="flex items-center gap-2 group-data-[collapsible=icon]:mx-auto"
+                >
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-200 text-stone-900">
+                    <BotMessageSquare />
+                  </div>
+                  <span className="group-data-[collapsible=icon]:hidden text-xl">
+                    PetBot
+                  </span>
+                </Link>
+              }
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -85,15 +85,15 @@ export function AppSidebar({
                   className="flex items-center gap-2"
                 >
                   <SidebarMenuButton
-                    asChild
                     tooltip={item.title}
                     className={active ? activeClass : undefined}
-                  >
-                    <Link href={item.href}>
-                      <item.Icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                    render={
+                      <Link href={item.href}>
+                        <item.Icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    }
+                  />
                 </SidebarMenuItem>
               );
             })}
@@ -104,50 +104,50 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  asChild
                   tooltip="Terms of service"
                   className={matchPath("/terms") ? activeClass : undefined}
-                >
-                  <Link href="/terms">
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      Terms
-                    </span>
-                    <Handshake className="ml-auto" />
-                  </Link>
-                </SidebarMenuButton>
+                  render={
+                    <Link href="/terms">
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        Terms
+                      </span>
+                      <Handshake className="ml-auto" />
+                    </Link>
+                  }
+                />
               </SidebarMenuItem>
 
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  asChild
                   tooltip="Privacy policy"
                   className={matchPath("/privacy") ? activeClass : undefined}
-                >
-                  <Link href="/privacy">
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      Privacy
-                    </span>
-                    <Shield className="ml-auto" />
-                  </Link>
-                </SidebarMenuButton>
+                  render={
+                    <Link href="/privacy">
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        Privacy
+                      </span>
+                      <Shield className="ml-auto" />
+                    </Link>
+                  }
+                />
               </SidebarMenuItem>
 
               {version ? (
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    asChild
                     tooltip={"Version: v" + version}
                     className={
                       matchPath("/changelog") ? activeClass : undefined
                     }
-                  >
-                    <Link href="/changelog">
-                      <span className="group-data-[collapsible=icon]:hidden">
-                        Version v{version}
-                      </span>
-                      <History className="ml-auto" />
-                    </Link>
-                  </SidebarMenuButton>
+                    render={
+                      <Link href="/changelog">
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Version v{version}
+                        </span>
+                        <History className="ml-auto" />
+                      </Link>
+                    }
+                  />
                 </SidebarMenuItem>
               ) : null}
 

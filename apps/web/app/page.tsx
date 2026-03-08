@@ -47,36 +47,48 @@ export default function Home() {
             contributors are credited on each release for the work they've done.
           </p>
           <ButtonGroup>
-            <Button size="lg" variant="outline" asChild>
-              <Link
-                href="https://ko-fi.com/walnutfox"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Coffee />
-                Tip PetBot Development
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link
-                href="https://ko-fi.com/zimbi"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Palette />
-                Commission a YCH
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link
-                href="https://github.com/RustedAperture/petbot"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Github />
-                GitHub
-              </Link>
-            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              render={
+                <Link
+                  href="https://ko-fi.com/walnutfox"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Coffee />
+                  Tip PetBot Development
+                </Link>
+              }
+            />
+            <Button
+              size="lg"
+              variant="outline"
+              render={
+                <Link
+                  href="https://ko-fi.com/zimbi"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Palette />
+                  Commission a YCH
+                </Link>
+              }
+            />
+            <Button
+              size="lg"
+              variant="outline"
+              render={
+                <Link
+                  href="https://github.com/RustedAperture/petbot"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Github />
+                  GitHub
+                </Link>
+              }
+            />
           </ButtonGroup>
         </div>
       </main>

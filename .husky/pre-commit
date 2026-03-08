@@ -1,10 +1,21 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Run linting (root + web) before allowing a commit.
 # Heavy security scans (Bearer) are run in CI to avoid slowing local commits.
 # Exit non-zero to block the commit if any check fails.
 
 # fast fail
 set -e
+
+# make sure both nvm and Homebrew tools are available in hooks
+# (git hooks run with a minimal PATH, so we manually expand it)
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh"
+fi
+# optionally pick a version (adjust if you pin one in .nvmrc)
+nvm use --silent || true
+
+# include Homebrew binaries so things like `gpg` can be found
+export PATH="/opt/homebrew/bin:$PATH"
 
 # lint repo
 npm run lint
