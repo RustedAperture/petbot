@@ -46,10 +46,10 @@ export default function Home() {
             for bug reporters, feature suggesters, and tippers. Code
             contributors are credited on each release for the work they've done.
           </p>
-          <ButtonGroup>
+          <div className="flex gap-2">
             <Button
               size="lg"
-              variant="outline"
+              className={"bg-[#50ACED] hover:scale-105 hover:bg-[#61bcfe]"}
               render={
                 <Link
                   href="https://ko-fi.com/walnutfox"
@@ -63,7 +63,7 @@ export default function Home() {
             />
             <Button
               size="lg"
-              variant="outline"
+              className={"bg-[#ffa500] hover:scale-105 hover:bg-[#ffb844]"}
               render={
                 <Link
                   href="https://ko-fi.com/zimbi"
@@ -77,7 +77,7 @@ export default function Home() {
             />
             <Button
               size="lg"
-              variant="outline"
+              className={"bg-[#fff] hover:scale-105 hover:bg-[#fff"}
               render={
                 <Link
                   href="https://github.com/RustedAperture/petbot"
@@ -89,7 +89,7 @@ export default function Home() {
                 </Link>
               }
             />
-          </ButtonGroup>
+          </div>
         </div>
       </main>
     </div>
