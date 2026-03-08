@@ -25,7 +25,7 @@ export default function StatsCard({
     : actionName;
 
   return (
-    <Card className="pb-0">
+    <Card className="pb-0 bg-linear-to-t from-primary/20 to-15%">
       <Image
         src={actionImageUrl}
         alt={displayName}

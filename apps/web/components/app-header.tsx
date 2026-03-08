@@ -11,6 +11,7 @@ import GuildSelect from "@/components/guild-select";
 import UserStatsSelector from "@/components/user-stats-selector";
 import { useSession } from "@/hooks/use-session";
 import { Github } from "lucide-react";
+import Link from "next/link";
 
 export function computeTitle(pathname: string, activeTitle?: string) {
   if (pathname === "/privacy") {
@@ -112,14 +113,14 @@ export function AppHeader() {
           size="sm"
           className="hidden sm:flex"
           render={
-            <a
+            <Link
               href="https://github.com/RustedAperture/petbot"
-              rel="noopener noreferrer"
               target="_blank"
+              rel="noopener noreferrer"
               className="dark:text-foreground"
             >
               <Github /> GitHub
-            </a>
+            </Link>
           }
         />
       </div>
