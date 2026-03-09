@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Badge } from "../ui/badge";
 import { Card, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { formatNumber, formatPercentage } from "@/lib/format";
+import { NativeCounterUp } from "../uitripled/native-counter-up-carbon";
 
 interface StatsCardProps {
   actionName: string;
@@ -32,7 +33,7 @@ export default function StatsCard({
         width={400}
         height={400}
         sizes="(min-width: 768px) 384px, 100vw"
-        className="block w-full aspect-square object-cover rounded-t-xl"
+        className="block w-full aspect-square object-cover rounded-xl"
       />
       <CardHeader>
         <CardTitle>{displayName}</CardTitle>
@@ -44,7 +45,7 @@ export default function StatsCard({
               <b>Performed:</b>
             </p>
             <div className="flex justify-between grow">
-              {formatNumber(performedCount)}
+              <NativeCounterUp value={performedCount} className="font-normal" />
               <Badge variant="outline">
                 {formatPercentage(performedCount, totalActionsPerformed)} of
                 actions
@@ -56,7 +57,7 @@ export default function StatsCard({
               <b>Users:</b>
             </p>
             <div className="flex justify-between grow">
-              {formatNumber(userCount)}
+              <NativeCounterUp value={userCount} className="font-normal" />
               <Badge variant="outline">
                 {formatPercentage(userCount, totalUniqueUsers)} of users
               </Badge>

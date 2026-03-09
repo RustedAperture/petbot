@@ -3,7 +3,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { parseChangelog, ChangelogSection } from "@/lib/changelog";
+import {
+  parseChangelog,
+  ChangelogSection,
+  changelogToTimelineItems,
+} from "@/lib/changelog";
+import {
+  InteractiveTimeline,
+  TimelineItem,
+} from "@/components/uitripled/interactive-timeline";
 import {
   Select,
   SelectTrigger,
@@ -15,9 +23,8 @@ import {
 export default function ChangelogPage() {
   const [changelog, setChangelog] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  // Base UI Select may pass `null` when nothing is selected, so our state
-  // accepts string or null. We default to "all" for showing everything.
-  const [selectedVersion, setSelectedVersion] = useState<string | null>("all");
+  // null represents "all versions"; otherwise string is a specific version
+  const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
 
   useEffect(() => {
     if (changelog !== null || fetchError !== null) return;
@@ -37,13 +44,20 @@ export default function ChangelogPage() {
     [changelog],
   );
 
-  const displayedContent = useMemo(() => {
-    if (!changelog) return null;
-    if (selectedVersion === "all") return changelog;
-    return (
-      sections.find((s) => s.version === selectedVersion)?.content ?? changelog
-    );
-  }, [changelog, sections, selectedVersion]);
+  const timelineItems: TimelineItem[] = useMemo(
+    () => changelogToTimelineItems(sections),
+    [sections],
+  );
+
+  const filteredTimelineItems: TimelineItem[] = useMemo(() => {
+    if (selectedVersion === null) return timelineItems;
+
+    const idx = sections.findIndex((s) => s.version === selectedVersion);
+    if (idx !== -1) {
+      return [timelineItems[idx]];
+    }
+    return [];
+  }, [selectedVersion, sections, timelineItems]);
 
   return (
     <main className="prose dark:prose-invert p-4">
@@ -54,14 +68,13 @@ export default function ChangelogPage() {
           <Select
             value={selectedVersion}
             onValueChange={(value) => {
-              setSelectedVersion(value ?? "all");
+              setSelectedVersion(value ?? null);
             }}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="All versions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All versions</SelectItem>
               {sections.map((s) => (
                 <SelectItem key={s.version} value={s.version}>
                   {s.version}
@@ -72,17 +85,16 @@ export default function ChangelogPage() {
         </div>
       )}
 
-      <div className="prose prose-sm dark:prose-invert">
-        {fetchError ? (
-          <p className="text-destructive">{fetchError}</p>
-        ) : displayedContent ? (
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {displayedContent}
-          </ReactMarkdown>
-        ) : (
-          "Loading..."
-        )}
-      </div>
+      {filteredTimelineItems.length > 0 && (
+        <div className="mb-8">
+          <InteractiveTimeline items={filteredTimelineItems} />
+        </div>
+      )}
+
+      {fetchError && <p className="text-destructive">{fetchError}</p>}
+      {!fetchError && filteredTimelineItems.length === 0 && (
+        <p className="text-sm text-muted-foreground">No changelog entries.</p>
+      )}
     </main>
   );
 }

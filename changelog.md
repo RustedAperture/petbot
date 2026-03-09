@@ -1,23 +1,29 @@
-## v8.3.1 - Mar 08, 2026
+## v8.4.0 - Mar 08, 2026
 
 ### Enhancement
 
 - Added how to support text to the homepage of the website
+- Update website styling
+  - Change the theme colors
+  - Update design of the changelog page
 
 ## v8.3.0 - Mar 07, 2026
 
-### Enhancements
+### New Features
 
-- Update wording on homepage to be login aware
-- Fix bug in user stats that was showing the guild ID instead of the name
 - Added option for GDPR data deletions in the user settings page
 - Added an option to opt out of interactions via the user settings
 - Added a very basic privacy policy
 - Added a very basic terms of service
 
+### Enhancements
+
+- Update wording on homepage to be login aware
+- Fix bug in user stats that was showing the guild ID instead of the name
+
 ## v8.2.5 - Feb 22, 2026
 
-### Enhancements
+### New Features
 
 - Add Changelog to the website, clicking on the version in the sidebar now opens a changelog modal
 
