@@ -86,7 +86,7 @@ function GuildSelect({
                 </SelectValue>
               </SelectTrigger>
 
-              <SelectContent>
+              <SelectContent className="min-w-xs">
                 {availableGuilds.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}
