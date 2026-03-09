@@ -44,21 +44,38 @@ export function changelogToTimelineItems(
   return sections.map((s) => {
     const desc = s.content.replace(/^## [^\n]+\n/, "").trim();
     let date: string | undefined;
-    // if the heading contains a parenthesized date, capture that; otherwise
-    // look for a dash and take everything after it (common pattern like
-    // "v8.3.0 - Mar 07, 2026").
-    const dateMatch = s.version.match(/\(([^)]+)\)|-\s*(.+)$/);
-    if (dateMatch) {
-      date = dateMatch[1] || dateMatch[2];
-      date = date?.trim();
+
+    // first try parenthesized date
+    const parenMatch = s.version.match(/\(([^)]+)\)$/);
+    if (parenMatch) {
+      date = parenMatch[1].trim();
+    } else {
+      // split on " - " and look at the last segment for digits
+      const parts = s.version.split(" - ");
+      const last = parts[parts.length - 1];
+      if (/\d/.test(last)) {
+        date = last.trim();
+      }
     }
-    // derive a title that excludes any trailing date information
+
+    // derive title/id
     let title = s.version;
-    const dashIdx = title.lastIndexOf(" - ");
-    if (dashIdx !== -1) {
-      title = title.slice(0, dashIdx);
+    if (date) {
+      // date was found, strip only the date portion and any parentheses
+      title = title.replace(/\s*\([^)]*\)$/, "");
+      const dashIndex = title.lastIndexOf(" - ");
+      if (dashIndex !== -1 && /\d/.test(title.slice(dashIndex + 3))) {
+        title = title.slice(0, dashIndex);
+      }
+    } else {
+      // no date; drop any trailing description after the first dash
+      const firstDash = title.indexOf(" - ");
+      if (firstDash !== -1) {
+        title = title.slice(0, firstDash);
+      }
+      title = title.replace(/\s*\([^)]*\)$/, "");
     }
-    const id = title; // version numbers are unique enough
+    const id = title;
     return {
       id,
       title,
