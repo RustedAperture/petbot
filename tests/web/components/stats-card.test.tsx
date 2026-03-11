@@ -28,21 +28,18 @@ vi.mock("../../../apps/web/components/ui/carousel.js", () => {
     __esModule: true,
     __api: api,
     Carousel: ({ children, setApi }: any) => {
+      // useEffect is available on the React import used elsewhere
+      // a simple render hook ensures setApi is called on mount
       React.useEffect(() => {
         if (setApi) {
           setApi(api);
         }
       }, []);
-      return React.createElement(
-        "div",
-        { "data-testid": "carousel" },
-        children,
-      );
+      return createElement("div", { "data-testid": "carousel" }, children);
     },
     CarouselContent: ({ children }: any) =>
-      React.createElement("div", null, children),
-    CarouselItem: ({ children }: any) =>
-      React.createElement("div", null, children),
+      createElement("div", null, children),
+    CarouselItem: ({ children }: any) => createElement("div", null, children),
   };
 });
 

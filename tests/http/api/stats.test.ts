@@ -65,13 +65,15 @@ describe("/api/stats handler - DM location presence behavior", () => {
       [{ cnt: 1 }], // bonk
       [{ cnt: 1 }], // squish
       [{ cnt: 0 }], // explode
-      // image rows for each action
-      [{ images: ["u1"] }],
-      [{ images: ["u2"] }],
-      [{ images: [] }],
-      [{ images: ["i1"] }],
-      [{ images: [] }],
-      [{ images: [] }],
+      // consolidated image query returns multiple rows at once
+      [
+        { actionType: "pet", images: ["u1"] },
+        { actionType: "bite", images: ["u2"] },
+        { actionType: "hug", images: [] },
+        { actionType: "bonk", images: ["i1"] },
+        { actionType: "squish", images: [] },
+        { actionType: "explode", images: [] },
+      ],
       [{ c: 1 }], // totalUniqueUsers (user presence -> 1)
       [{ c: 1 }], // totalLocations (user present at the requested location)
     ];

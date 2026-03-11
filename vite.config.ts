@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { fileURLToPath } from "node:url";
 
 const stub = (name: string) =>
-  new URL(`./tests/web/__mocks__/${name}`, import.meta.url).pathname;
+  fileURLToPath(new URL(`./tests/web/__mocks__/${name}`, import.meta.url));
 const rootPkg = (pkg: string) =>
-  new URL(`./node_modules/${pkg}`, import.meta.url).pathname;
+  fileURLToPath(new URL(`./node_modules/${pkg}`, import.meta.url));
 
 export default defineConfig({
   plugins: [tsconfigPaths()],

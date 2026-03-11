@@ -4,7 +4,7 @@
 // Required for React's act() to work outside of a full testing-library setup
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { it, expect, vi, beforeEach } from "vitest";
+import { it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -12,20 +12,17 @@ import ChangelogPage from "../../../apps/web/app/changelog/page.js";
 const ChangelogPageAny = ChangelogPage as any;
 
 // Mock Select to avoid @base-ui/react multi-React-instance crash
-vi.mock("../../../apps/web/components/ui/select.js", () => {
-  const React = require("react");
+vi.mock("../../../apps/web/components/ui/select.js", async () => {
+  // use the already-imported createElement rather than requiring React
   return {
     __esModule: true,
-    Select: ({ children }: any) =>
-      React.createElement(React.Fragment, null, children),
-    SelectTrigger: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SelectContent: ({ children }: any) =>
-      React.createElement("div", null, children),
+    Select: ({ children }: any) => createElement(() => children),
+    SelectTrigger: ({ children }: any) => createElement("div", null, children),
+    SelectContent: ({ children }: any) => createElement("div", null, children),
     SelectItem: ({ children, value }: any) =>
-      React.createElement("div", { "data-value": value }, children),
+      createElement("div", { "data-value": value }, children),
     SelectValue: ({ placeholder }: any) =>
-      React.createElement("span", null, placeholder),
+      createElement("span", null, placeholder),
   };
 });
 

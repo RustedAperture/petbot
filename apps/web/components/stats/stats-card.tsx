@@ -38,6 +38,7 @@ export default function StatsCard({
     : actionName;
 
   const hasUserImages = Array.isArray(userImages) && userImages.length > 0;
+  const userImageCount = userImages?.length ?? 0;
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi | null>(
     null,
   );
@@ -78,7 +79,7 @@ export default function StatsCard({
       )}
       <CardHeader className="flex items-center justify-between flex-grow">
         <CardTitle>{displayName}</CardTitle>
-        {hasUserImages && userImages.length > 1 && (
+        {hasUserImages && userImageCount > 1 && (
           <ButtonGroup>
             <Button
               type="button"

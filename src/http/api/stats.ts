@@ -97,25 +97,27 @@ export default async function statsHandler(req: any, res: any) {
       > = {};
 
       // prefetch per-action image arrays when we have both user+guild filters.
-      // these are stored in `actionData.images` and will be attached to the
-      // response so the user‑stats page can render a carousel of the photos.
+      // To avoid N queries we perform a single DB call selecting actionType+
+      // images for all relevant kinds and then group the results so the
+      // response includes carousel data.
       const imagesByAction: Record<string, string[]> = {};
       if (effectiveUserId && guildId) {
-        await Promise.all(
-          actionKinds.map(async (k) => {
-            const r: any = await drizzleDb
-              .select({ images: actionData.images })
-              .from(actionData)
-              .where(
-                and(
-                  eq(actionData.userId, effectiveUserId),
-                  eq(actionData.locationId, guildId),
-                  eq(actionData.actionType, k),
-                ),
-              );
-            imagesByAction[k] = (r?.[0]?.images as string[]) || [];
-          }),
-        );
+        // fetch all rows for this user+location and bucket by actionType
+        const rows: any[] = await drizzleDb
+          .select({
+            actionType: actionData.actionType,
+            images: actionData.images,
+          })
+          .from(actionData)
+          .where(
+            and(
+              eq(actionData.userId, effectiveUserId),
+              eq(actionData.locationId, guildId),
+            ),
+          );
+        rows.forEach((row) => {
+          imagesByAction[row.actionType] = (row.images as string[]) || [];
+        });
       }
 
       actionKinds.forEach((k, i) => {
