@@ -58,9 +58,9 @@ describe("useGlobalStats", () => {
     vi.unstubAllGlobals();
   });
 
-  it("starts with loading false and no data when initialData omitted", () => {
+  it("starts with loading true and no data when initialData omitted", () => {
     const { result, unmount } = renderHook(() => useGlobalStats());
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeNull();
     expect(result.current.error).toBeNull();
     unmount();

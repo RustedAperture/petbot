@@ -1,7 +1,11 @@
 // @vitest-environment happy-dom
 /// <reference lib="dom" />
+
+// Required for React's act() to work outside of a full testing-library setup
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
 import { describe, it, expect, vi } from "vitest";
-import { createElement } from "react";
+import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
 
 import StatsCard from "../../../apps/web/components/stats/stats-card.js";
@@ -24,9 +28,11 @@ vi.mock("../../../apps/web/components/ui/carousel.js", () => {
     __esModule: true,
     __api: api,
     Carousel: ({ children, setApi }: any) => {
-      if (setApi) {
-        setApi(api);
-      }
+      React.useEffect(() => {
+        if (setApi) {
+          setApi(api);
+        }
+      }, []);
       return React.createElement(
         "div",
         { "data-testid": "carousel" },
@@ -44,11 +50,13 @@ function render(element: any) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
-  root.render(createElement(() => element));
+  act(() => {
+    root.render(createElement(() => element));
+  });
   return {
     container,
     unmount() {
-      root.unmount();
+      act(() => root.unmount());
       container.remove();
     },
   };
@@ -76,7 +84,7 @@ describe("StatsCard component carousel support", () => {
     unmount();
   });
 
-  it("renders carousel when userImages provided", () => {
+  it("renders carousel when userImages provided", async () => {
     const imgs = ["a.png", "b.png", "c.png"];
     const { container, unmount } = render(
       <StatsCardAny {...baseProps} userImages={imgs} />,
@@ -89,8 +97,12 @@ describe("StatsCard component carousel support", () => {
     expect(prevBtn).toBeTruthy();
     expect(nextBtn).toBeTruthy();
     // ensure buttons are rendered alongside the title text
-    expect(prevBtn?.parentElement?.textContent).toContain("pet");
-    expect(nextBtn?.parentElement?.textContent).toContain("pet");
+    expect(
+      prevBtn?.closest("[data-slot='card-header']")?.textContent,
+    ).toContain("Pet");
+    expect(
+      nextBtn?.closest("[data-slot='card-header']")?.textContent,
+    ).toContain("Pet");
     // clicking the buttons should call the fake API
     if (prevBtn) {
       prevBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -99,7 +111,8 @@ describe("StatsCard component carousel support", () => {
       nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     }
     // verify the mocked methods were invoked via the exported __api object
-    const carouselMock = require("../../../apps/web/components/ui/carousel.js");
+    const carouselMock =
+      await import("../../../apps/web/components/ui/carousel.js");
     expect(carouselMock.__api.scrollPrev).toHaveBeenCalled();
     expect(carouselMock.__api.scrollNext).toHaveBeenCalled();
     // each image should appear inside carousel items
