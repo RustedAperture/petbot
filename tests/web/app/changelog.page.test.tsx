@@ -33,10 +33,19 @@ vi.mock("../../../apps/web/components/ui/select.js", () => {
 const sample = "## v1.0.0 - 2026-03-10\n- Initial\n";
 
 beforeEach(() => {
-  global.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    text: async () => sample,
-  });
+  // stubGlobal ensures the original is saved and can be restored by unstubAllGlobals
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => sample,
+    }),
+  );
+});
+
+afterEach(() => {
+  // restore any globals we stubbed to avoid leaks across tests
+  vi.unstubAllGlobals();
 });
 
 it("mobile view shows cards and hides timeline", async () => {

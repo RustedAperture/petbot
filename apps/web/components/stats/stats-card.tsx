@@ -3,7 +3,12 @@ import { Badge } from "../ui/badge";
 import { Card, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { formatPercentage } from "@/lib/format";
 import { NativeCounterUp } from "../uitripled/native-counter-up-carbon";
-import { Carousel, CarouselContent, CarouselItem } from "../ui/carousel";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "../ui/carousel";
 import React from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "../ui/button";
@@ -33,9 +38,10 @@ export default function StatsCard({
     : actionName;
 
   const hasUserImages = Array.isArray(userImages) && userImages.length > 0;
-  const [carouselApi, setCarouselApi] = React.useState<any>(null);
+  const [carouselApi, setCarouselApi] = React.useState<CarouselApi | null>(
+    null,
+  );
 
-  console.debug(actionName, { userImages, hasUserImages });
   return (
     <Card className="py-0 dark:bg-linear-to-t from-primary/20 to-15%">
       {hasUserImages ? (
@@ -79,16 +85,20 @@ export default function StatsCard({
               onClick={() => carouselApi?.scrollPrev()}
               data-testid="prev"
               size={"sm"}
+              aria-label="Previous image"
             >
               <ChevronLeftIcon />
+              <span className="sr-only">Previous Image</span>
             </Button>
             <Button
               type="button"
               onClick={() => carouselApi?.scrollNext()}
               data-testid="next"
               size={"sm"}
+              aria-label="Next image"
             >
               <ChevronRightIcon />
+              <span className="sr-only">Next Image</span>
             </Button>
           </ButtonGroup>
         )}

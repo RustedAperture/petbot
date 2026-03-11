@@ -87,13 +87,23 @@ describe("useGlobalStats", () => {
 
     const { result, unmount } = renderHook(() => useGlobalStats());
 
-    // trigger a refresh which performs fetch
+    // initial state should reflect loading and no error
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.error).toBeNull();
+
+    // allow the mount effect (which calls refresh) to run and resolve
     await act(async () => {
-      result.current.refresh();
+      await Promise.resolve();
     });
 
-    expect(result.current.data).toEqual(fake);
     expect(fetchMock).toHaveBeenCalled();
+
+    // since refresh() doesn't return a promise, wait for the hook to settle
+    await vi.waitFor(() => {
+      expect(result.current.data).toEqual(fake);
+      expect(result.current.isLoading).toBe(false);
+    });
+
     unmount();
   });
 });

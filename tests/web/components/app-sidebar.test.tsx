@@ -5,8 +5,23 @@
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createElement, useEffect, act } from "react";
+import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
+
+// next/navigation needs to be stubbed outside of a Next App Router context
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
+// next/link also needs a simple stub to avoid DOM shipping warnings and
+// navigation behavior in happy-dom. return an object with a default export
+// that renders an actual <a> so we can query href attributes in tests.
+vi.mock("next/link", () => {
+  const React = require("react");
+  return {
+    default: ({ href, children, ...props }: any) =>
+      React.createElement("a", { href, ...props }, children),
+  };
+});
 
 import { AppSidebar } from "../../../apps/web/components/app-sidebar.js";
 import {
@@ -97,11 +112,11 @@ function render(element: any) {
 describe("AppSidebar mobile behaviour", () => {
   let context: any = null;
 
-  function ContextReader() {
+  // synchronously grab the sidebar context during render so tests can't see
+  // a null value due to useEffect timing.
+  function ContextReader({ onReady }: { onReady: (ctx: any) => void }) {
     const ctx = useSidebar();
-    useEffect(() => {
-      context = ctx;
-    }, [ctx]);
+    onReady(ctx);
     return null;
   }
 
@@ -113,16 +128,20 @@ describe("AppSidebar mobile behaviour", () => {
     const { container, unmount } = render(
       <SidebarProvider>
         <AppSidebar />
-        <ContextReader />
+        <ContextReader onReady={(ctx: any) => (context = ctx)} />
       </SidebarProvider>,
     );
 
     // ensure we have context and we can open mobile
     expect(context).not.toBeNull();
 
+    // trigger a state update inside act and wait a microtask tick so the
+    // provider has a chance to re-render and update `openMobile` value.
     await act(async () => {
       context.setOpenMobile(true);
+      await Promise.resolve();
     });
+    // at this point the update has flushed
     expect(context.openMobile).toBe(true);
 
     // find a stats link (first in menu)
