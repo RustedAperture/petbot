@@ -2,6 +2,7 @@ export type ActionTotals = {
   totalHasPerformed: number;
   totalUsers: number;
   imageUrl: string;
+  images?: string[];
 };
 
 export type GlobalStats = {

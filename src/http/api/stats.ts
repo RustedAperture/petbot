@@ -88,14 +88,44 @@ export default async function statsHandler(req: any, res: any) {
 
       const totalsByAction: Record<
         string,
-        { totalHasPerformed: number; totalUsers: number; imageUrl?: string }
+        {
+          totalHasPerformed: number;
+          totalUsers: number;
+          imageUrl?: string;
+          images?: string[];
+        }
       > = {};
+
+      // prefetch per-action image arrays when we have both user+guild filters.
+      // To avoid N queries we perform a single DB call selecting actionType+
+      // images for all relevant kinds and then group the results so the
+      // response includes carousel data.
+      const imagesByAction: Record<string, string[]> = {};
+      if (effectiveUserId && guildId) {
+        // fetch all rows for this user+location and bucket by actionType
+        const rows: any[] = await drizzleDb
+          .select({
+            actionType: actionData.actionType,
+            images: actionData.images,
+          })
+          .from(actionData)
+          .where(
+            and(
+              eq(actionData.userId, effectiveUserId),
+              eq(actionData.locationId, guildId),
+            ),
+          );
+        rows.forEach((row) => {
+          imagesByAction[row.actionType] = (row.images as string[]) || [];
+        });
+      }
 
       actionKinds.forEach((k, i) => {
         totalsByAction[k] = {
           totalHasPerformed: Number(sums[i]) || 0,
           totalUsers: Number(users[i]) || 0,
           imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
+          ...(imagesByAction[k] ? { images: imagesByAction[k] } : {}),
         };
       });
 
@@ -224,7 +254,12 @@ export default async function statsHandler(req: any, res: any) {
 
     const totalsByAction: Record<
       string,
-      { totalHasPerformed: number; totalUsers: number; imageUrl?: string }
+      {
+        totalHasPerformed: number;
+        totalUsers: number;
+        imageUrl?: string;
+        images?: string[];
+      }
     > = {};
 
     actionKinds.forEach((k, i) => {
