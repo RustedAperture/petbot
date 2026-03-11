@@ -81,6 +81,7 @@ export default function UserStatsPage() {
                 userCount={totals.totalUsers}
                 totalUniqueUsers={data.totalUniqueUsers}
                 totalActionsPerformed={data.totalActionsPerformed}
+                userImages={totals.images}
               />
             ))}
           </div>

@@ -88,14 +88,42 @@ export default async function statsHandler(req: any, res: any) {
 
       const totalsByAction: Record<
         string,
-        { totalHasPerformed: number; totalUsers: number; imageUrl?: string }
+        {
+          totalHasPerformed: number;
+          totalUsers: number;
+          imageUrl?: string;
+          images?: string[];
+        }
       > = {};
+
+      // prefetch per-action image arrays when we have both user+guild filters.
+      // these are stored in `actionData.images` and will be attached to the
+      // response so the user‑stats page can render a carousel of the photos.
+      const imagesByAction: Record<string, string[]> = {};
+      if (effectiveUserId && guildId) {
+        await Promise.all(
+          actionKinds.map(async (k) => {
+            const r: any = await drizzleDb
+              .select({ images: actionData.images })
+              .from(actionData)
+              .where(
+                and(
+                  eq(actionData.userId, effectiveUserId),
+                  eq(actionData.locationId, guildId),
+                  eq(actionData.actionType, k),
+                ),
+              );
+            imagesByAction[k] = (r?.[0]?.images as string[]) || [];
+          }),
+        );
+      }
 
       actionKinds.forEach((k, i) => {
         totalsByAction[k] = {
           totalHasPerformed: Number(sums[i]) || 0,
           totalUsers: Number(users[i]) || 0,
           imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
+          ...(imagesByAction[k] ? { images: imagesByAction[k] } : {}),
         };
       });
 
@@ -224,7 +252,12 @@ export default async function statsHandler(req: any, res: any) {
 
     const totalsByAction: Record<
       string,
-      { totalHasPerformed: number; totalUsers: number; imageUrl?: string }
+      {
+        totalHasPerformed: number;
+        totalUsers: number;
+        imageUrl?: string;
+        images?: string[];
+      }
     > = {};
 
     actionKinds.forEach((k, i) => {

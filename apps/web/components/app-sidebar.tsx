@@ -20,6 +20,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
@@ -33,6 +34,7 @@ export function AppSidebar({
   ...props
 }: { version?: string } & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const activeClass =
     "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear";
@@ -60,6 +62,7 @@ export function AppSidebar({
                   href="/"
                   aria-label="PetBot"
                   className="flex items-center gap-2 group-data-[collapsible=icon]:mx-auto"
+                  onClick={() => isMobile && setOpenMobile(false)}
                 >
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-amber-200 text-stone-900">
                     <BotMessageSquare />
@@ -88,7 +91,10 @@ export function AppSidebar({
                     tooltip={item.title}
                     className={active ? activeClass : undefined}
                     render={
-                      <Link href={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => isMobile && setOpenMobile(false)}
+                      >
                         <item.Icon />
                         <span>{item.title}</span>
                       </Link>

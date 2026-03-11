@@ -59,6 +59,13 @@ describe("/api/stats handler - DM location presence behavior", () => {
       [{ s: 40 }], // bonk sum
       [{ s: 50 }], // squish sum
       [{ s: 0 }], // explode sum
+      // image rows for each action
+      [{ images: ["u1"] }],
+      [{ images: ["u2"] }],
+      [{ images: [] }],
+      [{ images: ["i1"] }],
+      [{ images: [] }],
+      [{ images: [] }],
       [{ cnt: 1 }], // pet distinct users
       [{ cnt: 1 }], // bite
       [{ cnt: 1 }], // hug
@@ -99,5 +106,13 @@ describe("/api/stats handler - DM location presence behavior", () => {
     expect(body.totalsByAction.pet.totalHasPerformed).toBe(10);
     expect(body.totalsByAction.bite.totalHasPerformed).toBe(20);
     expect(body.totalsByAction.hug.totalHasPerformed).toBe(30);
+
+    // images column should be returned when both user and guild are supplied
+    expect(body.totalsByAction.pet.images).toEqual(["u1"]);
+    expect(body.totalsByAction.bite.images).toEqual(["u2"]);
+    expect(body.totalsByAction.hug.images).toEqual([]);
+    expect(body.totalsByAction.bonk.images).toEqual(["i1"]);
+    expect(body.totalsByAction.squish.images).toEqual([]);
+    expect(body.totalsByAction.explode.images).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-## v8.4.0 - Mar 08, 2026
+## v8.4.0 - Mar 10, 2026
 
 ### Enhancement
 
@@ -6,6 +6,11 @@
 - Update website styling
   - Change the theme colors
   - Update design of the changelog page
+- Mobile sidebar now automatically collapses after selecting a menu item (improves navigation on phones).
+
+### New Features
+
+- Add ability to see your images in the user stats section; images are shown in a carousel on the user stats page when viewing a specific guild.
 
 ## v8.3.0 - Mar 07, 2026
 
