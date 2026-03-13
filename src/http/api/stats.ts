@@ -118,6 +118,14 @@ export default async function statsHandler(req: any, res: any) {
         rows.forEach((row) => {
           imagesByAction[row.actionType] = (row.images as string[]) || [];
         });
+
+        for (const k of actionKinds) {
+          if (!imagesByAction[k]) {
+            const defaultImage =
+              ACTIONS[k as keyof typeof ACTIONS]?.defaultImage;
+            imagesByAction[k] = defaultImage ? [defaultImage] : [];
+          }
+        }
       }
 
       actionKinds.forEach((k, i) => {
