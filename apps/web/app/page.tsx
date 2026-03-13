@@ -77,7 +77,7 @@ export default function Home() {
             />
             <Button
               size="lg"
-              className={"bg-[#fff] hover:scale-105 hover:bg-[#fff"}
+              className={"bg-[#fff] hover:scale-105 hover:bg-[#fff]"}
               render={
                 <Link
                   href="https://github.com/RustedAperture/petbot"
