@@ -47,8 +47,9 @@ COPY package*.json ./
 
 RUN --mount=type=cache,target=/root/.npm npm --prefix apps/web ci --no-audit --no-fund --ignore-scripts
 
-# Copy web sources and build
+# Copy web sources and the shared constants the web app imports, then build
 COPY apps/web ./apps/web
+COPY src/types/constants.ts ./src/types/constants.ts
 RUN npm --prefix apps/web run build
 
 

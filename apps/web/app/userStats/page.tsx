@@ -62,13 +62,15 @@ export default function UserStatsPage() {
         <div className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
             <StatsCardSimple
-              statString="Visited Locations"
-              value={data.totalLocations}
-            />
-            <StatsCardSimple
               statString="Total Actions Performed"
               value={data.totalActionsPerformed}
             />
+            {!queryLocationId && (
+              <StatsCardSimple
+                statString="Visited Locations"
+                value={data.totalLocations}
+              />
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -81,6 +83,9 @@ export default function UserStatsPage() {
                 userCount={totals.totalUsers}
                 totalUniqueUsers={data.totalUniqueUsers}
                 totalActionsPerformed={data.totalActionsPerformed}
+                userImages={totals.images}
+                guildId={queryLocationId}
+                hideUserCount={true}
               />
             ))}
           </div>

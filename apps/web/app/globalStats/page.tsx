@@ -27,16 +27,16 @@ export default function GlobalStatsPage() {
         <div className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
             <StatsCardSimple
+              statString="Total Actions Performed"
+              value={data.totalActionsPerformed}
+            />
+            <StatsCardSimple
               statString="Total Unique Users"
               value={data.totalUniqueUsers}
             />
             <StatsCardSimple
               statString="Total Visited Locations"
               value={data.totalLocations}
-            />
-            <StatsCardSimple
-              statString="Total Actions Performed"
-              value={data.totalActionsPerformed}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

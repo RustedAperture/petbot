@@ -65,6 +65,15 @@ describe("/api/stats handler - DM location presence behavior", () => {
       [{ cnt: 1 }], // bonk
       [{ cnt: 1 }], // squish
       [{ cnt: 0 }], // explode
+      // consolidated image query returns multiple rows at once
+      [
+        { actionType: "pet", images: ["u1"] },
+        { actionType: "bite", images: ["u2"] },
+        { actionType: "hug", images: [] },
+        { actionType: "bonk", images: ["i1"] },
+        { actionType: "squish", images: [] },
+        { actionType: "explode", images: [] },
+      ],
       [{ c: 1 }], // totalUniqueUsers (user presence -> 1)
       [{ c: 1 }], // totalLocations (user present at the requested location)
     ];
@@ -99,5 +108,13 @@ describe("/api/stats handler - DM location presence behavior", () => {
     expect(body.totalsByAction.pet.totalHasPerformed).toBe(10);
     expect(body.totalsByAction.bite.totalHasPerformed).toBe(20);
     expect(body.totalsByAction.hug.totalHasPerformed).toBe(30);
+
+    // images column should be returned when both user and guild are supplied
+    expect(body.totalsByAction.pet.images).toEqual(["u1"]);
+    expect(body.totalsByAction.bite.images).toEqual(["u2"]);
+    expect(body.totalsByAction.hug.images).toEqual([]);
+    expect(body.totalsByAction.bonk.images).toEqual(["i1"]);
+    expect(body.totalsByAction.squish.images).toEqual([]);
+    expect(body.totalsByAction.explode.images).toEqual([]);
   });
 });

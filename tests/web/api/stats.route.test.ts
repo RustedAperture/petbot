@@ -57,7 +57,9 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
   it("userScoped flow: client requests userScoped=true -> forward userId+guildId and return user-scoped data", async () => {
     const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
 
-    const userBody = { totalsByAction: { pet: { totalHasPerformed: 7 } } };
+    const userBody = {
+      totalsByAction: { pet: { totalHasPerformed: 7, images: ["a", "b"] } },
+    };
 
     const mockFetch = vi
       .fn()

@@ -12,6 +12,7 @@ import guildsHandler from "./api/guilds.js";
 import userSessionsHandler from "./api/userSessions.js";
 import userDataHandler from "./api/userData.js";
 import optOutHandler from "./api/optOut.js";
+import setImagesHandler from "./api/setImages.js";
 
 function sha256buf(s: string) {
   return crypto.createHash("sha256").update(String(s)).digest();
@@ -106,6 +107,7 @@ export function startHttpServer(
           "/api/userSessions": userSessionsHandler,
           "/api/userData": userDataHandler,
           "/api/optOut": optOutHandler,
+          "/api/setImages": setImagesHandler,
         };
 
         const handlerFn = apiRouter[pathname];

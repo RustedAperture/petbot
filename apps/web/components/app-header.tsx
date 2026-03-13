@@ -11,6 +11,7 @@ import GuildSelect from "@/components/guild-select";
 import UserStatsSelector from "@/components/user-stats-selector";
 import { useSession } from "@/hooks/use-session";
 import { Github } from "lucide-react";
+import Link from "next/link";
 
 export function computeTitle(pathname: string, activeTitle?: string) {
   if (pathname === "/privacy") {
@@ -107,16 +108,21 @@ export function AppHeader() {
 
       {/* right group */}
       <div className="hidden ml-auto md:flex items-center gap-2">
-        <Button variant="outline" asChild size="sm" className="hidden sm:flex">
-          <a
-            href="https://github.com/RustedAperture/petbot"
-            rel="noopener noreferrer"
-            target="_blank"
-            className="dark:text-foreground"
-          >
-            <Github /> GitHub
-          </a>
-        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="hidden sm:flex"
+          render={
+            <Link
+              href="https://github.com/RustedAperture/petbot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dark:text-foreground"
+            >
+              <Github /> GitHub
+            </Link>
+          }
+        />
       </div>
     </header>
   );
