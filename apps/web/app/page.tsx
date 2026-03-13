@@ -19,7 +19,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center">
-      <main className="flex min-h-screen w-full flex-col items-center justify-between py-32 px-16">
+      <main className="flex min-h-screen w-full flex-col items-center justify-between py-8 sm:py-32 px-4 sm:px-16">
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left justify-center">
           <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
             Welcome to PetBot!
@@ -46,7 +46,7 @@ export default function Home() {
             for bug reporters, feature suggesters, and tippers. Code
             contributors are credited on each release for the work they've done.
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               size="lg"
               className={"bg-[#50ACED] hover:scale-105 hover:bg-[#61bcfe]"}
