@@ -42,7 +42,6 @@ export default function StatsCard({
     ? actionName[0].toUpperCase() + actionName.slice(1)
     : actionName;
 
-  const hasUserImages = Array.isArray(userImages) && userImages.length > 0;
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi | null>(
     null,
   );
@@ -55,12 +54,13 @@ export default function StatsCard({
     setLiveImages(userImages ?? []);
   }, [userImages]);
 
-  const liveImageCount = liveImages.filter(Boolean).length;
+  const VALID_URL = /^https?:\/\//i;
+  const displayImages = liveImages.filter((url) => VALID_URL.test(url));
 
   return (
     <>
       <Card className="py-0 dark:bg-linear-to-t from-primary/20 to-15%">
-        {hasUserImages ? (
+        {displayImages.length > 0 ? (
           <Carousel
             setApi={setCarouselApi}
             opts={{
@@ -68,7 +68,7 @@ export default function StatsCard({
             }}
           >
             <CarouselContent>
-              {liveImages.map((url, idx) => (
+              {displayImages.map((url, idx) => (
                 <CarouselItem key={idx}>
                   <Image
                     src={url}
@@ -96,7 +96,7 @@ export default function StatsCard({
           <CardTitle>{displayName}</CardTitle>
 
           <ButtonGroup>
-            {hasUserImages && liveImageCount > 1 && (
+            {displayImages.length > 1 && (
               <Button
                 type="button"
                 onClick={() => carouselApi?.scrollPrev()}
@@ -108,7 +108,7 @@ export default function StatsCard({
                 <span className="sr-only">Previous Image</span>
               </Button>
             )}
-            {hasUserImages && (
+            {!!guildId && (
               <Button
                 type="button"
                 size="sm"
@@ -118,7 +118,7 @@ export default function StatsCard({
                 <PencilIcon />
               </Button>
             )}
-            {hasUserImages && liveImageCount > 1 && (
+            {displayImages.length > 1 && (
               <Button
                 type="button"
                 onClick={() => carouselApi?.scrollNext()}

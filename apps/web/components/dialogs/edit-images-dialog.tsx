@@ -133,7 +133,7 @@ export function EditImagesDialog({
           {Array.from({ length: SLOT_COUNT }, (_, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className="size-16 shrink-0 rounded-lg overflow-hidden bg-muted border border-border">
-                {images[i] ? (
+                {images[i] && validateUrl(images[i]) === null ? (
                   <Image
                     src={images[i]}
                     alt={`Slot ${i + 1} preview`}
@@ -177,8 +177,11 @@ export function EditImagesDialog({
             </Label>
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger>
-                  <InfoIcon className="size-3.5 text-muted-foreground cursor-help" />
+                <TooltipTrigger
+                  aria-label="What does 'Set everywhere' do?"
+                  className="cursor-help text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                >
+                  <InfoIcon className="size-3.5" aria-hidden="true" />
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   Sets these images everywhere you have performed this action

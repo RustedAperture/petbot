@@ -62,12 +62,16 @@ export default async function setImagesHandler(req: any, res: any) {
   if (
     !Array.isArray(images) ||
     images.length > 4 ||
-    images.some(
-      (img) =>
-        typeof img !== "string" ||
-        (img !== "" &&
-          (!ALLOWED_SCHEMES.test(img) || img.length > MAX_URL_LENGTH)),
-    )
+    images.some((img) => {
+      if (typeof img !== "string") {
+        return true;
+      }
+      const trimmed = img.trim();
+      return (
+        trimmed !== "" &&
+        (!ALLOWED_SCHEMES.test(trimmed) || trimmed.length > MAX_URL_LENGTH)
+      );
+    })
   ) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "invalid_images" }));
@@ -75,24 +79,21 @@ export default async function setImagesHandler(req: any, res: any) {
   }
 
   const action = actionType as ActionType;
-  const imagesArray = images as string[];
+  const imagesArray = [
+    ...new Set(
+      (images as string[]).map((url) => url.trim()).filter((url) => url !== ""),
+    ),
+  ];
   const isEverywhere = Boolean(everywhere);
 
   try {
     if (isEverywhere) {
-      const rows: any[] = await drizzleDb
-        .select()
-        .from(actionData)
+      await drizzleDb
+        .update(actionData)
+        .set({ images: imagesArray, updatedAt: new Date().toISOString() })
         .where(
           and(eq(actionData.userId, userId), eq(actionData.actionType, action)),
         );
-
-      for (const r of rows) {
-        await drizzleDb
-          .update(actionData)
-          .set({ images: imagesArray, updatedAt: new Date().toISOString() })
-          .where(eq(actionData.id, r.id));
-      }
     } else {
       if (typeof guildId !== "string" || !/^\d+$/.test(guildId)) {
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -100,6 +101,26 @@ export default async function setImagesHandler(req: any, res: any) {
         return;
       }
 
+      // Presence check: user must have participated in this guild for at least
+      // one action before they are allowed to set images there.
+      const presenceRows: any[] = await drizzleDb
+        .select()
+        .from(actionData)
+        .where(
+          and(
+            eq(actionData.userId, userId),
+            eq(actionData.locationId, guildId),
+          ),
+        )
+        .limit(1);
+
+      if (presenceRows.length === 0) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "not_found" }));
+        return;
+      }
+
+      // Look up the specific action row for this guild.
       const rows: any[] = await drizzleDb
         .select()
         .from(actionData)

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ACTIONS } from "@petbot/constants";
 
 function readCookie(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
@@ -63,8 +64,7 @@ export async function POST(req: Request) {
 
   const { guildId, actionType, images, everywhere } = body;
 
-  const VALID_ACTIONS = ["pet", "bite", "hug", "bonk", "squish", "explode"];
-  if (typeof actionType !== "string" || !VALID_ACTIONS.includes(actionType)) {
+  if (typeof actionType !== "string" || !(actionType in ACTIONS)) {
     return NextResponse.json({ error: "invalid_actionType" }, { status: 400 });
   }
 
