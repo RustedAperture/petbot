@@ -89,7 +89,11 @@ describe("StatsCard component carousel support", () => {
   });
 
   it("renders carousel when userImages provided", async () => {
-    const imgs = ["a.png", "b.png", "c.png"];
+    const imgs = [
+      "https://example.com/a.png",
+      "https://example.com/b.png",
+      "https://example.com/c.png",
+    ];
     const { container, unmount } = render(
       <StatsCardAny {...baseProps} userImages={imgs} />,
     );
