@@ -11,6 +11,7 @@
 ### New Features
 
 - Add ability to see your images in the user stats section; images are shown in a carousel on the user stats page when viewing a specific guild.
+- Add Ability to set your images in the user stats section;
 
 ## v8.3.0 - Mar 07, 2026
 

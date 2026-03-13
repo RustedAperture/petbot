@@ -93,12 +93,12 @@ export default function GuildStatsPage() {
         >
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
             <StatsCardSimple
-              statString="Total Unique Users"
-              value={data.totalUniqueUsers}
-            />
-            <StatsCardSimple
               statString="Total Actions Performed"
               value={data.totalActionsPerformed}
+            />
+            <StatsCardSimple
+              statString="Total Unique Users"
+              value={data.totalUniqueUsers}
             />
           </div>
 
