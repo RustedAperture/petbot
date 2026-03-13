@@ -18,6 +18,13 @@ vi.mock("next/image", () => ({
   default: (props: any) => createElement("img", props),
 }));
 
+// EditImagesDialog uses @base-ui/react Dialog which conflicts with the root
+// ReactDOM instance in tests; stub it out since it is not under test here.
+vi.mock("../../../apps/web/components/dialogs/edit-images-dialog.js", () => ({
+  __esModule: true,
+  EditImagesDialog: () => null,
+}));
+
 // Embla carousel does not work in happy-dom; mock the carousel components to
 // render their children and provide a fake API for navigation.
 vi.mock("../../../apps/web/components/ui/carousel.js", () => {
