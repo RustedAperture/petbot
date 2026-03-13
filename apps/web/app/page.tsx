@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center">
       <main className="flex min-h-screen w-full flex-col items-center justify-between py-8 sm:py-32 px-4 sm:px-16">
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left justify-center">
+        <div className="flex flex-col items-center gap-6 text-center sm:items-start text-left justify-center">
           <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
             Welcome to PetBot!
           </h1>
