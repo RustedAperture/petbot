@@ -50,10 +50,18 @@ export const command = {
       });
     }
 
+    const guildId = interaction.guildId;
+    if (!guildId) {
+      return interaction.reply({
+        content: "This command can only be run in a server.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const gsRows: GuildSettings[] = await drizzleDb
       .select()
       .from(botData)
-      .where(eq(botData.guildId, interaction.guildId))
+      .where(eq(botData.guildId, guildId))
       .limit(1);
     let guildSettings = gsRows?.[0] ?? null;
 
@@ -124,7 +132,7 @@ export const command = {
       })
       .addFields({
         name: "Triggered by",
-        value: `<@${interaction.member.id}>`,
+        value: `<@${interaction.user.id}>`,
       });
 
     if (
