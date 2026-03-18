@@ -3,7 +3,7 @@ import {
   MessageFlags,
   type ModalSubmitInteraction,
 } from "discord.js";
-import drizzleDb from "../db/connector.js";
+import { drizzleDb } from "../db/connector.js";
 import { botData } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -35,8 +35,10 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
       .limit(1);
     const guildSettings = gsRows?.[0] ?? null;
 
-    const finalNickname = nickname || guildSettings?.nickname || "";
-    const finalSleepImage = sleepImage || guildSettings?.sleepImage || "";
+    const finalNickname =
+      nickname !== undefined ? nickname : (guildSettings?.nickname ?? "");
+    const finalSleepImage =
+      sleepImage !== undefined ? sleepImage : (guildSettings?.sleepImage ?? "");
     const finalLogChannel = logChannelId ?? guildSettings?.logChannel ?? "";
 
     if (!guildSettings) {

@@ -56,25 +56,37 @@ export const command = {
       .from(botData)
       .where(eq(botData.guildId, interaction.guildId))
       .limit(1);
-    const guildSettings = gsRows?.[0] ?? null;
+    let guildSettings = gsRows?.[0] ?? null;
 
     const setupEmbed = new EmbedBuilder().setTitle(
       "PetBot Server Config Updated",
     );
 
     if (!guildSettings) {
+      const now = new Date().toISOString();
       await drizzleDb.insert(botData).values({
         guildId: interaction.guildId,
         defaultImages: null,
         logChannel: "",
         nickname: "",
         sleepImage: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: now,
+        updatedAt: now,
       } as any);
+
+      // Keep a local copy of the inserted row so we can use it without a second roundtrip.
+      guildSettings = {
+        guildId: interaction.guildId,
+        defaultImages: null,
+        logChannel: "",
+        nickname: "",
+        sleepImage: "",
+        createdAt: now,
+        updatedAt: now,
+      } as any;
     }
 
-    const logChannelId = guildSettings?.logChannel;
+    const logChannelId = guildSettings.logChannel;
     let logChannel: TextChannel | null = null;
 
     if (logChannelId) {
@@ -88,24 +100,18 @@ export const command = {
     }
 
     // merge into the JSON map so future lookups prefer `defaultImages`
-    const gsRows2: any[] = await drizzleDb
-      .select()
-      .from(botData)
-      .where(eq(botData.guildId, interaction.guildId))
-      .limit(1);
-    const botRow2 = gsRows2?.[0] ?? null;
-    const current2 = botRow2?.defaultImages as any;
-    const map2 =
-      current2 && typeof current2 === "object"
-        ? { ...current2 }
-        : current2
-          ? JSON.parse(current2)
+    const current = guildSettings.defaultImages as any;
+    const map =
+      current && typeof current === "object"
+        ? { ...current }
+        : current
+          ? JSON.parse(current)
           : {};
-    map2[action] = url;
+    map[action] = url;
 
     await drizzleDb
       .update(botData)
-      .set({ defaultImages: map2 })
+      .set({ defaultImages: map })
       .where(eq(botData.guildId, interaction.guildId));
 
     logger.debug(
