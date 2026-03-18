@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 describe("/setup command", () => {
-  it("creates guild settings when none exist and replies with fallback (no log channel)", async () => {
+  it("shows the modal when no guild settings exist", async () => {
     // default mock returns no guild row
     const interaction = mockInteraction({
       options: {
@@ -43,14 +43,10 @@ describe("/setup command", () => {
 
     await command.execute(interaction as any);
 
-    expect((drizzleDb as any).insert).toHaveBeenCalled();
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "No log channel has been set yet.",
-    );
+    expect(interaction.__calls.showModals.length).toBe(1);
   });
 
-  it("replies and logs when log channel exists and send succeeds", async () => {
+  it("shows the modal even when a log channel exists", async () => {
     // make select return a bot row with log_channel
     (drizzleDb as any).select.mockImplementation(() => ({
       from: (_table: any) => ({
@@ -82,45 +78,6 @@ describe("/setup command", () => {
     await command.execute(interaction as any);
 
     expect((drizzleDb as any).insert).not.toHaveBeenCalled();
-    expect(fakeLog.send).toHaveBeenCalled();
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "Updated Configs. This has been logged.",
-    );
-  });
-
-  it("replies with fallback when log channel not set or send fails", async () => {
-    // make select return a bot row with a non-existent channel id
-    (drizzleDb as any).select.mockImplementation(() => ({
-      from: (_table: any) => ({
-        where: (_cond: any) => ({
-          then: (r: any) =>
-            r({ default_images: null, log_channel: "non-existent-channel" }),
-          limit: () =>
-            Promise.resolve([
-              { default_images: null, log_channel: "non-existent-channel" },
-            ]),
-        }),
-      }),
-    }));
-
-    const interaction = mockInteraction({
-      options: {
-        nickname: null,
-        default_pet: null,
-        default_bite: null,
-        sleep_image: null,
-        default_bonk: null,
-        default_squish: null,
-      },
-      fetchChannel: null,
-    });
-
-    await command.execute(interaction as any);
-
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "No log channel has been set yet.",
-    );
+    expect(interaction.__calls.showModals.length).toBe(1);
   });
 });

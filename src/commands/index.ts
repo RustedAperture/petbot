@@ -15,6 +15,7 @@ import hug from "./slash/hug.js";
 import pet from "./slash/pet.js";
 import random from "./slash/random.js";
 import reset from "./slash/reset.js";
+import serverSet from "./slash/serverSet.js";
 import serverSetup from "./slash/serverSetup.js";
 import setCmd from "./slash/set.js";
 import squish from "./slash/squish.js";
@@ -36,6 +37,7 @@ export const slashCommands = [
   pet,
   random,
   reset,
+  serverSet,
   serverSetup,
   setCmd,
   squish,
