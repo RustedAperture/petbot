@@ -14,11 +14,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Detect changed paths
         id: paths
-        uses: dorny/paths-filter@v2
+        uses: dorny/paths-filter@v4.0.1
         with:
           filters: |
             web:
@@ -41,7 +41,7 @@ jobs:
           severity: "medium,high,critical"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.3.0
         with:
           node-version: "24"
           cache: "npm"
@@ -54,7 +54,7 @@ jobs:
 
       - name: Restore Next.js build cache
         if: steps.paths.outputs.web == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.3
         with:
           path: apps/web/.next
           key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json', 'apps/web/package-lock.json', 'apps/web/package.json') }}
@@ -81,16 +81,16 @@ jobs:
         target: [bot, web]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v4.0.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4.0.0
 
       - name: Validate build — ${{ matrix.target }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
