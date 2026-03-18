@@ -77,6 +77,61 @@ describe("/setup command", () => {
 
     expect((drizzleDb as any).insert).not.toHaveBeenCalled();
     expect(interaction.__calls.showModals.length).toBe(1);
+
+    const modal = interaction.__calls.showModals[0];
+    const components = modal.components
+      .map((c: any) => c?.data?.component)
+      .filter(Boolean);
+    const logSelect = components.find(
+      (c: any) => c.data?.custom_id === "logChannelSelect",
+    );
+    expect(logSelect).toBeDefined();
+
+    const logSelectJson = logSelect.toJSON();
+    expect(logSelectJson.default_values?.[0]?.id).toBe("channel-1");
+  });
+
+  it("pre-selects restricted mode option based on guild settings", async () => {
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_cond: any) => ({
+          then: (r: any) => r([{ restricted: true }]),
+          limit: () => Promise.resolve([{ restricted: true }]),
+        }),
+      }),
+    }));
+
+    const interaction = mockInteraction({
+      options: {
+        nickname: null,
+        default_pet: null,
+        default_bite: null,
+        sleep_image: null,
+        default_bonk: null,
+        default_squish: null,
+      },
+      fetchMember: { setNickname: vi.fn() },
+    });
+
+    await command.execute(interaction as any);
+
+    const modal = interaction.__calls.showModals[0];
+    const modalData = JSON.parse(JSON.stringify(modal));
+
+    const selectComponent = modalData.components
+      .map((c: any) => c.component)
+      .find((c: any) => c?.custom_id === "restrictedSelect");
+
+    expect(selectComponent).toBeDefined();
+    const yesOption = selectComponent.options.find(
+      (o: any) => o.value === "true",
+    );
+    const noOption = selectComponent.options.find(
+      (o: any) => o.value === "false",
+    );
+
+    expect(yesOption.default).toBe(true);
+    expect(noOption.default).toBe(false);
   });
 });
 

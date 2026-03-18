@@ -7,7 +7,6 @@ import {
   TextInputBuilder,
   ChannelSelectMenuBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
 } from "discord.js";
 
 import { drizzleDb } from "../../db/connector.js";
@@ -54,6 +53,10 @@ export const command = {
       .setChannelTypes([0])
       .setPlaceholder("Select a log channel");
 
+    if (guildSettings?.logChannel) {
+      logChannelSelect.setDefaultChannels(guildSettings.logChannel);
+    }
+
     const logChannelLabel = new LabelBuilder()
       .setLabel("Where should I send log messages?")
       .setDescription(
@@ -75,20 +78,26 @@ export const command = {
       )
       .setTextInputComponent(sleepImageInput);
 
+    const restrictedEnabled = Boolean(guildSettings?.restricted);
+
     const restrictedSelect = new StringSelectMenuBuilder()
       .setCustomId("restrictedSelect")
       .setPlaceholder("Enable restricted mode?")
       .addOptions(
-        new StringSelectMenuOptionBuilder()
-          .setLabel("Yes")
-          .setValue("true")
-          .setDescription(
-            "Restrict PetBot interactions to users with the Manage Messages permission.",
-          ),
-        new StringSelectMenuOptionBuilder()
-          .setLabel("No")
-          .setValue("false")
-          .setDescription("Allow all users to interact with PetBot."),
+        {
+          label: "Yes",
+          value: "true",
+          description:
+            "Only use server-default images when responding; ignore users’ custom images.",
+          default: restrictedEnabled,
+        },
+        {
+          label: "No",
+          value: "false",
+          description:
+            "Allow users to use their own images (default behavior).",
+          default: !restrictedEnabled,
+        },
       );
 
     const restrictedLabel = new LabelBuilder()

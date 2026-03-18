@@ -22,7 +22,7 @@ export async function performAction(
     await checkUser(actionKind, author, guild);
   }
 
-  const [tRows, aRows] = await Promise.all([
+  const [tRows, aRows, gsRows] = await Promise.all([
     drizzleDb
       .select()
       .from(actionData)
@@ -45,19 +45,14 @@ export async function performAction(
         ),
       )
       .limit(1),
+    drizzleDb.select().from(botData).where(eq(botData.guildId, guild)).limit(1),
   ]);
   const targetRow = tRows?.[0] ?? null;
   const authorRow = aRows?.[0] ?? null;
+  const guildSettings = gsRows?.[0] ?? null;
 
   const imageSource = ACTIONS[actionKind].imageSource;
   const imageRow = imageSource === "author" ? authorRow : targetRow;
-
-  const gsRows: any[] = await drizzleDb
-    .select()
-    .from(botData)
-    .where(eq(botData.guildId, guild))
-    .limit(1);
-  const guildSettings = gsRows?.[0] ?? null;
 
   const defaultImagesRaw = guildSettings?.defaultImages;
   const guildDefaultImage =
