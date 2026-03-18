@@ -6,6 +6,8 @@ import {
   TextInputStyle,
   TextInputBuilder,
   ChannelSelectMenuBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
 } from "discord.js";
 
 import { drizzleDb } from "../../db/connector.js";
@@ -73,9 +75,31 @@ export const command = {
       )
       .setTextInputComponent(sleepImageInput);
 
+    const restrictedSelect = new StringSelectMenuBuilder()
+      .setCustomId("restrictedSelect")
+      .setPlaceholder("Enable restricted mode?")
+      .addOptions(
+        new StringSelectMenuOptionBuilder()
+          .setLabel("Yes")
+          .setValue("true")
+          .setDescription(
+            "Restrict PetBot interactions to users with the Manage Messages permission.",
+          ),
+        new StringSelectMenuOptionBuilder()
+          .setLabel("No")
+          .setValue("false")
+          .setDescription("Allow all users to interact with PetBot."),
+      );
+
+    const restrictedLabel = new LabelBuilder()
+      .setLabel("Enable Restricted Mode?")
+      .setDescription("Restrict PetBot to images set by the server.")
+      .setStringSelectMenuComponent(restrictedSelect);
+
     modal.addLabelComponents(nicknameLabel);
     modal.addLabelComponents(logChannelLabel);
     modal.addLabelComponents(sleepImageLabel);
+    modal.addLabelComponents(restrictedLabel);
 
     await interaction.showModal(modal);
   },

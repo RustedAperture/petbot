@@ -42,6 +42,7 @@ export const botData = sqliteTable("botData", {
   defaultImages: text("default_images", { mode: "json" })
     .default("[]")
     .$type<Record<string, string>>(),
+  restricted: integer("restricted", { mode: "boolean" }).default(false),
 });
 
 export const userSessions = sqliteTable("userSessions", {

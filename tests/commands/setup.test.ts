@@ -21,6 +21,7 @@ vi.mock("../../src/db/schema.js", () => ({ botData: {} }));
 
 import { drizzleDb } from "../../src/db/connector.js";
 import { command } from "../../src/commands/slash/serverSetup.js";
+import { handleServerSetupModal } from "../../src/modals/serverSetupModal.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -76,5 +77,88 @@ describe("/setup command", () => {
 
     expect((drizzleDb as any).insert).not.toHaveBeenCalled();
     expect(interaction.__calls.showModals.length).toBe(1);
+  });
+});
+
+describe("/setup modal submission", () => {
+  function mockModal(overrides: any = {}) {
+    const calls: any = { editedReplies: [] };
+
+    const guild = overrides.guild ?? {
+      id: overrides.guildId ?? "guild-1",
+      channels: {
+        fetch: async (_id: string) => overrides.fetchChannel ?? null,
+      },
+      members: {
+        fetch: async (_id: string) =>
+          overrides.fetchMember ?? { setNickname: async () => {} },
+      },
+    };
+
+    const client = overrides.client ?? { application: { id: "bot-id" } };
+
+    const fields = {
+      getTextInputValue: (key: string) => overrides.fields?.[key] ?? "",
+      getSelectedChannels: (key: string) =>
+        overrides.selectedChannels?.[key] ?? undefined,
+      getStringSelectValues: (key: string) =>
+        overrides.stringSelectValues?.[key] ?? undefined,
+    };
+
+    return {
+      deferReply: async () => {},
+      editReply: async (payload: any) => calls.editedReplies.push(payload),
+      fields,
+      guildId: overrides.guildId ?? "guild-1",
+      guild,
+      user: { id: "user-1" },
+      client,
+      __calls: calls,
+    };
+  }
+
+  it("saves restricted mode when selected", async () => {
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_cond: any) => ({
+          limit: () =>
+            Promise.resolve([
+              {
+                logChannel: "channel-1",
+                nickname: "PetBot",
+                sleepImage: "https://example.com/old.png",
+                restricted: false,
+              },
+            ]),
+        }),
+      }),
+    }));
+
+    const fakeChannel = { isTextBased: () => true, send: vi.fn() };
+    const fakeMember = { setNickname: vi.fn() };
+
+    const modal = mockModal({
+      guildId: "guild-1",
+      guild: {
+        id: "guild-1",
+        channels: { fetch: async () => fakeChannel },
+        members: { fetch: async () => fakeMember },
+      },
+      fields: {
+        nicknameInput: "PetBot",
+        sleepImageInput: "https://example.com/new.png",
+      },
+      selectedChannels: { logChannelSelect: ["channel-1"] },
+      stringSelectValues: { restrictedSelect: ["true"] },
+    });
+
+    await handleServerSetupModal(modal as any);
+
+    const updateResult = (drizzleDb as any).update.mock.results[0].value;
+    expect(updateResult.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        restricted: true,
+      }),
+    );
   });
 });

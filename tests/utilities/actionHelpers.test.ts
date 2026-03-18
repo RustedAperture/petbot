@@ -14,7 +14,7 @@ vi.mock("../../src/db/connector.js", () => ({
     update: vi.fn(() => ({ set: vi.fn() })),
   },
 }));
-vi.mock("../../src/db/schema.js", () => ({ actionData: {} }));
+vi.mock("../../src/db/schema.js", () => ({ actionData: {}, botData: {} }));
 vi.mock("@utils/helper.js", () => ({ randomImage: vi.fn() }));
 vi.mock("../../src/components/buildActionReply.js", () => ({
   buildActionReply: vi.fn(),
@@ -69,6 +69,14 @@ describe("actionHelpers", () => {
       .mockImplementationOnce(() => ({
         from: (_: any) => ({
           where: (_: any) => ({
+            then: (r: any) => r([]),
+            limit: () => Promise.resolve([]),
+          }),
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        from: (_: any) => ({
+          where: (_: any) => ({
             then: (r: any) => r([{ ...targetRow, hasReceived: 2 }]),
             limit: () => Promise.resolve([{ ...targetRow, hasReceived: 2 }]),
           }),
@@ -92,6 +100,85 @@ describe("actionHelpers", () => {
     expect((drizzleDb as any).update).toHaveBeenCalled();
     expect(buildActionReply).toHaveBeenCalled();
     expect(res).toBe("container");
+  });
+
+  it("uses guild default images when restricted mode is enabled", async () => {
+    const targetRow = {
+      id: 11,
+      images: ["img"],
+      hasReceived: 1,
+    };
+    const authorRow = {
+      id: 22,
+      images: ["img"],
+      hasPerformed: 2,
+    };
+
+    (drizzleDb as any).select
+      .mockImplementationOnce(() => ({
+        from: (_: any) => ({
+          where: (_: any) => ({
+            then: (r: any) => r([targetRow]),
+            limit: () => Promise.resolve([targetRow]),
+          }),
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        from: (_: any) => ({
+          where: (_: any) => ({
+            then: (r: any) => r([authorRow]),
+            limit: () => Promise.resolve([authorRow]),
+          }),
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        from: (_: any) => ({
+          where: (_: any) => ({
+            then: (r: any) =>
+              r([
+                {
+                  restricted: true,
+                  defaultImages: { pet: "https://example.com/restricted.png" },
+                },
+              ]),
+            limit: () =>
+              Promise.resolve([
+                {
+                  restricted: true,
+                  defaultImages: { pet: "https://example.com/restricted.png" },
+                },
+              ]),
+          }),
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        from: (_: any) => ({
+          where: (_: any) => ({
+            then: (r: any) => r([{ ...targetRow, hasReceived: 2 }]),
+            limit: () => Promise.resolve([{ ...targetRow, hasReceived: 2 }]),
+          }),
+        }),
+      }));
+
+    (drizzleDb as any).update.mockImplementation(() => ({
+      set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+    }));
+
+    (randomImage as any).mockReturnValue("img");
+    (buildActionReply as any).mockReturnValue("container");
+
+    await performAction(
+      "pet" as any,
+      { id: "t" } as any,
+      { id: "a" } as any,
+      "g1",
+    );
+
+    expect(randomImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        images: ["https://example.com/restricted.png"],
+      }),
+    );
   });
 
   it("getActionStatsContainer returns built stats reply when row exists", async () => {
