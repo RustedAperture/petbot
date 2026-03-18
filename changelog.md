@@ -2,6 +2,9 @@
 
 ### Enhancements
 
+- Rework the `/server-setup` command to use a modal
+- Add a new `/server-set` command specifically for the images
+
 ### New Features
 
 ## v8.4.0 - Mar 13, 2026
