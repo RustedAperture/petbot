@@ -4,11 +4,7 @@ import {
   type Interaction,
   type ButtonInteraction,
   type Client,
-  type Message,
-  type GuildMember,
-  type User,
 } from "discord.js";
-import { resetAction } from "../utilities/resetAction.js";
 
 interface Executable {
   name: string;
@@ -100,262 +96,50 @@ const interactionCreate = {
       }
     } else if (interaction.isButton()) {
       const buttonInteraction = interaction as ButtonInteraction;
+      const { buttonHandlers } = await import("../buttons/index.js");
+      const handler = buttonHandlers.find((h) =>
+        h.matches(buttonInteraction.customId),
+      );
 
-      if (buttonInteraction.customId === "reset-pet") {
-        await buttonInteraction.deferReply({ flags: MessageFlags.Ephemeral });
-        const msg = (await buttonInteraction.message) as Message;
-        const row = msg.components?.[0] as { components?: any[] } | undefined;
-        const msgDesc = row?.components?.[1]?.content ?? "";
-        const lines = msgDesc.split("\n")?.[1] ?? "";
-        const slotStr = lines.trim().split(":")?.[1]?.trim() ?? "";
-        const mentionMatch = msgDesc.match(/<@(\d+)>/);
-        const mention = mentionMatch ? mentionMatch[1] : "";
-        const slotNumber = slotStr ? parseInt(slotStr) : NaN;
-
-        if (mention && !isNaN(slotNumber)) {
-          await resetAction("pet", buttonInteraction, mention, slotNumber);
-          await buttonInteraction.editReply({
-            content: `<@${mention}> pet image has been reset`,
-          });
-        } else {
-          await buttonInteraction.editReply({
-            content: "Failed to parse mention or slot number.",
-          });
-        }
-      }
-      if (buttonInteraction.customId === "reset-bite") {
-        await buttonInteraction.deferReply({ flags: MessageFlags.Ephemeral });
-        const msg = (await buttonInteraction.message) as Message;
-
-        const row = msg.components?.[0] as { components?: any[] } | undefined;
-        const msgDesc = row?.components?.[1]?.content ?? "";
-
-        const lines = msgDesc.split("\n")?.[1] ?? "";
-
-        const slotStr = lines.trim().split(":")?.[1]?.trim() ?? "";
-        const mentionMatch = msgDesc.match(/<@(\d+)>/);
-        const mention = mentionMatch ? mentionMatch[1] : "";
-        const slotNumber = slotStr ? parseInt(slotStr) : NaN;
-
-        if (mention && !isNaN(slotNumber)) {
-          await resetAction("bite", buttonInteraction, mention, slotNumber);
-          await buttonInteraction.editReply({
-            content: `<@${mention}> bite image has been reset`,
-          });
-        } else {
-          await buttonInteraction.editReply({
-            content: "Failed to parse mention or slot number.",
-          });
-        }
-      }
-    } else if (interaction.isStringSelectMenu()) {
-      const select = interaction;
-      const custom = select.customId || "";
-
-      if (custom.startsWith("perform-select:")) {
-        const targetId = custom.slice("perform-select:".length);
-        if (!targetId) {
-          await select.reply({
-            content: "Invalid target specified.",
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        const { isOptedOut } = await import("../utilities/check_user.js");
-        if (await isOptedOut(targetId)) {
-          await select.reply({
-            content:
-              "That user has opted out of PetBot and cannot be interacted with.",
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-
-        await select.deferReply();
-
-        const action = select.values?.[0];
-        const guild = select.guildId ?? select.channelId!;
-        // Normalize author to a User-like object (ensure .id exists)
-        const authorRaw = select.member ?? select.user;
-        const author =
-          authorRaw && (authorRaw as any).user
-            ? (authorRaw as any).user
-            : (authorRaw as any);
-
+      if (handler) {
         try {
-          // fetch target (try member first) and normalize types
-          let target: GuildMember | User;
-          if (select.guild) {
-            try {
-              target = (await select.guild.members.fetch(
-                targetId,
-              )) as GuildMember;
-            } catch {
-              // fallback to user
-              target = (await select.client.users.fetch(targetId)) as User;
-            }
-          } else {
-            target = (await select.client.users.fetch(targetId)) as User;
-          }
-
-          if (!action) {
-            await select.editReply({ content: "No action selected." });
-            return;
-          }
-
-          // defensive check: ensure ids exist
-          if (!target || !(target as any).id) {
-            await select.editReply({ content: "Failed to resolve target." });
-            return;
-          }
-          if (!author || !(author as any).id) {
-            await select.editReply({ content: "Failed to resolve actor." });
-            return;
-          }
-
-          // validate action
-          if (!(action in (await import("../types/constants.js")).ACTIONS)) {
-            await select.editReply({ content: "Invalid action." });
-            return;
-          }
-
-          const { checkUser } = await import("../utilities/check_user.js");
-          const { performAction } =
-            await import("../utilities/actionHelpers.js");
-
-          // Ensure both target and author have action rows ready concurrently
-          await Promise.all([
-            checkUser(action as any, target, guild),
-            checkUser(action as any, author, guild),
-          ]);
-
-          const container = await performAction(
-            action as any,
-            target,
-            author,
-            guild,
-            { skipChecks: true },
-          );
-
-          await select.editReply({
-            components: [container] as any,
-            flags: MessageFlags.IsComponentsV2,
-          });
+          await handler.execute(buttonInteraction);
         } catch (err) {
           console.error(err);
-          await select.editReply({ content: "Failed to perform action." });
+          if (!buttonInteraction.replied && !buttonInteraction.deferred) {
+            await buttonInteraction.reply({
+              content: "There was an error while handling this button.",
+              flags: MessageFlags.Ephemeral,
+            });
+          } else if (buttonInteraction.deferred) {
+            await buttonInteraction.editReply({
+              content: "There was an error while handling this button.",
+            });
+          }
         }
       }
     } else if (interaction.isModalSubmit()) {
       const modal = interaction;
       const custom = modal.customId || "";
-      if (custom.startsWith("perform-modal:")) {
-        const targetId = custom.slice("perform-modal:".length);
-        if (!targetId) {
-          await modal.reply({
-            content: "Invalid target specified.",
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
 
-        const { isOptedOut } = await import("../utilities/check_user.js");
-        if (await isOptedOut(targetId)) {
-          await modal.reply({
-            content:
-              "That user has opted out of PetBot and cannot be interacted with.",
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
+      const { modalHandlers } = await import("../modals/index.js");
+      const handler = modalHandlers.find((h) => h.matches(custom));
 
-        await modal.deferReply();
-        let action: string | null = null;
+      if (handler) {
         try {
-          action = modal.fields.getStringSelectValues("action")[0];
-        } catch {
-          // not a text input modal
-        }
-
-        const guild = modal.guildId ?? modal.channelId!;
-        // Normalize author to a User-like object (ensure .id exists)
-        const authorRaw = modal.member ?? modal.user;
-        const author =
-          authorRaw && (authorRaw as any).user
-            ? (authorRaw as any).user
-            : (authorRaw as any);
-
-        try {
-          // fetch target (try member first) and normalize types
-          let target: GuildMember | User;
-          if (modal.guild) {
-            try {
-              target = (await modal.guild.members.fetch(
-                targetId,
-              )) as GuildMember;
-            } catch {
-              // fallback to user
-              target = (await modal.client.users.fetch(targetId)) as User;
-            }
-          } else {
-            target = (await modal.client.users.fetch(targetId)) as User;
-          }
-
-          if (!action) {
-            // attempt to read selection from raw modal data (label -> component pattern)
-            const comp = (modal as any).data?.components?.[0]?.component;
-            if (comp && Array.isArray(comp.values) && comp.values.length > 0) {
-              action = comp.values[0];
-            }
-          }
-
-          // defensive check: ensure ids exist
-          if (!target || !(target as any).id) {
-            await modal.editReply({ content: "Failed to resolve target." });
-            return;
-          }
-          if (!author || !(author as any).id) {
-            await modal.editReply({ content: "Failed to resolve actor." });
-            return;
-          }
-
-          if (!action) {
-            await modal.editReply({ content: "No action provided." });
-            return;
-          }
-
-          // validate action
-          if (!(action in (await import("../types/constants.js")).ACTIONS)) {
-            await modal.editReply({ content: "Invalid action." });
-            return;
-          }
-
-          const { checkUser } = await import("../utilities/check_user.js");
-          const { performAction } =
-            await import("../utilities/actionHelpers.js");
-
-          // Ensure both target and author have action rows ready concurrently
-          await Promise.all([
-            checkUser(action as any, target, guild),
-            checkUser(action as any, author, guild),
-          ]);
-
-          const container = await performAction(
-            action as any,
-            target,
-            author,
-            guild,
-            { skipChecks: true },
-          );
-
-          await modal.editReply({
-            components: [container] as any,
-            flags: MessageFlags.IsComponentsV2,
-          });
+          await handler.execute(modal);
         } catch (err) {
           console.error(err);
-          await modal.editReply({ content: "Failed to perform action." });
+          if (!modal.replied && !modal.deferred) {
+            await modal.reply({
+              content: "There was an error while handling this modal.",
+              flags: MessageFlags.Ephemeral,
+            });
+          } else if (modal.deferred) {
+            await modal.editReply({
+              content: "There was an error while handling this modal.",
+            });
+          }
         }
       }
     }

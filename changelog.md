@@ -1,3 +1,14 @@
+## v8.5.0 - Mar 17, 2026
+
+### Enhancements
+
+- Rework the `/server-setup` command to use a modal
+- Add a new `/server-set` command specifically for the images
+
+### New Features
+
+- Add a restricted option to server setup, when enabled it will allow for the server to only use the default or server set images
+
 ## v8.4.0 - Mar 13, 2026
 
 ### Enhancement

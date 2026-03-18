@@ -1,0 +1,1 @@
+ALTER TABLE `botData` ADD `restricted` integer DEFAULT false;

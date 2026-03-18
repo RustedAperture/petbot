@@ -21,13 +21,14 @@ vi.mock("../../src/db/schema.js", () => ({ botData: {} }));
 
 import { drizzleDb } from "../../src/db/connector.js";
 import { command } from "../../src/commands/slash/serverSetup.js";
+import { handleServerSetupModal } from "../../src/modals/serverSetupModal.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("/setup command", () => {
-  it("creates guild settings when none exist and replies with fallback (no log channel)", async () => {
+  it("shows the modal when no guild settings exist", async () => {
     // default mock returns no guild row
     const interaction = mockInteraction({
       options: {
@@ -43,24 +44,17 @@ describe("/setup command", () => {
 
     await command.execute(interaction as any);
 
-    expect((drizzleDb as any).insert).toHaveBeenCalled();
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "No log channel has been set yet.",
-    );
+    expect(interaction.__calls.showModals.length).toBe(1);
   });
 
-  it("replies and logs when log channel exists and send succeeds", async () => {
-    // make select return a bot row with log_channel
+  it("shows the modal even when a log channel exists", async () => {
+    // make select return a bot row with logChannel (camelCase) so the pre-population path is hit
     (drizzleDb as any).select.mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_cond: any) => ({
-          then: (r: any) =>
-            r({ default_images: null, log_channel: "channel-1" }),
+          then: (r: any) => r({ defaultImages: null, logChannel: "channel-1" }),
           limit: () =>
-            Promise.resolve([
-              { default_images: null, log_channel: "channel-1" },
-            ]),
+            Promise.resolve([{ defaultImages: null, logChannel: "channel-1" }]),
         }),
       }),
     }));
@@ -82,24 +76,27 @@ describe("/setup command", () => {
     await command.execute(interaction as any);
 
     expect((drizzleDb as any).insert).not.toHaveBeenCalled();
-    expect(fakeLog.send).toHaveBeenCalled();
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "Updated Configs. This has been logged.",
+    expect(interaction.__calls.showModals.length).toBe(1);
+
+    const modal = interaction.__calls.showModals[0];
+    const components = modal.components
+      .map((c: any) => c?.data?.component)
+      .filter(Boolean);
+    const logSelect = components.find(
+      (c: any) => c.data?.custom_id === "logChannelSelect",
     );
+    expect(logSelect).toBeDefined();
+
+    const logSelectJson = logSelect.toJSON();
+    expect(logSelectJson.default_values?.[0]?.id).toBe("channel-1");
   });
 
-  it("replies with fallback when log channel not set or send fails", async () => {
-    // make select return a bot row with a non-existent channel id
+  it("pre-selects restricted mode option based on guild settings", async () => {
     (drizzleDb as any).select.mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_cond: any) => ({
-          then: (r: any) =>
-            r({ default_images: null, log_channel: "non-existent-channel" }),
-          limit: () =>
-            Promise.resolve([
-              { default_images: null, log_channel: "non-existent-channel" },
-            ]),
+          then: (r: any) => r([{ restricted: true }]),
+          limit: () => Promise.resolve([{ restricted: true }]),
         }),
       }),
     }));
@@ -113,14 +110,110 @@ describe("/setup command", () => {
         default_bonk: null,
         default_squish: null,
       },
-      fetchChannel: null,
+      fetchMember: { setNickname: vi.fn() },
     });
 
     await command.execute(interaction as any);
 
-    expect(interaction.__calls.replies.length).toBe(1);
-    expect(interaction.__calls.replies[0].content).toBe(
-      "No log channel has been set yet.",
+    const modal = interaction.__calls.showModals[0];
+    const modalData = JSON.parse(JSON.stringify(modal));
+
+    const selectComponent = modalData.components
+      .map((c: any) => c.component)
+      .find((c: any) => c?.custom_id === "restrictedSelect");
+
+    expect(selectComponent).toBeDefined();
+    const yesOption = selectComponent.options.find(
+      (o: any) => o.value === "true",
+    );
+    const noOption = selectComponent.options.find(
+      (o: any) => o.value === "false",
+    );
+
+    expect(yesOption.default).toBe(true);
+    expect(noOption.default).toBe(false);
+  });
+});
+
+describe("/setup modal submission", () => {
+  function mockModal(overrides: any = {}) {
+    const calls: any = { editedReplies: [] };
+
+    const guild = overrides.guild ?? {
+      id: overrides.guildId ?? "guild-1",
+      channels: {
+        fetch: async (_id: string) => overrides.fetchChannel ?? null,
+      },
+      members: {
+        fetch: async (_id: string) =>
+          overrides.fetchMember ?? { setNickname: async () => {} },
+      },
+    };
+
+    const client = overrides.client ?? { application: { id: "bot-id" } };
+
+    const fields = {
+      getTextInputValue: (key: string) => overrides.fields?.[key] ?? "",
+      getSelectedChannels: (key: string) =>
+        overrides.selectedChannels?.[key] ?? undefined,
+      getStringSelectValues: (key: string) =>
+        overrides.stringSelectValues?.[key] ?? undefined,
+    };
+
+    return {
+      deferReply: async () => {},
+      editReply: async (payload: any) => calls.editedReplies.push(payload),
+      fields,
+      guildId: overrides.guildId ?? "guild-1",
+      guild,
+      user: { id: "user-1" },
+      client,
+      __calls: calls,
+    };
+  }
+
+  it("saves restricted mode when selected", async () => {
+    (drizzleDb as any).select.mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_cond: any) => ({
+          limit: () =>
+            Promise.resolve([
+              {
+                logChannel: "channel-1",
+                nickname: "PetBot",
+                sleepImage: "https://example.com/old.png",
+                restricted: false,
+              },
+            ]),
+        }),
+      }),
+    }));
+
+    const fakeChannel = { isTextBased: () => true, send: vi.fn() };
+    const fakeMember = { setNickname: vi.fn() };
+
+    const modal = mockModal({
+      guildId: "guild-1",
+      guild: {
+        id: "guild-1",
+        channels: { fetch: async () => fakeChannel },
+        members: { fetch: async () => fakeMember },
+      },
+      fields: {
+        nicknameInput: "PetBot",
+        sleepImageInput: "https://example.com/new.png",
+      },
+      selectedChannels: { logChannelSelect: ["channel-1"] },
+      stringSelectValues: { restrictedSelect: ["true"] },
+    });
+
+    await handleServerSetupModal(modal as any);
+
+    const updateResult = (drizzleDb as any).update.mock.results[0].value;
+    expect(updateResult.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        restricted: true,
+      }),
     );
   });
 });
