@@ -35,10 +35,8 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
       .limit(1);
     const guildSettings = gsRows?.[0] ?? null;
 
-    const finalNickname =
-      nickname !== undefined ? nickname : (guildSettings?.nickname ?? "");
-    const finalSleepImage =
-      sleepImage !== undefined ? sleepImage : (guildSettings?.sleepImage ?? "");
+    const finalNickname = nickname;
+    const finalSleepImage = sleepImage;
     const finalLogChannel = logChannelId ?? guildSettings?.logChannel ?? "";
 
     if (!guildSettings) {
