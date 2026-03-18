@@ -47,16 +47,13 @@ describe("/setup command", () => {
   });
 
   it("shows the modal even when a log channel exists", async () => {
-    // make select return a bot row with log_channel
+    // make select return a bot row with logChannel (camelCase) so the pre-population path is hit
     (drizzleDb as any).select.mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_cond: any) => ({
-          then: (r: any) =>
-            r({ default_images: null, log_channel: "channel-1" }),
+          then: (r: any) => r({ defaultImages: null, logChannel: "channel-1" }),
           limit: () =>
-            Promise.resolve([
-              { default_images: null, log_channel: "channel-1" },
-            ]),
+            Promise.resolve([{ defaultImages: null, logChannel: "channel-1" }]),
         }),
       }),
     }));

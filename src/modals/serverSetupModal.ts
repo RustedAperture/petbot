@@ -76,6 +76,7 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
     const summaryEmbed = new EmbedBuilder().setTitle("Setup");
     summaryEmbed.addFields(
       { name: "Nickname", value: finalNickname || "(none)" },
+      { name: "Sleep image", value: finalSleepImage || "(none)" },
       {
         name: "Log Channel",
         value: finalLogChannel ? `<#${finalLogChannel}>` : "(none)",
