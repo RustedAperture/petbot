@@ -64,12 +64,19 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
     }
 
     if (modal.guild) {
-      try {
-        const botId = modal.client.application.id;
-        const botMember = await modal.guild.members.fetch(botId);
-        await botMember.setNickname(finalNickname || null);
-      } catch (err) {
-        console.warn("Failed to update bot nickname in guild.", err);
+      const application = modal.client.application;
+      if (!application?.id) {
+        console.warn(
+          "Could not update bot nickname: Discord application details are not available.",
+        );
+      } else {
+        try {
+          const botId = application.id;
+          const botMember = await modal.guild.members.fetch(botId);
+          await botMember.setNickname(finalNickname || null);
+        } catch (err) {
+          console.warn("Failed to update bot nickname in guild.", err);
+        }
       }
     }
 

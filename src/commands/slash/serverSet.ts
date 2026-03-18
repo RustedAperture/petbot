@@ -3,7 +3,6 @@ import {
   PermissionsBitField,
   EmbedBuilder,
   MessageFlags,
-  TextChannel,
 } from "discord.js";
 import { drizzleDb } from "../../db/connector.js";
 import { botData } from "../../db/schema.js";
@@ -87,13 +86,13 @@ export const command = {
     }
 
     const logChannelId = guildSettings.logChannel;
-    let logChannel: TextChannel | null = null;
+    let logChannel: any | null = null;
 
     if (logChannelId) {
       try {
-        logChannel = (await interaction.guild.channels.fetch(
+        logChannel = await interaction.guild.channels.fetch(
           logChannelId as any,
-        )) as TextChannel;
+        );
       } catch {
         logger.warn("No log channel has been setup yet!");
       }
@@ -128,7 +127,11 @@ export const command = {
         value: `<@${interaction.member.id}>`,
       });
 
-    if (logChannel) {
+    if (
+      logChannel &&
+      typeof logChannel.isTextBased === "function" &&
+      logChannel.isTextBased()
+    ) {
       try {
         await logChannel.send({ embeds: [setupEmbed] });
       } catch (error: unknown) {
