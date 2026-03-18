@@ -7,6 +7,8 @@
 
 ### New Features
 
+- Add a restricted option to server setup, when enabled it will allow for the server to only use the default or server set images
+
 ## v8.4.0 - Mar 13, 2026
 
 ### Enhancement

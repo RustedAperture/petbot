@@ -22,6 +22,17 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
     // some discord.js versions may not support channel selects in ModalFields
   }
 
+  let restrictedValue: boolean | null = null;
+  try {
+    const restrictedSelection =
+      modal.fields.getStringSelectValues("restrictedSelect");
+    if (restrictedSelection?.length) {
+      restrictedValue = restrictedSelection[0] === "true";
+    }
+  } catch {
+    // some discord.js versions may not support string select values in ModalFields
+  }
+
   try {
     const guildId = modal.guildId;
     if (!guildId) {
@@ -38,6 +49,8 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
     const finalNickname = nickname;
     const finalSleepImage = sleepImage;
     const finalLogChannel = logChannelId ?? guildSettings?.logChannel ?? "";
+    const finalRestricted =
+      restrictedValue ?? guildSettings?.restricted ?? false;
 
     if (!guildSettings) {
       await drizzleDb.insert(botData).values({
@@ -46,6 +59,7 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
         logChannel: finalLogChannel,
         nickname: finalNickname,
         sleepImage: finalSleepImage,
+        restricted: finalRestricted,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       } as any);
@@ -56,6 +70,7 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
           logChannel: finalLogChannel,
           nickname: finalNickname,
           sleepImage: finalSleepImage,
+          restricted: finalRestricted,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(botData.guildId, guildId));
@@ -82,6 +97,10 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
     summaryEmbed.addFields(
       { name: "Nickname", value: finalNickname || "(none)" },
       { name: "Sleep image", value: finalSleepImage || "(none)" },
+      {
+        name: "Restricted",
+        value: finalRestricted ? "Yes" : "No",
+      },
       {
         name: "Log Channel",
         value: finalLogChannel ? `<#${finalLogChannel}>` : "(none)",

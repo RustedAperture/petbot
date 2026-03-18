@@ -2,7 +2,7 @@ import { GuildMember, TextDisplayBuilder, User } from "discord.js";
 import { ContainerBuilder } from "discord.js";
 import { checkUser } from "./check_user.js";
 import { drizzleDb } from "../db/connector.js";
-import { actionData } from "../db/schema.js";
+import { actionData, botData } from "../db/schema.js";
 import { sql, eq, and } from "drizzle-orm";
 import { ActionUser } from "../types/user.js";
 import { buildActionReply } from "../components/buildActionReply.js";
@@ -22,7 +22,7 @@ export async function performAction(
     await checkUser(actionKind, author, guild);
   }
 
-  const [tRows, aRows] = await Promise.all([
+  const [tRows, aRows, gsRows] = await Promise.all([
     drizzleDb
       .select()
       .from(actionData)
@@ -45,48 +45,70 @@ export async function performAction(
         ),
       )
       .limit(1),
+    drizzleDb.select().from(botData).where(eq(botData.guildId, guild)).limit(1),
   ]);
   const targetRow = tRows?.[0] ?? null;
   const authorRow = aRows?.[0] ?? null;
+  const guildSettings = gsRows?.[0] ?? null;
 
   const imageSource = ACTIONS[actionKind].imageSource;
   const imageRow = imageSource === "author" ? authorRow : targetRow;
 
-  const imageUser: ActionUser = imageRow
-    ? {
+  const defaultImagesRaw = guildSettings?.defaultImages;
+  const guildDefaultImage =
+    defaultImagesRaw && typeof defaultImagesRaw === "object"
+      ? (defaultImagesRaw as Record<string, string>)[actionKind]
+      : undefined;
+  const defaultImage = guildDefaultImage ?? ACTIONS[actionKind].defaultImage;
+
+  const restrictedMode = Boolean(guildSettings?.restricted);
+
+  const rowImages = (imageRow?.images as string[]) ?? [];
+  let images: string[];
+  if (restrictedMode) {
+    images = [defaultImage];
+  } else if (rowImages.length) {
+    images = rowImages;
+  } else {
+    images = [defaultImage];
+  }
+
+  const normalizeDate = (value: unknown): string => {
+    if (typeof value === "string") {
+      return value;
+    }
+    if (value) {
+      return String(value);
+    }
+    return new Date().toISOString();
+  };
+
+  let imageUser: ActionUser;
+  if (imageRow) {
+    imageUser = {
       id: imageRow.id,
       userId: imageRow.userId,
       locationId: imageRow.locationId ?? null,
       actionType: imageRow.actionType,
       hasPerformed: (imageRow.hasPerformed ?? 0) as number,
       hasReceived: (imageRow.hasReceived ?? 0) as number,
-      images: (imageRow.images as string[]) ?? [
-        ACTIONS[actionKind].defaultImage,
-      ],
-      createdAt:
-          typeof imageRow.createdAt === "string"
-            ? imageRow.createdAt
-            : imageRow.createdAt
-              ? String(imageRow.createdAt)
-              : new Date().toISOString(),
-      updatedAt:
-          typeof imageRow.updatedAt === "string"
-            ? imageRow.updatedAt
-            : imageRow.updatedAt
-              ? String(imageRow.updatedAt)
-              : new Date().toISOString(),
-    }
-    : {
+      images,
+      createdAt: normalizeDate(imageRow.createdAt),
+      updatedAt: normalizeDate(imageRow.updatedAt),
+    };
+  } else {
+    imageUser = {
       id: 0,
       userId: "",
       locationId: null,
       actionType: actionKind,
       hasPerformed: 0,
       hasReceived: 0,
-      images: [ACTIONS[actionKind].defaultImage],
+      images,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+  }
 
   const image = randomImage(imageUser);
 
