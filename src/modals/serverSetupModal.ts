@@ -63,12 +63,11 @@ export async function handleServerSetupModal(modal: ModalSubmitInteraction) {
         .where(eq(botData.guildId, guildId));
     }
 
-    // If a nickname was provided, update bot nickname in the guild
-    if (finalNickname && modal.guild) {
+    if (modal.guild) {
       try {
         const botId = modal.client.application.id;
         const botMember = await modal.guild.members.fetch(botId);
-        await botMember.setNickname(finalNickname);
+        await botMember.setNickname(finalNickname || null);
       } catch (err) {
         console.warn("Failed to update bot nickname in guild.", err);
       }
