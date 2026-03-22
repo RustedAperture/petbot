@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { Readable } from "stream";
 
-const { selectMock, isGuildAdminMock } = vi.hoisted(() => ({
+const { selectMock, updateMock, isGuildAdminMock } = vi.hoisted(() => ({
   selectMock: vi.fn(),
+  updateMock: vi.fn(),
   isGuildAdminMock: vi.fn(),
 }));
 
 vi.mock("../../../src/db/connector.js", () => ({
-  drizzleDb: { select: selectMock },
+  drizzleDb: {
+    select: selectMock,
+    update: updateMock,
+  },
 }));
 
 vi.mock("../../../src/db/schema.js", () => ({
@@ -228,13 +233,261 @@ describe("/api/serverSettings handler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(500, {
       "Content-Type": "application/json",
     });
-    expect(res.end).toHaveBeenCalledWith(
-      expect.stringContaining("server_error"),
-    );
+    const endArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(endArg)).toMatchObject({
+      error: "server_error",
+      reason: "fetch_settings_failed",
+    });
     const loggerMock = vi.mocked(logger);
     expect(loggerMock.error).toHaveBeenCalledWith(
       expect.objectContaining({ err: expect.any(Error) }),
-      "Error fetching server settings",
+      "Error fetching server settings rows",
     );
+  });
+
+  it("returns 400 for invalid JSON body on PATCH", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push("{ not valid json }");
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const endArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(endArg)).toMatchObject({
+      error: "invalid_json",
+      reason: "parse_json_failed",
+    });
+  });
+
+  it("returns 500 when DB update fails in PATCH", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    updateMock.mockImplementation(() => ({
+      set: () => ({
+        where: () => Promise.reject(new Error("update_failure")),
+      }),
+    }));
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push('{"nickname":"NewName"}');
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(500, {
+      "Content-Type": "application/json",
+    });
+    const endArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(endArg)).toMatchObject({
+      error: "update_failed",
+      reason: "db_update_failed",
+      details: "update_failure",
+    });
+  });
+
+  it("returns 400 when PATCH has disallowed keys", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push('{"badField":"nope"}');
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const invalidEndArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(invalidEndArg)).toMatchObject({
+      error: "invalid_update_keys",
+      reason: "update_keys_not_allowed",
+      details: ["badField"],
+    });
+  });
+
+  it("returns 400 when PATCH body is non-object", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push("[1,2,3]");
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const errArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(errArg)).toMatchObject({
+      error: "invalid_payload",
+      reason: "body_must_be_object",
+    });
+  });
+
+  it("returns 200 and updates allowed fields on PATCH", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    updateMock.mockImplementation(() => ({
+      set: () => ({
+        where: () => Promise.resolve(),
+      }),
+    }));
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push(
+      JSON.stringify({
+        nickname: "PetBot2",
+        restricted: 0,
+        logChannel: "C456",
+      }),
+    );
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(updateMock).toHaveBeenCalled();
+    expect(res.writeHead).toHaveBeenCalledWith(200, {
+      "Content-Type": "application/json",
+    });
+
+    const successBody = JSON.parse(
+      (res.end as unknown as vi.Mock).mock.calls[0][0],
+    );
+    expect(successBody).toMatchObject({
+      success: true,
+      settings: {
+        logChannel: "C456",
+        nickname: "PetBot2",
+        sleepImage: "http://img",
+        defaultImages: { pet: "x" },
+        restricted: 0,
+      },
+    });
+    expect(typeof successBody.settings.updatedAt).toBe("string");
   });
 });

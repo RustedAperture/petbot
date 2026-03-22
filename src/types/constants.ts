@@ -41,3 +41,13 @@ export const ACTIONS = {
 
 export type ActionType = keyof typeof ACTIONS;
 export type ActionConfig = (typeof ACTIONS)[ActionType];
+
+export enum HttpMethod {
+  GET = "GET",
+  POST = "POST",
+  PATCH = "PATCH",
+  DELETE = "DELETE",
+  PUT = "PUT",
+  HEAD = "HEAD",
+  OPTIONS = "OPTIONS",
+}
