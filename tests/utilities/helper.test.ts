@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import type { Client } from "discord.js";
 
 vi.mock("../../src/logger.js", () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -16,6 +17,7 @@ import {
   fetchStatsForLocation,
   isGuildAdmin,
 } from "../../src/utilities/helper.js";
+import type { ActionUser } from "../../src/types/user.js";
 import { drizzleDb } from "../../src/db/connector.js";
 
 const selectMock = drizzleDb.select as Mock;
@@ -30,7 +32,17 @@ describe("helper util", () => {
 
   it("randomImage returns deterministic item when Math.random mocked", () => {
     const restore = vi.spyOn(Math, "random").mockReturnValue(0.9);
-    const target = { images: ["a", "b", "c"] };
+    const target: ActionUser = {
+      id: 1,
+      userId: "test-user",
+      locationId: "loc-1",
+      actionType: "pet",
+      hasPerformed: 1,
+      hasReceived: 0,
+      images: ["a", "b", "c"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     expect(randomImage(target)).toBe("c");
     restore.mockRestore();
   });
@@ -153,7 +165,7 @@ describe("helper util", () => {
   it("isGuildAdmin returns false for unknown guild", async () => {
     const client = {
       guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
-    } as Client<boolean>;
+    } as unknown as Client<boolean>;
 
     await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
       false,
@@ -168,7 +180,7 @@ describe("helper util", () => {
 
     const client = {
       guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as Client<boolean>;
+    } as unknown as Client<boolean>;
 
     await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
       false,
@@ -187,7 +199,7 @@ describe("helper util", () => {
 
     const client = {
       guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as Client<boolean>;
+    } as unknown as Client<boolean>;
 
     await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
       false,
@@ -206,7 +218,7 @@ describe("helper util", () => {
 
     const client = {
       guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as Client<boolean>;
+    } as unknown as Client<boolean>;
 
     await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
       true,
@@ -225,7 +237,7 @@ describe("helper util", () => {
 
     const client = {
       guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as Client<boolean>;
+    } as unknown as Client<boolean>;
 
     await expect(isGuildAdmin(client, "guild-99", "owner-1")).resolves.toBe(
       true,

@@ -35,8 +35,9 @@ vi.mock("../../../src/logger.js", () => ({
 
 import logger from "../../../src/logger.js";
 import serverSettingsHandler from "../../../src/http/api/serverSettings.js";
+import { Client } from "discord.js";
 
-function buildSelectReturn(values: Array<Record<string, number>>) {
+function buildSelectReturn(values: Array<Record<string, unknown>>) {
   return {
     from: () => ({
       where: () => ({
@@ -57,7 +58,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
@@ -75,7 +79,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings?guildId=G1",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
@@ -95,7 +102,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
@@ -118,7 +128,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
@@ -150,7 +163,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
@@ -181,7 +197,10 @@ describe("/api/serverSettings handler", () => {
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
     } as Partial<IncomingMessage> as IncomingMessage;
-    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
 
     await serverSettingsHandler(req, res, {} as Client<boolean>);
 
