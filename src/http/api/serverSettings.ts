@@ -55,7 +55,7 @@ export default async function serverSettingsHandler(
       .where(eq(botData.guildId, guildId))
       .limit(1);
 
-    if (!settingsRows || settingsRows.length === 0) {
+    if (settingsRows.length === 0) {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "not_found" }));
       return;
