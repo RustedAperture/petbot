@@ -64,9 +64,9 @@ export default async function serverSettingsHandler(
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ settings: settingsRows[0] }));
   } catch (err) {
+    logger.error({ err }, "Error fetching server settings");
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "server_error" }));
-    logger.error({ err: err }, "Error fetching server settings");
   }
 
   return;
