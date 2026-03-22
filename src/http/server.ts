@@ -36,7 +36,7 @@ function secureEqual(a?: string, b?: string) {
 export function startHttpServer(
   port = Number(process.env.HTTP_PORT) || 3001,
   host = process.env.HTTP_HOST || "127.0.0.1",
-  client?: Client<boolean>,
+  client: Client<boolean>,
 ) {
   // TLS support (optional): provide raw PEM via env or file paths
   const tlsKey =

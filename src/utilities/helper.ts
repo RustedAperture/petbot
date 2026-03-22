@@ -153,7 +153,13 @@ export async function isGuildAdmin(
   guildId: string,
   userId: string,
 ): Promise<boolean> {
-  const guild = await client.guilds.fetch(guildId);
+  let guild;
+  try {
+    guild = await client.guilds.fetch(guildId);
+  } catch {
+    return false;
+  }
+
   if (!guild) {
     return false;
   }

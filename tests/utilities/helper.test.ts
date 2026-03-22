@@ -10,6 +10,7 @@ import {
   randomImage,
   fetchGlobalStats,
   fetchStatsForLocation,
+  isGuildAdmin,
 } from "../../src/utilities/helper.js";
 import { drizzleDb } from "../../src/db/connector.js";
 
@@ -131,5 +132,30 @@ describe("helper util", () => {
     expect(res.totalsByAction.bite.totalHasPerformed).toBe(0);
     expect(res.totalsByAction.pet.totalUsers).toBe(0);
     expect(res.totalLocations).toBe(0);
+  });
+
+  it("isGuildAdmin returns false for unknown guild and true for admin member", async () => {
+    const mockMember = {
+      permissions: { has: vi.fn().mockReturnValue(true) },
+    } as any;
+
+    const mockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    } as any;
+
+    const client = {
+      guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
+    } as any;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+
+    client.guilds.fetch = vi.fn().mockResolvedValue(mockGuild);
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      true,
+    );
   });
 });

@@ -1,9 +1,10 @@
-import { isGuildAdmin } from "../../utilities/helper.js";
-import { drizzleDb } from "../../db/connector.js";
-import { botData } from "../../db/schema.js";
+import { isGuildAdmin } from "@utils/helper.js";
+import { drizzleDb } from "@db/connector.js";
+import { botData } from "@db/schema.js";
 import { eq } from "drizzle-orm";
 import { Client } from "discord.js";
 import http from "node:http";
+import logger from "@logger";
 
 export default async function serverSettingsHandler(
   req: http.IncomingMessage,
@@ -41,33 +42,32 @@ export default async function serverSettingsHandler(
     return;
   }
 
-  if (req.method === "GET") {
-    try {
-      const settingsRows = await drizzleDb
-        .select({
-          logChannel: botData.logChannel,
-          nickname: botData.nickname,
-          sleepImage: botData.sleepImage,
-          defaultImages: botData.defaultImages,
-          restricted: botData.restricted,
-        })
-        .from(botData)
-        .where(eq(botData.guildId, guildId))
-        .limit(1);
+  try {
+    const settingsRows = await drizzleDb
+      .select({
+        logChannel: botData.logChannel,
+        nickname: botData.nickname,
+        sleepImage: botData.sleepImage,
+        defaultImages: botData.defaultImages,
+        restricted: botData.restricted,
+      })
+      .from(botData)
+      .where(eq(botData.guildId, guildId))
+      .limit(1);
 
-      if (!settingsRows || settingsRows.length === 0) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "not_found" }));
-        return;
-      }
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ settings: settingsRows[0] }));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: `server_error: ${err}` }));
+    if (!settingsRows || settingsRows.length === 0) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "not_found" }));
+      return;
     }
 
-    return;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ settings: settingsRows[0] }));
+  } catch (_err) {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "server_error" }));
+    logger.error({ err: _err }, "Error fetching server settings");
   }
+
+  return;
 }
