@@ -177,9 +177,8 @@ export async function isGuildAdmin(
     return true;
   }
 
-  if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    return true;
-  }
+  return false;
+}
 
 
   return false;
