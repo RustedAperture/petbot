@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
 const { selectMock, isGuildAdminMock } = vi.hoisted(() => ({
   selectMock: vi.fn(),
@@ -35,7 +36,7 @@ vi.mock("../../../src/logger.js", () => ({
 import logger from "../../../src/logger.js";
 import serverSettingsHandler from "../../../src/http/api/serverSettings.js";
 
-function buildSelectReturn(values: any[]) {
+function buildSelectReturn(values: Array<Record<string, number>>) {
   return {
     from: () => ({
       where: () => ({
@@ -51,14 +52,14 @@ describe("/api/serverSettings handler", () => {
   });
 
   it("returns 405 for unsupported methods", async () => {
-    const req: any = {
+    const req = {
       method: "POST",
       url: "/api/serverSettings",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(res.writeHead).toHaveBeenCalledWith(405, {
       "Content-Type": "application/json",
@@ -69,14 +70,14 @@ describe("/api/serverSettings handler", () => {
   });
 
   it("returns 400 when guildId or userId is missing", async () => {
-    const req: any = {
+    const req = {
       method: "GET",
       url: "/api/serverSettings?guildId=G1",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(res.writeHead).toHaveBeenCalledWith(400, {
       "Content-Type": "application/json",
@@ -89,14 +90,14 @@ describe("/api/serverSettings handler", () => {
   it("returns 403 when user is not guild admin", async () => {
     isGuildAdminMock.mockResolvedValue(false);
 
-    const req: any = {
+    const req = {
       method: "GET",
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(isGuildAdminMock).toHaveBeenCalledWith({}, "G1", "U1");
     expect(res.writeHead).toHaveBeenCalledWith(403, {
@@ -112,14 +113,14 @@ describe("/api/serverSettings handler", () => {
 
     selectMock.mockReturnValue(buildSelectReturn([]));
 
-    const req: any = {
+    const req = {
       method: "GET",
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(res.writeHead).toHaveBeenCalledWith(404, {
       "Content-Type": "application/json",
@@ -144,14 +145,14 @@ describe("/api/serverSettings handler", () => {
       ]),
     );
 
-    const req: any = {
+    const req = {
       method: "GET",
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(res.writeHead).toHaveBeenCalledWith(200, {
       "Content-Type": "application/json",
@@ -175,14 +176,14 @@ describe("/api/serverSettings handler", () => {
       throw new Error("db-failure");
     });
 
-    const req: any = {
+    const req = {
       method: "GET",
       url: "/api/serverSettings?guildId=G1&userId=U1",
       headers: { host: "localhost" },
-    };
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = { writeHead: vi.fn(), end: vi.fn() } as ServerResponse;
 
-    await serverSettingsHandler(req, res, {} as any);
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
 
     expect(res.writeHead).toHaveBeenCalledWith(500, {
       "Content-Type": "application/json",
