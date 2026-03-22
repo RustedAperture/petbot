@@ -169,11 +169,11 @@ export async function isGuildAdmin(
     return false;
   }
 
-  if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+  if (guild.ownerId === userId) {
     return true;
   }
 
-  if (guild.ownerId === userId) {
+  if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
     return true;
   }
 
