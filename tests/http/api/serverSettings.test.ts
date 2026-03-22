@@ -24,6 +24,16 @@ vi.mock("../../../src/utilities/helper.js", () => ({
   isGuildAdmin: isGuildAdminMock,
 }));
 
+vi.mock("../../../src/logger.js", () => {
+  const loggerMock = {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  };
+  (globalThis as any).__serverSettingsLoggerMock = loggerMock;
+  return { default: loggerMock };
+});
+
 import serverSettingsHandler from "../../../src/http/api/serverSettings.js";
 
 function buildSelectReturn(values: any[]) {
@@ -180,6 +190,11 @@ describe("/api/serverSettings handler", () => {
     });
     expect(res.end).toHaveBeenCalledWith(
       expect.stringContaining("server_error"),
+    );
+    const loggerMock = (globalThis as any).__serverSettingsLoggerMock;
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      "Error fetching server settings",
     );
   });
 });

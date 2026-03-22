@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+vi.mock("../../src/logger.js", () => ({
+  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
 vi.mock("../../src/db/connector.js", () => ({
   drizzleDb: { select: vi.fn() },
 }));
@@ -134,9 +138,34 @@ describe("helper util", () => {
     expect(res.totalLocations).toBe(0);
   });
 
-  it("isGuildAdmin returns false for unknown guild and true for admin member", async () => {
+  it("isGuildAdmin returns false for unknown guild", async () => {
+    const client = {
+      guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
+    } as any;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("isGuildAdmin returns false for missing member", async () => {
+    const mockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(null) },
+    } as any;
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as any;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("isGuildAdmin returns false for non-admin non-owner", async () => {
     const mockMember = {
-      permissions: { has: vi.fn().mockReturnValue(true) },
+      permissions: { has: vi.fn().mockReturnValue(false) },
     } as any;
 
     const mockGuild = {
@@ -145,16 +174,29 @@ describe("helper util", () => {
     } as any;
 
     const client = {
-      guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
     } as any;
 
     await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
       false,
     );
+  });
 
-    client.guilds.fetch = vi.fn().mockResolvedValue(mockGuild);
+  it("isGuildAdmin returns true for owner", async () => {
+    const mockMember = {
+      permissions: { has: vi.fn().mockReturnValue(false) },
+    } as any;
 
-    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+    const mockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    } as any;
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as any;
+
+    await expect(isGuildAdmin(client, "guild-99", "owner-1")).resolves.toBe(
       true,
     );
   });
