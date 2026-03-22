@@ -182,6 +182,25 @@ describe("helper util", () => {
     );
   });
 
+  it("isGuildAdmin returns true when member has Administrator permission", async () => {
+    const mockMember = {
+      permissions: { has: vi.fn().mockReturnValue(true) },
+    } as any;
+
+    const mockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    } as any;
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as any;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      true,
+    );
+  });
+
   it("isGuildAdmin returns true for owner", async () => {
     const mockMember = {
       permissions: { has: vi.fn().mockReturnValue(false) },
