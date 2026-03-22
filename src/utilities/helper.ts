@@ -179,7 +179,3 @@ export async function isGuildAdmin(
 
   return false;
 }
-
-
-  return false;
-}
