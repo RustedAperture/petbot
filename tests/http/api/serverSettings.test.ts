@@ -94,6 +94,27 @@ describe("/api/serverSettings handler", () => {
     );
   });
 
+  it("returns 400 when guildId is missing", async () => {
+    const req = {
+      method: "GET",
+      url: "/api/serverSettings?userId=U1",
+      headers: { host: "localhost" },
+    } as Partial<IncomingMessage> as IncomingMessage;
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(req, res, {} as Client<boolean>);
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    expect(res.end).toHaveBeenCalledWith(
+      JSON.stringify({ error: "missing parameter: guildId" }),
+    );
+  });
+
   it("returns 403 when user is not guild admin", async () => {
     isGuildAdminMock.mockResolvedValue(false);
 
