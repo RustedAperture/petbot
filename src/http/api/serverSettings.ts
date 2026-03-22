@@ -8,7 +8,7 @@ import http from "node:http";
 import logger from "@logger";
 
 export interface ServerSettingsResponse {
-  settings: Partial<GuildSettings> | null;
+  settings: Partial<GuildSettings>;
 }
 
 export default async function serverSettingsHandler(

@@ -164,13 +164,13 @@ export async function isGuildAdmin(
     return false;
   }
 
+  if (guild.ownerId === userId) {
+    return true;
+  }
+
   const member = await guild.members.fetch(userId).catch(() => null);
   if (!member) {
     return false;
-  }
-
-  if (guild.ownerId === userId) {
-    return true;
   }
 
   if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
