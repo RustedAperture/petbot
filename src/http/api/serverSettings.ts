@@ -3,8 +3,13 @@ import { drizzleDb } from "@db/connector.js";
 import { botData } from "@db/schema.js";
 import { eq } from "drizzle-orm";
 import { Client } from "discord.js";
+import type { GuildSettings } from "../../types/guild.js";
 import http from "node:http";
 import logger from "@logger";
+
+export interface ServerSettingsResponse {
+  settings: Partial<GuildSettings> | null;
+}
 
 export default async function serverSettingsHandler(
   req: http.IncomingMessage,
@@ -61,8 +66,12 @@ export default async function serverSettingsHandler(
       return;
     }
 
+    const responseData: ServerSettingsResponse = {
+      settings: settingsRows[0] as Partial<GuildSettings>,
+    };
+
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ settings: settingsRows[0] }));
+    res.end(JSON.stringify(responseData));
   } catch (err) {
     logger.error({ err }, "Error fetching server settings");
     res.writeHead(500, { "Content-Type": "application/json" });
