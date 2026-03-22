@@ -9,6 +9,7 @@
       "@components/*": ["components/*"],
       "@commands/*": ["commands/*"],
       "@types/*": ["types/*"],
+      "@db/*": ["db/*"],
       "@logger": ["logger.js"]
     },
 

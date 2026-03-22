@@ -1,4 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import type { Client } from "discord.js";
+
+vi.mock("../../src/logger.js", () => ({
+  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
 
 vi.mock("../../src/db/connector.js", () => ({
   drizzleDb: { select: vi.fn() },
@@ -10,9 +15,12 @@ import {
   randomImage,
   fetchGlobalStats,
   fetchStatsForLocation,
+  isGuildAdmin,
 } from "../../src/utilities/helper.js";
+import type { ActionUser } from "../../src/types/user.js";
 import { drizzleDb } from "../../src/db/connector.js";
 
+const selectMock = drizzleDb.select as Mock;
 describe("helper util", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -24,13 +32,23 @@ describe("helper util", () => {
 
   it("randomImage returns deterministic item when Math.random mocked", () => {
     const restore = vi.spyOn(Math, "random").mockReturnValue(0.9);
-    const target = { images: ["a", "b", "c"] } as any;
+    const target: ActionUser = {
+      id: 1,
+      userId: "test-user",
+      locationId: "loc-1",
+      actionType: "pet",
+      hasPerformed: 1,
+      hasReceived: 0,
+      images: ["a", "b", "c"],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
     expect(randomImage(target)).toBe("c");
     restore.mockRestore();
   });
 
   it("fetchGlobalStats returns aggregated values", async () => {
-    const seq: any[] = [
+    const seq: Array<Record<string, number>>[] = [
       [{ s: 10 }],
       [{ s: 20 }],
       [{ s: 30 }],
@@ -46,10 +64,11 @@ describe("helper util", () => {
       [{ cnt: 0 }],
     ];
     let call = 0;
-    (drizzleDb.select as any).mockImplementation(() => ({
+    selectMock.mockImplementation(() => ({
       from: () => ({
         where: () => Promise.resolve(seq[call++] ?? [{ cnt: 0 }]),
-        then: (resolve: any) => resolve(seq[call++] ?? [{ cnt: 0 }]),
+        then: (resolve: (value: Array<Record<string, number>>) => void) =>
+          resolve(seq[call++] ?? [{ cnt: 0 }]),
       }),
     }));
 
@@ -71,7 +90,7 @@ describe("helper util", () => {
   });
 
   it("fetchGlobalStats handles errors and returns zeros", async () => {
-    (drizzleDb.select as any).mockImplementation(() => {
+    selectMock.mockImplementation(() => {
       throw new Error("boom");
     });
     const res = await fetchGlobalStats();
@@ -80,7 +99,7 @@ describe("helper util", () => {
   });
 
   it("fetchStatsForLocation returns aggregated values for a given location", async () => {
-    const seq: any[] = [
+    const seq: Array<Record<string, number>>[] = [
       [{ s: 3 }],
       [{ s: 4 }],
       [{ s: 5 }],
@@ -96,10 +115,11 @@ describe("helper util", () => {
       [{ cnt: 0 }],
     ];
     let call = 0;
-    (drizzleDb.select as any).mockImplementation(() => ({
+    selectMock.mockImplementation(() => ({
       from: () => ({
         where: () => Promise.resolve(seq[call++] ?? [{ cnt: 0 }]),
-        then: (resolve: any) => resolve(seq[call++] ?? [{ cnt: 0 }]),
+        then: (resolve: (value: Array<Record<string, number>>) => void) =>
+          resolve(seq[call++] ?? [{ cnt: 0 }]),
       }),
     }));
 
@@ -121,7 +141,7 @@ describe("helper util", () => {
   });
 
   it("fetchStatsForLocation handles errors and returns zeros", async () => {
-    (drizzleDb.select as any).mockImplementation(() => {
+    selectMock.mockImplementation(() => {
       throw new Error("boom");
     });
 
@@ -131,5 +151,96 @@ describe("helper util", () => {
     expect(res.totalsByAction.bite.totalHasPerformed).toBe(0);
     expect(res.totalsByAction.pet.totalUsers).toBe(0);
     expect(res.totalLocations).toBe(0);
+  });
+
+  interface MockMember {
+    permissions: { has: (perm: number) => boolean };
+  }
+
+  interface MockGuild {
+    ownerId: string;
+    members: { fetch: () => Promise<MockMember | null> };
+  }
+
+  it("isGuildAdmin returns false for unknown guild", async () => {
+    const client = {
+      guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
+    } as unknown as Client<boolean>;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("isGuildAdmin returns false for missing member", async () => {
+    const mockGuild: MockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(null) },
+    };
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as unknown as Client<boolean>;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("isGuildAdmin returns false for non-admin non-owner", async () => {
+    const mockMember: MockMember = {
+      permissions: { has: vi.fn().mockReturnValue(false) },
+    };
+
+    const mockGuild: MockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    };
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as unknown as Client<boolean>;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      false,
+    );
+  });
+
+  it("isGuildAdmin returns true when member has Administrator permission", async () => {
+    const mockMember: MockMember = {
+      permissions: { has: vi.fn().mockReturnValue(true) },
+    };
+
+    const mockGuild: MockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    };
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as unknown as Client<boolean>;
+
+    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
+      true,
+    );
+  });
+
+  it("isGuildAdmin returns true for owner", async () => {
+    const mockMember: MockMember = {
+      permissions: { has: vi.fn().mockReturnValue(false) },
+    };
+
+    const mockGuild: MockGuild = {
+      ownerId: "owner-1",
+      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
+    };
+
+    const client = {
+      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
+    } as unknown as Client<boolean>;
+
+    await expect(isGuildAdmin(client, "guild-99", "owner-1")).resolves.toBe(
+      true,
+    );
   });
 });

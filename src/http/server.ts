@@ -13,6 +13,8 @@ import userSessionsHandler from "./api/userSessions.js";
 import userDataHandler from "./api/userData.js";
 import optOutHandler from "./api/optOut.js";
 import setImagesHandler from "./api/setImages.js";
+import serverSettingsHandler from "./api/serverSettings.js";
+import { Client } from "discord.js";
 
 function sha256buf(s: string) {
   return crypto.createHash("sha256").update(String(s)).digest();
@@ -34,6 +36,7 @@ function secureEqual(a?: string, b?: string) {
 export function startHttpServer(
   port = Number(process.env.HTTP_PORT) || 3001,
   host = process.env.HTTP_HOST || "127.0.0.1",
+  client: Client<boolean>,
 ) {
   // TLS support (optional): provide raw PEM via env or file paths
   const tlsKey =
@@ -62,7 +65,10 @@ export function startHttpServer(
     );
   }
 
-  const handler = async (req: any, res: any) => {
+  const handler = async (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ) => {
     const start = Date.now();
     let pathname: string;
     try {
@@ -108,6 +114,10 @@ export function startHttpServer(
           "/api/userData": userDataHandler,
           "/api/optOut": optOutHandler,
           "/api/setImages": setImagesHandler,
+          "/api/serverSettings": (
+            req: http.IncomingMessage,
+            res: http.ServerResponse,
+          ) => serverSettingsHandler(req, res, client),
         };
 
         const handlerFn = apiRouter[pathname];
