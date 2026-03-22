@@ -28,11 +28,14 @@ await bootstrapDb(); // stamps legacy DBs so migrate() doesn't re-run existing D
 await migrate(drizzleDb, { migrationsFolder: "./drizzle" });
 logger.info("Database migrations applied");
 
-// start the HTTP API for the web UI (runs on 3001 by default)
-startHttpServer(Number(process.env.HTTP_PORT) || 3001);
-
 const client: Client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
+});
+
+// start the HTTP API for the web UI after the bot is ready
+client.once("ready", () => {
+  logger.info("Discord client ready, starting HTTP API");
+  startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
 });
 
 client.on("error", logger.error);

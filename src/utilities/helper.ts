@@ -1,5 +1,11 @@
 import { ActionUser } from "../types/user.js";
-import { GuildMember, RGBTuple, User } from "discord.js";
+import {
+  Client,
+  GuildMember,
+  PermissionsBitField,
+  RGBTuple,
+  User,
+} from "discord.js";
 import { drizzleDb } from "../db/connector.js";
 import { actionData } from "../db/schema.js";
 import { sql, eq, and } from "drizzle-orm";
@@ -140,4 +146,30 @@ export async function fetchGlobalStats() {
 
 export async function fetchStatsForLocation(locationId: string) {
   return fetchStatsInternal(locationId);
+}
+
+export async function isGuildAdmin(
+  client: Client<boolean>,
+  guildId: string,
+  userId: string,
+): Promise<boolean> {
+  const guild = await client.guilds.fetch(guildId);
+  if (!guild) {
+    return false;
+  }
+
+  const member = await guild.members.fetch(userId).catch(() => null);
+  if (!member) {
+    return false;
+  }
+
+  if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    return true;
+  }
+
+  if (guild.ownerId === userId) {
+    return true;
+  }
+
+  return false;
 }

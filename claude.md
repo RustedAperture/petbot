@@ -36,6 +36,8 @@
 ## Notes for contributors
 
 - Keep TypeScript types strict; this repo uses `tsconfig.server.json` for the bot and `apps/web/tsconfig.json` for the frontend.
+- Avoid using `any`, `never`, or `unknown` in implementation unless there is a documented, explicit exception with a clear reason.
+- Prefer explicit interfaces and discriminated unions for API payloads, DB records, and event payloads.
 - The bot is intended to run on Node; do not assume browser globals.
 - **Always add or update tests for new behavior and bug fixes.** Follow the existing Vitest patterns in `tests/`.
 
