@@ -43,7 +43,9 @@ describe("httpHelper.parseJsonBody", () => {
     const req = new PassThrough();
     const json = JSON.stringify({ hello: "world" });
 
-    const parsePromise = parseJsonBody<{ hello: string }>(req);
+    const parsePromise = parseJsonBody<{ hello: string }>(
+      req as unknown as import("node:http").IncomingMessage,
+    );
 
     req.write(json);
     req.end();
@@ -53,14 +55,18 @@ describe("httpHelper.parseJsonBody", () => {
 
   it("rejects empty body", async () => {
     const req = new PassThrough();
-    const parsePromise = parseJsonBody(req);
+    const parsePromise = parseJsonBody(
+      req as unknown as import("node:http").IncomingMessage,
+    );
     req.end();
     await expect(parsePromise).rejects.toThrow("empty_body");
   });
 
   it("rejects invalid JSON", async () => {
     const req = new PassThrough();
-    const parsePromise = parseJsonBody(req);
+    const parsePromise = parseJsonBody(
+      req as unknown as import("node:http").IncomingMessage,
+    );
 
     req.write("{ invalid json }");
     req.end();
@@ -71,7 +77,10 @@ describe("httpHelper.parseJsonBody", () => {
   it("rejects when body exceeds maxBodySize", async () => {
     const req = new PassThrough();
 
-    const parsePromise = parseJsonBody(req, { maxBodySize: 10 });
+    const parsePromise = parseJsonBody(
+      req as unknown as import("node:http").IncomingMessage,
+      { maxBodySize: 10 },
+    );
 
     req.write("1234567890");
     req.write("x");
@@ -80,9 +89,26 @@ describe("httpHelper.parseJsonBody", () => {
     await expect(parsePromise).rejects.toThrow("Payload too large");
   });
 
+  it("propagates stream errors", async () => {
+    const req = new PassThrough();
+    const parsePromise = parseJsonBody(
+      req as unknown as import("node:http").IncomingMessage,
+    );
+
+    req.emit("error", new Error("stream error"));
+
+    await expect(parsePromise).rejects.toThrow("stream error");
+
+    expect(req.listenerCount("data")).toBe(0);
+    expect(req.listenerCount("end")).toBe(0);
+    expect(req.listenerCount("error")).toBe(0);
+  });
+
   it("removes listeners after completion", async () => {
     const req = new PassThrough();
-    const parsePromise = parseJsonBody(req);
+    const parsePromise = parseJsonBody(
+      req as unknown as import("node:http").IncomingMessage,
+    );
 
     req.write(JSON.stringify({ a: 1 }));
     req.end();
