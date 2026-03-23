@@ -72,6 +72,7 @@ describe("/api/serverSettings handler", () => {
 
     expect(res.writeHead).toHaveBeenCalledWith(405, {
       "Content-Type": "application/json",
+      Allow: "GET, PATCH",
     });
     expect(res.end).toHaveBeenCalledWith(
       JSON.stringify({ error: "method_not_allowed" }),

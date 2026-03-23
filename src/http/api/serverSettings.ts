@@ -80,14 +80,14 @@ export default async function serverSettingsHandler(
   }
 
   try {
-    if (method === "GET") {
+    if (method === HttpMethod.GET) {
       const responseData: ServerSettingsResponse = {
         settings: settingsRows[0] as Partial<GuildSettings>,
       };
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(responseData));
-    } else if (method === "PATCH") {
+    } else if (method === HttpMethod.PATCH) {
       let rawBody: unknown;
       try {
         rawBody = await parseJsonBody<unknown>(req);
@@ -126,7 +126,6 @@ export default async function serverSettingsHandler(
         "sleepImage",
         "defaultImages",
         "restricted",
-        "updatedAt",
       ];
       const invalidKeys = Object.keys(body).filter(
         (key) => !allowedKeys.includes(key),
