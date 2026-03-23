@@ -95,21 +95,40 @@ export default async function serverSettingsHandler(
       } catch (err) {
         const isEmptyBody =
           err instanceof Error && err.message === "empty_body";
+        const isPayloadTooLarge =
+          err instanceof Error && err.message === "Payload too large";
+
         logger.error({ err }, "Error parsing request body");
+
+        if (isPayloadTooLarge) {
+          res.writeHead(413, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "payload_too_large",
+              reason: "payload_size_limit_exceeded",
+            }),
+          );
+          return;
+        }
+
+        if (isEmptyBody) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "missing_body",
+              reason: "body_required_for_patch",
+            }),
+          );
+          return;
+        }
+
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(
-          JSON.stringify(
-            isEmptyBody
-              ? {
-                error: "missing_body",
-                reason: "body_required_for_patch",
-              }
-              : {
-                error: "invalid_json",
-                reason: "parse_json_failed",
-                details: err instanceof Error ? err.message : String(err),
-              },
-          ),
+          JSON.stringify({
+            error: "invalid_json",
+            reason: "parse_json_failed",
+            details: err instanceof Error ? err.message : String(err),
+          }),
         );
         return;
       }

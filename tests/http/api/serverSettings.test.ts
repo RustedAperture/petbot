@@ -292,6 +292,50 @@ describe("/api/serverSettings handler", () => {
     });
   });
 
+  it("returns 413 when PATCH body is too large", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push("a".repeat(1_048_577));
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(413, {
+      "Content-Type": "application/json",
+    });
+    const endArg = (res.end as unknown as import("vitest").Mock).mock
+      .calls[0][0];
+    expect(JSON.parse(endArg)).toEqual({
+      error: "payload_too_large",
+      reason: "payload_size_limit_exceeded",
+    });
+  });
+
   it("returns 400 for empty PATCH body", async () => {
     isGuildAdminMock.mockResolvedValue(true);
 
