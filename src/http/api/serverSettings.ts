@@ -143,6 +143,62 @@ export default async function serverSettingsHandler(
         return;
       }
 
+      if ("restricted" in body) {
+        const val = body.restricted;
+        if (typeof val !== "boolean" && typeof val !== "number") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "invalid_field_type",
+              field: "restricted",
+            }),
+          );
+          return;
+        }
+      }
+
+      if ("defaultImages" in body) {
+        const val = body.defaultImages;
+        if (val === null || typeof val !== "object" || Array.isArray(val)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "invalid_field_type",
+              field: "defaultImages",
+            }),
+          );
+          return;
+        }
+
+        const mapping = val as Record<string, unknown>;
+        for (const [key, value] of Object.entries(mapping)) {
+          if (typeof key !== "string" || typeof value !== "string") {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                error: "invalid_field_type",
+                field: "defaultImages",
+              }),
+            );
+            return;
+          }
+        }
+      }
+
+      const stringFields = ["logChannel", "nickname", "sleepImage"] as const;
+      for (const field of stringFields) {
+        if (field in body && typeof body[field] !== "string") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: "invalid_field_type",
+              field,
+            }),
+          );
+          return;
+        }
+      }
+
       const sanitizedBody: Partial<GuildSettings> = {};
       for (const key of allowedKeys) {
         if (key in body) {
@@ -178,7 +234,7 @@ export default async function serverSettingsHandler(
       res.end(JSON.stringify({ success: true, settings: mergedSettings }));
     }
   } catch (err) {
-    logger.error({ err }, "Error fetching server settings");
+    logger.error({ err }, "Error handling server settings request");
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({

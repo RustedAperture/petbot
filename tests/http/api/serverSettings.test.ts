@@ -383,6 +383,135 @@ describe("/api/serverSettings handler", () => {
     });
   });
 
+  it("returns 400 when PATCH has restricted wrong type", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push(JSON.stringify({ restricted: "yes" }));
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const errArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(errArg)).toEqual({
+      error: "invalid_field_type",
+      field: "restricted",
+    });
+  });
+
+  it("returns 400 when PATCH has defaultImages wrong type", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push(JSON.stringify({ defaultImages: null }));
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const errArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(errArg)).toEqual({
+      error: "invalid_field_type",
+      field: "defaultImages",
+    });
+  });
+
+  it("returns 400 when PATCH has logChannel wrong type", async () => {
+    isGuildAdminMock.mockResolvedValue(true);
+
+    selectMock.mockReturnValue(
+      buildSelectReturn([
+        {
+          logChannel: "C123",
+          nickname: "PetBot",
+          sleepImage: "http://img",
+          defaultImages: { pet: "x" },
+          restricted: 1,
+        },
+      ]),
+    );
+
+    const req = new Readable();
+    (req as unknown as any).method = "PATCH";
+    (req as unknown as any).url = "/api/serverSettings?guildId=G1&userId=U1";
+    (req as unknown as any).headers = { host: "localhost" };
+    req.push(JSON.stringify({ logChannel: 42 }));
+    req.push(null);
+
+    const res = {
+      writeHead: vi.fn(),
+      end: vi.fn(),
+    } as unknown as ServerResponse;
+
+    await serverSettingsHandler(
+      req as unknown as IncomingMessage,
+      res,
+      {} as Client<boolean>,
+    );
+
+    expect(res.writeHead).toHaveBeenCalledWith(400, {
+      "Content-Type": "application/json",
+    });
+    const errArg = (res.end as unknown as vi.Mock).mock.calls[0][0];
+    expect(JSON.parse(errArg)).toEqual({
+      error: "invalid_field_type",
+      field: "logChannel",
+    });
+  });
+
   it("returns 400 when PATCH body is non-object", async () => {
     isGuildAdminMock.mockResolvedValue(true);
 
