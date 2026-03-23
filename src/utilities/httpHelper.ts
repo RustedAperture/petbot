@@ -75,8 +75,7 @@ export async function parseJsonBody<T = unknown>(
       cleanup();
 
       if (!raw) {
-        // If you want strict non-empty, throw here instead:
-        resolve({} as T);
+        reject(new Error("empty_body"));
         return;
       }
 

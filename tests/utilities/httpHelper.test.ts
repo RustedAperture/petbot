@@ -51,11 +51,11 @@ describe("httpHelper.parseJsonBody", () => {
     await expect(parsePromise).resolves.toEqual({ hello: "world" });
   });
 
-  it("resolves empty stream to empty object", async () => {
+  it("rejects empty body", async () => {
     const req = new PassThrough();
     const parsePromise = parseJsonBody(req);
     req.end();
-    await expect(parsePromise).resolves.toEqual({});
+    await expect(parsePromise).rejects.toThrow("empty_body");
   });
 
   it("rejects invalid JSON", async () => {

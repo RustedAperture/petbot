@@ -172,8 +172,8 @@ export default async function serverSettingsHandler(
         }
 
         const mapping = val as Record<string, unknown>;
-        for (const [key, value] of Object.entries(mapping)) {
-          if (typeof key !== "string" || typeof value !== "string") {
+        for (const value of Object.values(mapping)) {
+          if (typeof value !== "string") {
             res.writeHead(400, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
@@ -201,10 +201,26 @@ export default async function serverSettingsHandler(
       }
 
       const sanitizedBody: Partial<GuildSettings> = {};
-      for (const key of allowedKeys) {
-        if (key in body) {
-          sanitizedBody[key as keyof GuildSettings] = body[key] as any;
-        }
+      if ("logChannel" in body) {
+        sanitizedBody.logChannel = body.logChannel as string;
+      }
+      if ("nickname" in body) {
+        sanitizedBody.nickname = body.nickname as string;
+      }
+      if ("sleepImage" in body) {
+        sanitizedBody.sleepImage = body.sleepImage as string;
+      }
+      if ("defaultImages" in body) {
+        sanitizedBody.defaultImages = body.defaultImages as Record<
+          string,
+          string
+        >;
+      }
+      if ("restricted" in body) {
+        sanitizedBody.restricted =
+          typeof body.restricted === "number"
+            ? Boolean(body.restricted)
+            : (body.restricted as boolean);
       }
 
       if (Object.keys(sanitizedBody).length === 0) {

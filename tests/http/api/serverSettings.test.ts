@@ -668,7 +668,7 @@ describe("/api/serverSettings handler", () => {
         nickname: "PetBot2",
         sleepImage: "http://img",
         defaultImages: { pet: "x" },
-        restricted: 0,
+        restricted: false,
       },
     });
     expect(typeof successBody.settings.updatedAt).toBe("string");
