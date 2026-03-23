@@ -243,16 +243,16 @@ export default async function serverSettingsHandler(
         return;
       }
 
-      const mergedSettings: Partial<GuildSettings> = {
-        ...settingsRows[0],
+      const updatedAt = new Date().toISOString();
+      const dbUpdateData: Partial<GuildSettings> = {
         ...sanitizedBody,
-        updatedAt: new Date().toISOString(),
+        updatedAt,
       };
 
       try {
         await drizzleDb
           .update(botData)
-          .set(mergedSettings)
+          .set(dbUpdateData)
           .where(eq(botData.guildId, guildId));
       } catch (err) {
         logger.error({ err }, "Error updating server settings");
@@ -266,6 +266,12 @@ export default async function serverSettingsHandler(
         );
         return;
       }
+
+      const mergedSettings: Partial<GuildSettings> = {
+        ...settingsRows[0],
+        ...sanitizedBody,
+        updatedAt,
+      };
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true, settings: mergedSettings }));
