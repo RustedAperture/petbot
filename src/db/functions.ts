@@ -42,14 +42,6 @@ function normalizeDefaultImages(value: unknown): Record<string, string> | null {
   return null;
 }
 
-function serializeDefaultImages(value: unknown): Record<string, string> | null {
-  const normalized = normalizeDefaultImages(value);
-  if (normalized === null) {
-    return null;
-  }
-  return normalized;
-}
-
 export async function getBotData(
   guildId: string,
 ): Promise<GuildSettings | null> {
@@ -79,10 +71,16 @@ export async function upsertBotData(
   const existing = await getBotData(guildId);
 
   const now = new Date().toISOString();
+
+  const hasDefaultImages = Object.prototype.hasOwnProperty.call(
+    data,
+    "defaultImages",
+  );
+
   const sanitized: Partial<GuildSettings> = {
     ...data,
-    defaultImages: data.defaultImages
-      ? serializeDefaultImages(data.defaultImages)
+    defaultImages: hasDefaultImages
+      ? normalizeDefaultImages(data.defaultImages)
       : (existing?.defaultImages ?? null),
     updatedAt: now,
   };
@@ -93,11 +91,13 @@ export async function upsertBotData(
       .set(sanitized)
       .where(eq(botData.guildId, guildId));
 
-    return {
-      ...existing,
-      ...sanitized,
-      defaultImages: sanitized.defaultImages ?? null,
-    } as GuildSettings;
+    const updated = await getBotData(guildId);
+    if (!updated) {
+      throw new Error(
+        `Failed to load botData after update for guild ${guildId}`,
+      );
+    }
+    return updated;
   }
 
   const toInsert: Partial<GuildSettings> = {
@@ -108,15 +108,9 @@ export async function upsertBotData(
 
   await drizzleDb.insert(botData).values(toInsert as any);
 
-  return {
-    id: -1,
-    guildId,
-    logChannel: toInsert.logChannel ?? "",
-    nickname: toInsert.nickname ?? "",
-    sleepImage: toInsert.sleepImage ?? "",
-    defaultImages: toInsert.defaultImages ?? null,
-    restricted: Boolean(toInsert.restricted ?? false),
-    createdAt: now,
-    updatedAt: now,
-  } as GuildSettings;
+  const inserted = await getBotData(guildId);
+  if (!inserted) {
+    throw new Error(`Failed to load botData after insert for guild ${guildId}`);
+  }
+  return inserted;
 }

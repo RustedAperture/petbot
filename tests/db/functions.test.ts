@@ -62,12 +62,39 @@ describe("db/functions helpers", () => {
   });
 
   it("upsertBotData inserts when there is no existing record", async () => {
+    let hasInserted = false;
     (drizzleDb.select as any).mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_condition: any) => ({
-          limit: () => Promise.resolve([]),
+          limit: () =>
+            Promise.resolve(
+              hasInserted
+                ? [
+                  {
+                    id: 42,
+                    guildId: "guild-2",
+                    logChannel: "123",
+                    nickname: "",
+                    sleepImage: "",
+                    defaultImages: { pet: "https://example.com/pet2.png" },
+                    restricted: true,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ]
+                : [],
+            ),
         }),
       }),
+    }));
+
+    const valuesSpy = vi.fn(async (_row: Record<string, unknown>) => {
+      hasInserted = true;
+      return;
+    });
+
+    (drizzleDb.insert as any).mockImplementation(() => ({
+      values: valuesSpy,
     }));
 
     const result = await upsertBotData("guild-2", {
@@ -77,8 +104,18 @@ describe("db/functions helpers", () => {
     });
 
     expect((drizzleDb.insert as any).mock.calls.length).toBe(1);
-    const inserted = (drizzleDb.insert as any).mock.calls[0][0];
-    expect(inserted).toBeDefined();
+    expect(valuesSpy.mock.calls.length).toBe(1);
+
+    const insertedValues = valuesSpy.mock.calls[0]?.[0] as Record<string, any>;
+    expect(insertedValues.guildId).toBe("guild-2");
+    expect(insertedValues.logChannel).toBe("123");
+    expect(insertedValues.createdAt).toBeDefined();
+    expect(insertedValues.updatedAt).toBeDefined();
+    expect(insertedValues.defaultImages).toEqual({
+      pet: "https://example.com/pet2.png",
+    });
+
+    expect(result.id).toBe(42);
     expect(result.guildId).toBe("guild-2");
     expect(result.defaultImages).toEqual({
       pet: "https://example.com/pet2.png",
@@ -86,31 +123,71 @@ describe("db/functions helpers", () => {
     expect(result.restricted).toBe(true);
   });
 
+  it("getBotData returns null when no rows exist", async () => {
+    (drizzleDb.select as any).mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_condition: any) => ({
+          limit: () => Promise.resolve([]),
+        }),
+      }),
+    }));
+
+    const result = await getBotData("guild-missing");
+    expect(result).toBeNull();
+  });
+
   it("upsertBotData updates existing record and deserializes defaultImages", async () => {
+    let hasUpdated = false;
+
     (drizzleDb.select as any).mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_condition: any) => ({
           limit: () =>
-            Promise.resolve([
-              {
-                id: 99,
-                guildId: "guild-3",
-                logChannel: "lol",
-                nickname: "bot",
-                sleepImage: "",
-                defaultImages: { pet: "https://example.com/pet3.png" },
-                restricted: false,
-                createdAt: "2026-01-01T00:00:00.000Z",
-                updatedAt: "2026-01-01T00:00:00.000Z",
-              },
-            ]),
+            Promise.resolve(
+              hasUpdated
+                ? [
+                  {
+                    id: 99,
+                    guildId: "guild-3",
+                    logChannel: "lol",
+                    nickname: "new-bot",
+                    sleepImage: "",
+                    defaultImages: { hug: "https://example.com/hug.png" },
+                    restricted: false,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ]
+                : [
+                  {
+                    id: 99,
+                    guildId: "guild-3",
+                    logChannel: "lol",
+                    nickname: "bot",
+                    sleepImage: "",
+                    defaultImages: { pet: "https://example.com/pet3.png" },
+                    restricted: false,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ],
+            ),
         }),
+      }),
+    }));
+
+    (drizzleDb.update as any).mockImplementation(() => ({
+      set: (_data: any) => ({
+        where: () => {
+          hasUpdated = true;
+          return Promise.resolve();
+        },
       }),
     }));
 
     const result = await upsertBotData("guild-3", {
       nickname: "new-bot",
-      defaultImages: '{"hug":"https://example.com/hug.png"}',
+      defaultImages: '{"hug":"https://example.com/hug.png"}' as any,
     });
 
     expect((drizzleDb.update as any).mock.calls.length).toBe(1);
@@ -118,5 +195,62 @@ describe("db/functions helpers", () => {
     expect(result.defaultImages).toEqual({
       hug: "https://example.com/hug.png",
     });
+  });
+
+  it("upsertBotData clears defaultImages when explicitly null", async () => {
+    let hasUpdated = false;
+
+    (drizzleDb.select as any).mockImplementation(() => ({
+      from: (_table: any) => ({
+        where: (_condition: any) => ({
+          limit: () =>
+            Promise.resolve(
+              hasUpdated
+                ? [
+                  {
+                    id: 99,
+                    guildId: "guild-3",
+                    logChannel: "lol",
+                    nickname: "bot",
+                    sleepImage: "",
+                    defaultImages: null,
+                    restricted: false,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ]
+                : [
+                  {
+                    id: 99,
+                    guildId: "guild-3",
+                    logChannel: "lol",
+                    nickname: "bot",
+                    sleepImage: "",
+                    defaultImages: { pet: "https://example.com/pet3.png" },
+                    restricted: false,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ],
+            ),
+        }),
+      }),
+    }));
+
+    (drizzleDb.update as any).mockImplementation(() => ({
+      set: (_data: any) => ({
+        where: () => {
+          hasUpdated = true;
+          return Promise.resolve();
+        },
+      }),
+    }));
+
+    const result = await upsertBotData("guild-3", {
+      defaultImages: null,
+    });
+
+    expect((drizzleDb.update as any).mock.calls.length).toBe(1);
+    expect(result.defaultImages).toBeNull();
   });
 });

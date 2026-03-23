@@ -17,5 +17,11 @@ nvm use --silent || true
 # include Homebrew binaries so things like `gpg` can be found
 export PATH="/opt/homebrew/bin:$PATH"
 
-# lint repo
+# lint repo and auto-fix fixable problems
+npm run lint -- --fix
+
+# stage any changed files after auto-fix
+git add -A
+
+# run lint again to confirm a clean state
 npm run lint
