@@ -1,4 +1,116 @@
+import { drizzleDb } from "./connector.js";
+import { botData } from "./schema.js";
+import { eq } from "drizzle-orm";
+import type { GuildSettings } from "../types/guild.js";
+
 export const Op = {
   not: Symbol("not"),
   gt: Symbol("gt"),
 };
+
+export type BotDataUpdate = Partial<
+  Pick<
+    GuildSettings,
+    "logChannel" | "nickname" | "sleepImage" | "defaultImages" | "restricted"
+  >
+>;
+
+function normalizeDefaultImages(value: unknown): Record<string, string> | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return normalizeDefaultImages(parsed);
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const result: Record<string, string> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (typeof val === "string") {
+        result[key] = val;
+      }
+    }
+    return result;
+  }
+
+  return null;
+}
+
+export async function getBotData(
+  guildId: string,
+): Promise<GuildSettings | null> {
+  const rows = await drizzleDb
+    .select()
+    .from(botData)
+    .where(eq(botData.guildId, guildId))
+    .limit(1);
+
+  const row = rows?.[0];
+  if (!row) {
+    return null;
+  }
+
+  const normalizedDefaultImages = normalizeDefaultImages(row.defaultImages);
+
+  return {
+    ...row,
+    defaultImages: normalizedDefaultImages,
+  } as GuildSettings;
+}
+
+export async function upsertBotData(
+  guildId: string,
+  data: BotDataUpdate,
+): Promise<GuildSettings> {
+  const existing = await getBotData(guildId);
+
+  const now = new Date().toISOString();
+
+  const hasDefaultImages = Object.prototype.hasOwnProperty.call(
+    data,
+    "defaultImages",
+  );
+
+  const sanitized: Partial<GuildSettings> = {
+    ...data,
+    defaultImages: hasDefaultImages
+      ? normalizeDefaultImages(data.defaultImages)
+      : (existing?.defaultImages ?? null),
+    updatedAt: now,
+  };
+
+  if (existing) {
+    await drizzleDb
+      .update(botData)
+      .set(sanitized)
+      .where(eq(botData.guildId, guildId));
+
+    const updated = await getBotData(guildId);
+    if (!updated) {
+      throw new Error(
+        `Failed to load botData after update for guild ${guildId}`,
+      );
+    }
+    return updated;
+  }
+
+  const toInsert: Partial<GuildSettings> = {
+    guildId,
+    ...sanitized,
+    createdAt: now,
+  };
+
+  await drizzleDb.insert(botData).values(toInsert as any);
+
+  const inserted = await getBotData(guildId);
+  if (!inserted) {
+    throw new Error(`Failed to load botData after insert for guild ${guildId}`);
+  }
+  return inserted;
+}
