@@ -51,3 +51,11 @@ export enum HttpMethod {
   HEAD = "HEAD",
   OPTIONS = "OPTIONS",
 }
+
+export const ParseJsonErrors = {
+  EMPTY_BODY: "empty_body",
+  PAYLOAD_TOO_LARGE: "Payload too large",
+} as const;
+
+export type ParseJsonError =
+  (typeof ParseJsonErrors)[keyof typeof ParseJsonErrors];

@@ -1,4 +1,5 @@
 import http from "node:http";
+import { ParseJsonErrors } from "../types/constants.js";
 
 export function isAllowedMethod(
   method: string,
@@ -59,7 +60,7 @@ export async function parseJsonBody<T = unknown>(
       if (receivedBytes > maxBodySize) {
         isSettled = true;
         cleanup();
-        reject(new Error("Payload too large"));
+        reject(new Error(ParseJsonErrors.PAYLOAD_TOO_LARGE));
         return;
       }
 
@@ -74,7 +75,7 @@ export async function parseJsonBody<T = unknown>(
       cleanup();
 
       if (!raw) {
-        reject(new Error("empty_body"));
+        reject(new Error(ParseJsonErrors.EMPTY_BODY));
         return;
       }
 

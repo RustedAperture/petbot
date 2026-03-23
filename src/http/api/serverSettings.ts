@@ -8,6 +8,7 @@ import type { GuildSettings } from "../../types/guild.js";
 import http from "node:http";
 import logger from "../../logger.js";
 import { isAllowedMethod, parseJsonBody } from "../../utilities/httpHelper.js";
+import { ParseJsonErrors } from "../../types/constants.js";
 
 export interface ServerSettingsResponse {
   settings: Partial<GuildSettings>;
@@ -94,9 +95,10 @@ export default async function serverSettingsHandler(
         rawBody = await parseJsonBody<unknown>(req);
       } catch (err) {
         const isEmptyBody =
-          err instanceof Error && err.message === "empty_body";
+          err instanceof Error && err.message === ParseJsonErrors.EMPTY_BODY;
         const isPayloadTooLarge =
-          err instanceof Error && err.message === "Payload too large";
+          err instanceof Error &&
+          err.message === ParseJsonErrors.PAYLOAD_TOO_LARGE;
 
         logger.error({ err }, "Error parsing request body");
 
