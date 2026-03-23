@@ -79,4 +79,18 @@ describe("httpHelper.parseJsonBody", () => {
 
     await expect(parsePromise).rejects.toThrow("Payload too large");
   });
+
+  it("removes listeners after completion", async () => {
+    const req = new PassThrough();
+    const parsePromise = parseJsonBody(req);
+
+    req.write(JSON.stringify({ a: 1 }));
+    req.end();
+
+    await expect(parsePromise).resolves.toEqual({ a: 1 });
+
+    expect(req.listenerCount("data")).toBe(0);
+    expect(req.listenerCount("end")).toBe(0);
+    expect(req.listenerCount("error")).toBe(0);
+  });
 });

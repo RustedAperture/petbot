@@ -33,11 +33,18 @@ export async function parseJsonBody<T = unknown>(
     let receivedBytes = 0;
     let isSettled = false;
 
+    const cleanup = () => {
+      req.off("data", onData);
+      req.off("end", onEnd);
+      req.off("error", onError);
+    };
+
     const onError = (err: Error) => {
       if (isSettled) {
         return;
       }
       isSettled = true;
+      cleanup();
       reject(err);
     };
 
@@ -51,6 +58,7 @@ export async function parseJsonBody<T = unknown>(
 
       if (receivedBytes > maxBodySize) {
         isSettled = true;
+        cleanup();
         reject(new Error("Payload too large"));
         req.destroy();
         return;
@@ -64,6 +72,7 @@ export async function parseJsonBody<T = unknown>(
         return;
       }
       isSettled = true;
+      cleanup();
 
       if (!raw) {
         // If you want strict non-empty, throw here instead:

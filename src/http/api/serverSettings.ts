@@ -56,6 +56,7 @@ export default async function serverSettingsHandler(
         sleepImage: botData.sleepImage,
         defaultImages: botData.defaultImages,
         restricted: botData.restricted,
+        updatedAt: botData.updatedAt,
       })
       .from(botData)
       .where(eq(botData.guildId, guildId))
@@ -204,6 +205,17 @@ export default async function serverSettingsHandler(
         if (key in body) {
           sanitizedBody[key as keyof GuildSettings] = body[key] as any;
         }
+      }
+
+      if (Object.keys(sanitizedBody).length === 0) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            error: "invalid_payload",
+            reason: "no_fields_to_update",
+          }),
+        );
+        return;
       }
 
       const mergedSettings: Partial<GuildSettings> = {
