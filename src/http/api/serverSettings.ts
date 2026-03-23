@@ -93,14 +93,23 @@ export default async function serverSettingsHandler(
       try {
         rawBody = await parseJsonBody<unknown>(req);
       } catch (err) {
+        const isEmptyBody =
+          err instanceof Error && err.message === "empty_body";
         logger.error({ err }, "Error parsing request body");
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(
-          JSON.stringify({
-            error: "invalid_json",
-            reason: "parse_json_failed",
-            details: err instanceof Error ? err.message : String(err),
-          }),
+          JSON.stringify(
+            isEmptyBody
+              ? {
+                error: "missing_body",
+                reason: "body_required_for_patch",
+              }
+              : {
+                error: "invalid_json",
+                reason: "parse_json_failed",
+                details: err instanceof Error ? err.message : String(err),
+              },
+          ),
         );
         return;
       }

@@ -58,9 +58,9 @@ export async function parseJsonBody<T = unknown>(
 
       if (receivedBytes > maxBodySize) {
         isSettled = true;
+        req.destroy();
         cleanup();
         reject(new Error("Payload too large"));
-        req.destroy();
         return;
       }
 
