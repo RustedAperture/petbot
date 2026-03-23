@@ -4,12 +4,10 @@ import {
   EmbedBuilder,
   MessageFlags,
 } from "discord.js";
-import { drizzleDb } from "../../db/connector.js";
-import { botData } from "../../db/schema.js";
-import { eq } from "drizzle-orm";
 import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
+import { getBotData, upsertBotData } from "../../db/functions.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -58,39 +56,20 @@ export const command = {
       });
     }
 
-    const gsRows: GuildSettings[] = await drizzleDb
-      .select()
-      .from(botData)
-      .where(eq(botData.guildId, guildId))
-      .limit(1);
-    let guildSettings = gsRows?.[0] ?? null;
+    let guildSettings = (await getBotData(guildId)) as GuildSettings | null;
 
     const setupEmbed = new EmbedBuilder().setTitle(
       "PetBot Server Config Updated",
     );
 
     if (!guildSettings) {
-      const now = new Date().toISOString();
-      await drizzleDb.insert(botData).values({
-        guildId: interaction.guildId,
-        defaultImages: null,
+      guildSettings = await upsertBotData(guildId, {
         logChannel: "",
         nickname: "",
         sleepImage: "",
-        createdAt: now,
-        updatedAt: now,
-      } as any);
-
-      // Keep a local copy of the inserted row so we can use it without a second roundtrip.
-      guildSettings = {
-        guildId: interaction.guildId,
         defaultImages: null,
-        logChannel: "",
-        nickname: "",
-        sleepImage: "",
-        createdAt: now,
-        updatedAt: now,
-      } as any;
+        restricted: false,
+      });
     }
 
     const logChannelId = guildSettings.logChannel;
@@ -116,10 +95,9 @@ export const command = {
           : {};
     map[action] = url;
 
-    await drizzleDb
-      .update(botData)
-      .set({ defaultImages: map })
-      .where(eq(botData.guildId, interaction.guildId));
+    await upsertBotData(guildId, {
+      defaultImages: map,
+    });
 
     logger.debug(
       `Updated default ${actionConfig.noun} image for guild: ${interaction.guildId}`,

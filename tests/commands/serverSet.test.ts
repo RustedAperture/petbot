@@ -31,12 +31,37 @@ beforeEach(() => {
 
 describe("/server-set command", () => {
   it("updates default image map and replies with an embed when no log channel", async () => {
+    let existing = false;
+
     (drizzleDb.select as any).mockImplementation(() => ({
       from: (_table: any) => ({
         where: (_: any) => ({
-          limit: () => Promise.resolve([]),
+          limit: () =>
+            Promise.resolve(
+              existing
+                ? [
+                  {
+                    id: 1,
+                    guildId: "guild-1",
+                    logChannel: "",
+                    nickname: "",
+                    sleepImage: "",
+                    defaultImages: null,
+                    restricted: false,
+                    createdAt: "2026-01-01T00:00:00.000Z",
+                    updatedAt: "2026-01-01T00:00:00.000Z",
+                  },
+                ]
+                : [],
+            ),
         }),
       }),
+    }));
+
+    (drizzleDb.insert as any).mockImplementation(() => ({
+      values: async () => {
+        existing = true;
+      },
     }));
 
     const interaction = mockInteraction({
