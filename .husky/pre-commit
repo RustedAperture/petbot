@@ -20,8 +20,11 @@ export PATH="/opt/homebrew/bin:$PATH"
 # lint repo and auto-fix fixable problems
 npm run lint -- --fix
 
-# stage any changed files after auto-fix
-git add -A
+# re-stage only files that were staged before lint (preserve original staged set)
+STAGED_FILES=$(git diff --name-only --cached)
+if [ -n "$STAGED_FILES" ]; then
+  echo "$STAGED_FILES" | xargs git add
+fi
 
 # run lint again to confirm a clean state
 npm run lint
