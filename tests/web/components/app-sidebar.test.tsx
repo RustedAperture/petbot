@@ -5,7 +5,7 @@
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createElement, act } from "react";
+import { act } from "react";
 import { createRoot } from "react-dom/client";
 
 // next/navigation needs to be stubbed outside of a Next App Router context
@@ -23,12 +23,16 @@ vi.mock("next/link", () => {
   };
 });
 
-import { AppSidebar } from "../../../apps/web/components/app-sidebar.js";
-import { isAdminOrOwnerGuild } from "../../../apps/web/lib/utils.js";
-import {
-  SidebarProvider,
-  useSidebar,
-} from "../../../apps/web/components/ui/sidebar.js";
+type SidebarState = {
+  isMobile: boolean;
+  setOpenMobile: ReturnType<typeof vi.fn>;
+  openMobile: boolean;
+  open: boolean;
+  toggleSidebar: ReturnType<typeof vi.fn>;
+  setOpen: ReturnType<typeof vi.fn>;
+};
+
+let sidebarState: SidebarState;
 
 // Mock @base-ui-backed UI components that crash due to the dual-React-instance
 // problem: apps/web/node_modules/@base-ui uses its own React copy while
@@ -67,16 +71,84 @@ vi.mock("../../../apps/web/components/ui/sheet.js", () => {
 vi.mock("../../../apps/web/components/ui/sidebar.js", () => {
   const React = require("react");
   return {
-    SidebarProvider: ({ children }: any) =>
+    SidebarProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),
-    useSidebar: () => ({
-      isMobile: false,
-      setOpenMobile: () => {},
-      openMobile: false,
-      open: false,
-      toggleSidebar: () => {},
-      setOpen: () => {},
-    }),
+    useSidebar: () => sidebarState,
+    Sidebar: ({ children }: any) => React.createElement("div", null, children),
+    SidebarContent: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarFooter: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroup: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroupContent: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroupLabel: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarMenu: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarMenuButton: ({ render }: any) => render,
+    SidebarMenuItem: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarSeparator: () => React.createElement("hr", null),
+    SidebarHeader: ({ children }: any) =>
+      React.createElement("div", null, children),
+  };
+});
+
+// Also mock the path alias used by the app code so both imports resolve to
+// the same mocked module during tests.
+vi.mock("@/components/ui/sidebar", () => {
+  const React = require("react");
+  return {
+    SidebarProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    useSidebar: () => sidebarState,
+    Sidebar: ({ children }: any) => React.createElement("div", null, children),
+    SidebarContent: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarFooter: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroup: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroupContent: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarGroupLabel: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarMenu: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarMenuButton: ({ render }: any) => render,
+    SidebarMenuItem: ({ children }: any) =>
+      React.createElement("div", null, children),
+    SidebarSeparator: () => React.createElement("hr", null),
+    SidebarHeader: ({ children }: any) =>
+      React.createElement("div", null, children),
+  };
+});
+vi.mock("@/components/ui/theme-toggle", () => ({
+  ThemeToggle: () => null,
+}));
+vi.mock("@/components/ui/theme-toggle.js", () => ({
+  ThemeToggle: () => null,
+}));
+vi.mock("@/components/app-user", () => ({
+  AppUser: () => null,
+}));
+vi.mock("@/components/app-user.js", () => ({
+  AppUser: () => null,
+}));
+vi.mock("../../../apps/web/components/ui/theme-toggle.js", () => ({
+  ThemeToggle: () => null,
+}));
+vi.mock("../../../apps/web/components/app-user.js", () => ({
+  AppUser: () => null,
+}));
+vi.mock("@/components/ui/sidebar.js", () => {
+  const React = require("react");
+  return {
+    SidebarProvider: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    useSidebar: () => sidebarState,
     Sidebar: ({ children }: any) => React.createElement("div", null, children),
     SidebarContent: ({ children }: any) =>
       React.createElement("div", null, children),
@@ -129,6 +201,10 @@ vi.mock("next-themes", () => ({
   ThemeProvider: ({ children }: any) => children,
 }));
 
+const { AppSidebar } =
+  await import("../../../apps/web/components/app-sidebar.js");
+const { isAdminOrOwnerGuild } = await import("../../../apps/web/lib/utils.js");
+
 vi.mock("../../../apps/web/hooks/use-session", () => ({
   useSession: () => ({
     session: {
@@ -151,7 +227,10 @@ function render(element: any) {
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
-    root.render(createElement(() => element));
+    // Render the provided React element directly to avoid introducing an
+    // extra wrapper component which can cause hooks to be called outside
+    // the component tree in certain test environments.
+    root.render(element);
   });
   return {
     container,
@@ -163,39 +242,19 @@ function render(element: any) {
 }
 
 describe("AppSidebar mobile behaviour", () => {
-  let context: any = null;
-
-  // synchronously grab the sidebar context during render so tests can't see
-  // a null value due to useEffect timing.
-  function ContextReader({ onReady }: { onReady: (ctx: any) => void }) {
-    const ctx = useSidebar();
-    onReady(ctx);
-    return null;
-  }
-
   beforeEach(() => {
-    context = null;
+    sidebarState = {
+      isMobile: true,
+      setOpenMobile: vi.fn(),
+      openMobile: false,
+      open: false,
+      toggleSidebar: vi.fn(),
+      setOpen: vi.fn(),
+    };
   });
 
   it("closes mobile sidebar when a link is clicked", async () => {
-    const { container, unmount } = render(
-      <SidebarProvider>
-        <AppSidebar />
-        <ContextReader onReady={(ctx: any) => (context = ctx)} />
-      </SidebarProvider>,
-    );
-
-    // ensure we have context and we can open mobile
-    expect(context).not.toBeNull();
-
-    // trigger a state update inside act and wait a microtask tick so the
-    // provider has a chance to re-render and update `openMobile` value.
-    await act(async () => {
-      context.setOpenMobile(true);
-      await Promise.resolve();
-    });
-    // at this point the update has flushed
-    expect(context.openMobile).toBe(true);
+    const { container, unmount } = render(<AppSidebar />);
 
     // find a stats link (first in menu)
     const link = container.querySelector("a[href='/']");
@@ -217,18 +276,14 @@ describe("AppSidebar mobile behaviour", () => {
       reactOnClick({ preventDefault: () => {}, stopPropagation: () => {} });
     });
 
-    // after click, sidebar should be closed
-    expect(context.openMobile).toBe(false);
+    // after click, sidebar should request mobile close
+    expect(sidebarState.setOpenMobile).toHaveBeenCalledWith(false);
 
     unmount();
   });
 
   it("shows admin/owner guilds in the admin section", async () => {
-    const { container, unmount } = render(
-      <SidebarProvider>
-        <AppSidebar />
-      </SidebarProvider>,
-    );
+    const { container, unmount } = render(<AppSidebar />);
 
     const ownerLink = container.querySelector("a[href='/admin/111']");
     const adminLink = container.querySelector("a[href='/admin/222']");
