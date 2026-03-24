@@ -20,14 +20,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
 import { AppUser } from "@/components/app-user";
 import { Separator } from "./ui/separator";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { isAdminOrOwnerGuild, getDiscordGuildIconUrl } from "@/lib/utils";
 
 export function AppSidebar({
   version,
@@ -35,6 +37,18 @@ export function AppSidebar({
 }: { version?: string } & React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
+  const { session } = useSession();
+  const adminGuilds = useMemo(
+    () => (session?.guilds ?? []).filter(isAdminOrOwnerGuild),
+    [session?.guilds],
+  );
+
+  const visibleStatsMenu = useMemo(() => {
+    if (session) {
+      return STATS_MENU;
+    }
+    return STATS_MENU.filter((item) => item.id === "global");
+  }, [session]);
 
   const activeClass =
     "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear";
@@ -80,7 +94,7 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>Stats</SidebarGroupLabel>
           <SidebarMenu>
-            {STATS_MENU.map((item) => {
+            {visibleStatsMenu.map((item) => {
               const active = matchPath(item.href);
               return (
                 <SidebarMenuItem
@@ -105,6 +119,59 @@ export function AppSidebar({
             })}
           </SidebarMenu>
         </SidebarGroup>
+        <SidebarSeparator />
+        {session && adminGuilds.length > 0 ? (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarMenu>
+              {adminGuilds.map((guild) => {
+                const iconUrl = getDiscordGuildIconUrl(guild.id, guild.icon);
+                return (
+                  <SidebarMenuItem key={guild.id}>
+                    <SidebarMenuButton
+                      tooltip={guild.name}
+                      className={
+                        matchPath(`/admin/${guild.id}`)
+                          ? activeClass
+                          : undefined
+                      }
+                      render={
+                        <Link
+                          href={`/admin/${guild.id}`}
+                          onClick={() => isMobile && setOpenMobile(false)}
+                        >
+                          {iconUrl ? (
+                            <img
+                              src={iconUrl}
+                              alt=""
+                              className="rounded-full object-cover"
+                              style={{
+                                width: "calc(var(--spacing) * 4)",
+                                height: "calc(var(--spacing) * 4)",
+                              }}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div
+                              className="flex items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground"
+                              style={{
+                                minWidth: "calc(var(--spacing) * 4)",
+                                height: "calc(var(--spacing) * 4)",
+                              }}
+                            >
+                              {guild.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span>{guild.name}</span>
+                        </Link>
+                      }
+                    />
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null}
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>

@@ -14,6 +14,7 @@ import userDataHandler from "./api/userData.js";
 import optOutHandler from "./api/optOut.js";
 import setImagesHandler from "./api/setImages.js";
 import serverSettingsHandler from "./api/serverSettings.js";
+import guildChannelsHandler from "./api/guildChannels.js";
 import { Client } from "discord.js";
 
 function sha256buf(s: string) {
@@ -118,6 +119,10 @@ export function startHttpServer(
             req: http.IncomingMessage,
             res: http.ServerResponse,
           ) => serverSettingsHandler(req, res, client),
+          "/api/guildChannels": (
+            req: http.IncomingMessage,
+            res: http.ServerResponse,
+          ) => guildChannelsHandler(req, res, client),
         };
 
         const handlerFn = apiRouter[pathname];
