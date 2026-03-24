@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { useSession } from "@/hooks/use-session.js";
+import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

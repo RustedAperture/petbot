@@ -129,7 +129,7 @@ vi.mock("next-themes", () => ({
   ThemeProvider: ({ children }: any) => children,
 }));
 
-vi.mock("../../../apps/web/hooks/use-session.js", () => ({
+vi.mock("../../../apps/web/hooks/use-session", () => ({
   useSession: () => ({
     session: {
       user: { id: "123", username: "TestUser#0001" },
@@ -177,7 +177,7 @@ describe("AppSidebar mobile behaviour", () => {
     context = null;
   });
 
-  it.skip("closes mobile sidebar when a link is clicked", async () => {
+  it("closes mobile sidebar when a link is clicked", async () => {
     const { container, unmount } = render(
       <SidebarProvider>
         <AppSidebar />
@@ -223,22 +223,16 @@ describe("AppSidebar mobile behaviour", () => {
     unmount();
   });
 
-  it.skip("shows admin/owner guilds in the admin section", async () => {
+  it("shows admin/owner guilds in the admin section", async () => {
     const { container, unmount } = render(
       <SidebarProvider>
         <AppSidebar />
       </SidebarProvider>,
     );
 
-    const ownerLink = container.querySelector(
-      "a[href='/guildStats?guildId=111']",
-    );
-    const adminLink = container.querySelector(
-      "a[href='/guildStats?guildId=222']",
-    );
-    const memberLink = container.querySelector(
-      "a[href='/guildStats?guildId=333']",
-    );
+    const ownerLink = container.querySelector("a[href='/admin/111']");
+    const adminLink = container.querySelector("a[href='/admin/222']");
+    const memberLink = container.querySelector("a[href='/admin/333']");
 
     expect(ownerLink).toBeTruthy();
     expect(ownerLink?.textContent).toContain("Owner Server");

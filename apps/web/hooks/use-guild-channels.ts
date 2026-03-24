@@ -23,7 +23,7 @@ export function useGuildChannels(
   );
   const [error, setError] = React.useState<Error | null>(null);
 
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     if (!guildId || !userId) {
       setChannels([]);
       setIsLoading(false);

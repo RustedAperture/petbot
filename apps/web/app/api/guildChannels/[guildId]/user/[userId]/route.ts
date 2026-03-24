@@ -4,10 +4,11 @@ import {
   getInternalApiBase,
 } from "../../../../../../lib/internal-api";
 
-export async function GET(
-  req: Request,
-  { params }: { params: { guildId: string; userId: string } },
-) {
+export async function GET(req: Request, context: any) {
+  // `context.params` can be a plain object or a Promise depending on the
+  // Next.js build/runtime types. Widen to `any` here and coerce to a usable
+  // shape to avoid strict typing mismatches while preserving runtime checks.
+  const params = (context && (context.params as any)) || {};
   const raw = readCookie(req);
   if (!raw) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

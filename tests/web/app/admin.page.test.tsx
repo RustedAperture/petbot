@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 const useSessionMock = vi.fn();
 let mockedGuildId: string | undefined = "guild-id";
 
-vi.mock("../../../apps/web/hooks/use-session.js", () => ({
+vi.mock("../../../apps/web/hooks/use-session", () => ({
   useSession: () => useSessionMock(),
 }));
 vi.mock("next/navigation", () => ({
