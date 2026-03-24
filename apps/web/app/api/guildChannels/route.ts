@@ -21,7 +21,10 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   let guildId = url.searchParams.get("guildId");
-  let targetUserId = url.searchParams.get("userId") || userId;
+  // Always use the authenticated session user id as the target user.
+  // Do NOT allow clients to supply an arbitrary `userId` to impersonate
+  // another user — that would allow privilege escalation.
+  let targetUserId = userId;
 
   if (!guildId || !targetUserId) {
     const pathMatch = url.pathname.match(
@@ -29,7 +32,7 @@ export async function GET(req: Request) {
     );
     if (pathMatch) {
       guildId = guildId || decodeURIComponent(pathMatch[1]);
-      targetUserId = targetUserId || decodeURIComponent(pathMatch[2]);
+      // ignore path-supplied userId and always use session user id
     }
   }
 
@@ -55,6 +58,17 @@ export async function GET(req: Request) {
 
   try {
     const json = JSON.parse(text);
+    // If upstream returned a server error, strip internal `details` from the
+    // proxied response in production so sensitive internal information isn't
+    // exposed to end users via the browser devtools.
+    if (res.status >= 500 && json && typeof json === "object") {
+      if (process.env.NODE_ENV === "production") {
+        // remove details field when in production
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete (json as Record<string, unknown>).details;
+      }
+    }
+
     return NextResponse.json(json, { status: res.status });
   } catch {
     return new NextResponse(text, { status: res.status });

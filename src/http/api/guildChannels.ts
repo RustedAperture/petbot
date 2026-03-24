@@ -62,12 +62,19 @@ export default async function guildChannelsHandler(
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ channels: textChannels }));
   } catch (err) {
+    // Log the internal error for server-side visibility.
+    // Only include raw error details in responses when not running in production.
+    // This prevents leaking internal hostnames, DB strings, or API errors to clients.
+    // Always return a generic error payload to the client in production.
+    // Keep details in non-production environments to aid debugging.
+
+    console.error(err);
+    const body: Record<string, unknown> = { error: "server_error" };
+    if (process.env.NODE_ENV !== "production") {
+      body.details = err instanceof Error ? err.message : String(err);
+    }
+
     res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        error: "server_error",
-        details: err instanceof Error ? err.message : String(err),
-      }),
-    );
+    res.end(JSON.stringify(body));
   }
 }

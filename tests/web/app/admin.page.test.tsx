@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 const useSessionMock = vi.fn();
 let mockedGuildId: string | undefined = "guild-id";
 
-vi.mock("@/hooks/use-session.js", () => ({
+vi.mock("../../../apps/web/hooks/use-session.js", () => ({
   useSession: () => useSessionMock(),
 }));
 vi.mock("next/navigation", () => ({
@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Avoid @base-ui/select rendering bloat since it can require React internals
-vi.mock("@/components/ui/select.js", async () => ({
+vi.mock("../../../apps/web/components/ui/select.js", async () => ({
   __esModule: true,
   Select: ({ children }: any) => createElement("div", null, children),
   SelectTrigger: ({ children }: any) => createElement("div", null, children),
@@ -31,12 +31,12 @@ vi.mock("@/components/ui/select.js", async () => ({
     createElement("span", null, placeholder),
 }));
 
-vi.mock("@/components/ui/switch.js", async () => ({
+vi.mock("../../../apps/web/components/ui/switch.js", async () => ({
   __esModule: true,
   Switch: () => createElement("input", { type: "checkbox" }),
 }));
 
-vi.mock("@/components/ui/field.js", async () => ({
+vi.mock("../../../apps/web/components/ui/field.js", async () => ({
   __esModule: true,
   FieldGroup: ({ children }: any) => createElement("div", null, children),
   Field: ({ children }: any) => createElement("div", null, children),
@@ -46,7 +46,7 @@ vi.mock("@/components/ui/field.js", async () => ({
   FieldTitle: ({ children }: any) => createElement("strong", null, children),
 }));
 
-vi.mock("@/components/ui/alert.js", async () => ({
+vi.mock("../../../apps/web/components/ui/alert.js", async () => ({
   __esModule: true,
   Alert: ({ children }: any) => createElement("div", null, children),
   AlertTitle: ({ children }: any) => createElement("h2", null, children),
@@ -167,7 +167,7 @@ describe("AdminGuildPage", () => {
     mockedGuildId = "guild-id";
   });
 
-  it.skip("shows forbidden message and does not render form if access is forbidden", async () => {
+  it("shows forbidden message and does not render form if access is forbidden", async () => {
     mockedGuildId = "guild-id";
     useSessionMock.mockReturnValue({
       session: { user: { id: "user1" } },
