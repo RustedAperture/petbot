@@ -1,35 +1,8 @@
 import { NextResponse } from "next/server";
-
-function readCookie(req: Request) {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => {
-      const [k, ...v] = c.split("=");
-      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
-    }),
-  );
-  return cookies["petbot_session"];
-}
-
-function getInternalApiBase() {
-  if (process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL.replace(/\/$/, "");
-  }
-  const host = process.env.HTTP_HOST || "127.0.0.1";
-  const port = process.env.HTTP_PORT || "3001";
-  const preferHttps = Boolean(
-    process.env.HTTP_TLS_CERT ||
-    process.env.HTTP_TLS_KEY ||
-    process.env.INTERNAL_API_USE_HTTPS === "1" ||
-    process.env.INTERNAL_API_USE_HTTPS === "true" ||
-    process.env.NODE_ENV === "production",
-  );
-  const protocol =
-    preferHttps && host !== "127.0.0.1" && host !== "localhost"
-      ? "https"
-      : "http";
-  return `${protocol}://${host}:${port}`;
-}
+import {
+  readCookie,
+  getInternalApiBase,
+} from "../../../../../../lib/internal-api";
 
 export async function GET(
   req: Request,
@@ -53,9 +26,11 @@ export async function GET(
   }
 
   let guildId = params?.guildId;
-  let targetUserId = params?.userId || userId;
+  // Always enforce the authenticated session's user id. Ignore any userId supplied
+  // in the URL to prevent authorization bypass.
+  const targetUserId = userId;
 
-  if (!guildId || !targetUserId) {
+  if (!guildId) {
     try {
       const url = new URL(req.url);
       const pathMatch = url.pathname.match(
@@ -63,14 +38,13 @@ export async function GET(
       );
       if (pathMatch) {
         guildId = guildId || decodeURIComponent(pathMatch[1]);
-        targetUserId = targetUserId || decodeURIComponent(pathMatch[2]);
       }
     } catch {
       // ignore URL parse errors
     }
   }
 
-  if (!guildId || !targetUserId) {
+  if (!guildId) {
     return NextResponse.json(
       { error: "missing parameter: guildId or userId" },
       { status: 400 },

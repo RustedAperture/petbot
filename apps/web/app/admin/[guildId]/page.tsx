@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams } from "next/navigation";
-import { useSession } from "@/hooks/use-session";
+import { useSession } from "@/hooks/use-session.js";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -133,6 +133,8 @@ function AdminGuildPageContent({ guildId }: { guildId: string }) {
   const guildIconUrl = guild
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
+
+  // (debug logs removed)
 
   return (
     <form className="w-full flex flex-col gap-6">

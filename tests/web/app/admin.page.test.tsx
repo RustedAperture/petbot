@@ -4,7 +4,7 @@
 // Required for React's act() to work outside of a full testing-library setup
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { it, describe, expect, vi, afterEach } from "vitest";
+import { it, describe, expect, vi, beforeEach, afterEach } from "vitest";
 import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -155,7 +155,11 @@ describe("AdminGuildPage", () => {
     });
 
     const { container, root } = render(AdminGuildPage);
-    expect(container.textContent).toContain("Loading server settings...");
+    // The page renders Skeleton components when still loading and guildId
+    // isn't known; there is no visible "Loading server settings..." text.
+    expect(
+      container.querySelectorAll('[data-slot="skeleton"]').length,
+    ).toBeGreaterThan(0);
 
     act(() => root.unmount());
     container.remove();
