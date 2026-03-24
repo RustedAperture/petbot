@@ -2,6 +2,14 @@
 
 import * as React from "react";
 
+type GuildInSession = {
+  id: string;
+  name: string;
+  icon?: string | null;
+  owner?: boolean;
+  permissions?: string | null;
+};
+
 type Session = {
   user: {
     id: string;
@@ -9,7 +17,7 @@ type Session = {
     avatar?: string | null;
     avatarUrl?: string | null;
   };
-  guilds: Array<{ id: string; name: string }>;
+  guilds: GuildInSession[];
 } | null;
 
 // Module-scoped cache so multiple mounts (e.g. during client navigation)
