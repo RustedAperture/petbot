@@ -6,9 +6,9 @@ import {
 
 export async function GET(req: Request, context: any) {
   // `context.params` can be a plain object or a Promise depending on the
-  // Next.js build/runtime types. Widen to `any` here and coerce to a usable
-  // shape to avoid strict typing mismatches while preserving runtime checks.
-  const params = (context && (context.params as any)) || {};
+  // Next.js build/runtime types. Await to unwrap promises in newer Next.js
+  // runtimes, while still supporting plain objects in older runtimes.
+  const params = (await context?.params) || {};
   const raw = readCookie(req);
   if (!raw) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -67,6 +67,17 @@ export async function GET(req: Request, context: any) {
 
   try {
     const json = JSON.parse(text);
+    // If upstream returned a server error, strip internal `details` from the
+    // proxied response in production so sensitive internal information isn't
+    // exposed to end users via browser devtools.
+    if (res.status >= 500 && json && typeof json === "object") {
+      if (process.env.NODE_ENV === "production") {
+        // remove details field when in production
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete (json as Record<string, unknown>).details;
+      }
+    }
+
     return NextResponse.json(json, { status: res.status });
   } catch {
     return new NextResponse(text, { status: res.status });
