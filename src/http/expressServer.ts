@@ -49,6 +49,9 @@ function resolveTls(): { key?: string; cert?: string } {
 export function createApp(client?: Client<boolean>): express.Express {
   const app = express();
 
+  // --- Security: reduce server fingerprinting ---
+  app.disable("x-powered-by");
+
   // --- Security headers (Helmet) ---
   app.use(helmet());
 
