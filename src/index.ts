@@ -5,7 +5,8 @@ import { Client, Collection, GatewayIntentBits } from "discord.js";
 
 import config from "./config.js";
 import logger from "./logger.js";
-import { startHttpServer } from "./http/server.js";
+import { startHttpServer } from "./http/expressServer.js";
+import { readiness } from "./http/readiness.js";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { drizzleDb } from "./db/connector.js";
 import { bootstrapDb } from "./db/bootstrap.js";
@@ -27,6 +28,7 @@ declare module "discord.js" {
 await bootstrapDb(); // stamps legacy DBs so migrate() doesn't re-run existing DDL
 await migrate(drizzleDb, { migrationsFolder: "./drizzle" });
 logger.info("Database migrations applied");
+readiness.dbReady = true;
 
 const client: Client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
@@ -35,6 +37,7 @@ const client: Client = new Client({
 // start the HTTP API for the web UI after the bot is ready
 client.once("ready", () => {
   logger.info("Discord client ready, starting HTTP API");
+  readiness.botReady = true;
   startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
 });
 
