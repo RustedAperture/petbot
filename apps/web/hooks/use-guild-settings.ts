@@ -17,8 +17,10 @@ const fetcher = async (url: string): Promise<ServerSettingsResponse> => {
   return res.json();
 };
 
-const stripEmptyFields = (values: Partial<GuildSettings>) => {
-  const cleaned: Partial<GuildSettings> = {};
+const stripEmptyFields = (
+  values: Partial<GuildSettings>,
+): Record<string, unknown> => {
+  const cleaned: Record<string, unknown> = {};
 
   if (typeof values.restricted === "boolean") {
     cleaned.restricted = values.restricted;
@@ -26,26 +28,29 @@ const stripEmptyFields = (values: Partial<GuildSettings>) => {
 
   // Preserve explicit clears: if the caller provided the field (even as
   // an empty string), include it in the payload so the server can clear the
-  // stored value. Trim strings when present.
+  // stored value. Trim strings when present. Accept `null` explicitly.
   if (Object.prototype.hasOwnProperty.call(values, "nickname")) {
-    cleaned.nickname =
-      typeof values.nickname === "string"
-        ? values.nickname.trim()
-        : (values.nickname as any);
+    if (typeof values.nickname === "string") {
+      cleaned.nickname = values.nickname.trim();
+    } else if (values.nickname === null) {
+      cleaned.nickname = null;
+    }
   }
 
   if (Object.prototype.hasOwnProperty.call(values, "logChannel")) {
-    cleaned.logChannel =
-      typeof values.logChannel === "string"
-        ? values.logChannel.trim()
-        : (values.logChannel as any);
+    if (typeof values.logChannel === "string") {
+      cleaned.logChannel = values.logChannel.trim();
+    } else if (values.logChannel === null) {
+      cleaned.logChannel = null;
+    }
   }
 
   if (Object.prototype.hasOwnProperty.call(values, "sleepImage")) {
-    cleaned.sleepImage =
-      typeof values.sleepImage === "string"
-        ? values.sleepImage.trim()
-        : (values.sleepImage as any);
+    if (typeof values.sleepImage === "string") {
+      cleaned.sleepImage = values.sleepImage.trim();
+    } else if (values.sleepImage === null) {
+      cleaned.sleepImage = null;
+    }
   }
 
   if (values.defaultImages) {
@@ -60,8 +65,7 @@ const stripEmptyFields = (values: Partial<GuildSettings>) => {
 
     // Always include the mapping if the form provided it (even if all
     // entries are empty strings) so the server can clear defaults.
-    cleaned.defaultImages =
-      cleanedDefaultImages as unknown as GuildSettings["defaultImages"];
+    cleaned.defaultImages = cleanedDefaultImages;
   }
 
   return cleaned;
@@ -74,9 +78,9 @@ export function useGuildSettings(options: {
   const { guildId, userId } = options;
   const shouldFetch = Boolean(guildId && userId);
   const endpoint = shouldFetch
-    ? `/api/serverSettings?guildId=${encodeURIComponent(
-        guildId as string,
-      )}&userId=${encodeURIComponent(userId as string)}`
+    ? `/api/serverSettings?guildId=${encodeURIComponent(guildId!)}&userId=${encodeURIComponent(
+        userId!,
+      )}`
     : null;
 
   const { data, error, isLoading, mutate } = useSWR<ServerSettingsResponse>(

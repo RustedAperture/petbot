@@ -16,7 +16,6 @@ export default function AdminGuildPageContent({
     settings,
     isLoading: isSettingsLoading,
     error: isSettingsError,
-    refresh,
     update,
   } = useGuildSettings({ guildId, userId: session?.user?.id ?? undefined });
 
@@ -49,24 +48,18 @@ export default function AdminGuildPageContent({
   const guildIconUrl = guild
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
-  const isLoadingAll = pageLoading || isSettingsLoading;
-
   return (
     <AdminGuildSettingsForm
       guildId={guildId}
-      sessionUserId={session?.user?.id ?? null}
       settings={settings}
       isSettingsLoading={isSettingsLoading}
       isSettingsError={isSettingsError}
-      refresh={refresh}
       update={update}
       channelItems={channelItems}
-      channelsLoading={channelsLoading}
       channelsError={channelsError}
       pageLoading={pageLoading}
       guild={guild}
       guildIconUrl={guildIconUrl}
-      isLoadingAll={isLoadingAll}
     />
   );
 }

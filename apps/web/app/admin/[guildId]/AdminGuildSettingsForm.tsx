@@ -57,26 +57,22 @@ const AdminGuildSettingsSchema = z.object({
   nickname: z.string().optional(),
   logChannel: z.string().optional(),
   sleepImage: z.url().or(z.literal("")).optional(),
-  restricted: z.boolean(),
-  defaultImages: z.object(actionImagesSchemaShape),
+  restricted: z.boolean().optional(),
+  defaultImages: z.object(actionImagesSchemaShape).optional(),
 });
 
 type AdminGuildSettingsFormValues = z.infer<typeof AdminGuildSettingsSchema>;
 
 export type AdminGuildSettingsFormProps = {
   guildId: string;
-  sessionUserId: string | null;
   settings: Partial<GuildSettings> | null;
   isSettingsLoading: boolean;
   isSettingsError: Error | null;
-  refresh: () => Promise<unknown> | void;
   channelItems: Array<{ label: string; value: string }>;
-  channelsLoading: boolean;
   channelsError: Error | null;
   pageLoading: boolean;
   guild: { id: string; name: string; icon?: string | null } | null;
   guildIconUrl: string | null;
-  isLoadingAll: boolean;
   update: (values: Partial<GuildSettings>) => Promise<unknown> | unknown;
 };
 
@@ -109,18 +105,14 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 
 export default function AdminGuildSettingsForm({
   guildId,
-  sessionUserId,
   settings,
   isSettingsLoading,
   isSettingsError,
-  refresh,
   channelItems,
-  channelsLoading,
   channelsError,
   pageLoading,
   guild,
   guildIconUrl,
-  isLoadingAll,
   update,
 }: AdminGuildSettingsFormProps) {
   const form = useForm<AdminGuildSettingsFormValues>({
@@ -167,7 +159,7 @@ export default function AdminGuildSettingsForm({
     setSaving(true);
     setSaveError(null);
     try {
-      await update(values as Partial<GuildSettings>);
+      await update(values as unknown as Partial<GuildSettings>);
     } catch (error) {
       console.error(error);
       setSaveError(error as Error);
@@ -232,7 +224,7 @@ export default function AdminGuildSettingsForm({
               <Button
                 type="submit"
                 size="lg"
-                disabled={isLoadingAll || saving || !form.formState.isDirty}
+                disabled={pageLoading || saving || !form.formState.isDirty}
               >
                 {saving ? "Saving…" : "Save"}
               </Button>
