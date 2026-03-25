@@ -23,7 +23,6 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field";
-import { useGuildSettings } from "@/hooks/use-guild-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,6 +77,7 @@ export type AdminGuildSettingsFormProps = {
   guild: { id: string; name: string; icon?: string | null } | null;
   guildIconUrl: string | null;
   isLoadingAll: boolean;
+  update: (values: Partial<GuildSettings>) => Promise<unknown> | unknown;
 };
 
 function titleCase(value: string) {
@@ -121,6 +121,7 @@ export default function AdminGuildSettingsForm({
   guild,
   guildIconUrl,
   isLoadingAll,
+  update,
 }: AdminGuildSettingsFormProps) {
   const form = useForm<AdminGuildSettingsFormValues>({
     resolver: zodResolver(AdminGuildSettingsSchema),
@@ -159,7 +160,6 @@ export default function AdminGuildSettingsForm({
     });
   }, [settings, form]);
 
-  const { update } = useGuildSettings({ guildId, userId: sessionUserId });
   const [saving, setSaving] = React.useState(false);
 
   const onSubmit = async (values: AdminGuildSettingsFormValues) => {

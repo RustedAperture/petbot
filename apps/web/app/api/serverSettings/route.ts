@@ -38,6 +38,10 @@ export async function GET(req: Request) {
     );
   }
 
+  if (userId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const target = `${getInternalApiBase()}/api/serverSettings?guildId=${encodeURIComponent(
     guildId,
   )}&userId=${encodeURIComponent(userId)}`;

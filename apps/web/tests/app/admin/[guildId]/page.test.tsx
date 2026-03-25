@@ -129,21 +129,6 @@ vi.mock("@/components/ui/select", () => ({
 }));
 
 vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ children }: any) => {
-    // eslint-disable-next-line no-console
-    console.log("Mocked @/components/ui/switch loaded");
-    return createElement("div", null, children);
-  },
-}));
-vi.mock("../../../components/ui/switch", () => ({
-  Switch: ({ children }: any) => {
-    // eslint-disable-next-line no-console
-    console.log("Mocked ../../../components/ui/switch loaded");
-    return createElement("div", null, children);
-  },
-}));
-
-vi.mock("@/components/ui/switch", () => ({
   Switch: (props: any) => createElement("input", props, props.children),
 }));
 

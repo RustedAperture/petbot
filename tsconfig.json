@@ -39,7 +39,12 @@
     "sourceMap": true,
     "declaration": false
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "tests/**/*.tsx", "apps/web/tests/app/admin.page.test.tsx"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ],
   "exclude": [
     "node_modules",
     "dist",

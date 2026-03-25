@@ -17,6 +17,7 @@ export default function AdminGuildPageContent({
     isLoading: isSettingsLoading,
     error: isSettingsError,
     refresh,
+    update,
   } = useGuildSettings({ guildId, userId: session?.user?.id ?? undefined });
 
   const {
@@ -54,6 +55,7 @@ export default function AdminGuildPageContent({
       isSettingsLoading={isSettingsLoading}
       isSettingsError={isSettingsError}
       refresh={refresh}
+      update={update}
       channelItems={channelItems}
       channelsLoading={channelsLoading}
       channelsError={channelsError}
