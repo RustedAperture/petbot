@@ -12,7 +12,10 @@ export function requestLogger(
 ): void {
   const start = Date.now();
 
-  logger.info({ method: req.method, pathname: req.path }, "HTTP request");
+  logger.info(
+    { method: req.method, pathname: req.originalUrl },
+    "HTTP request",
+  );
 
   res.on("finish", () => {
     const elapsed = Date.now() - start;

@@ -127,8 +127,7 @@ export function startHttpServer(
   if (
     process.env.NODE_ENV === "production" &&
     isPublicHost &&
-    !key &&
-    !cert &&
+    !(key && cert) &&
     !process.env.INTERNAL_API_SECRET
   ) {
     throw new Error(

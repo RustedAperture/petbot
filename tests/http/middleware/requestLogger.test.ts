@@ -44,7 +44,11 @@ describe("requestLogger middleware", () => {
   });
 
   it("logs the incoming request", () => {
-    const req = makeReq({ method: "POST", path: "/api/stats" });
+    const req = makeReq({
+      method: "POST",
+      path: "/api/stats",
+      originalUrl: "/api/stats",
+    });
     const res = makeRes();
     const next = vi.fn();
 
