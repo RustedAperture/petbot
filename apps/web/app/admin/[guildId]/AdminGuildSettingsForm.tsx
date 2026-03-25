@@ -297,7 +297,9 @@ export default function AdminGuildSettingsForm({
                   items={channelItems}
                   value={form.watch("logChannel") ?? ""}
                   onValueChange={(val) =>
-                    form.setValue("logChannel", val ?? "")
+                    form.setValue("logChannel", val ?? "", {
+                      shouldDirty: true,
+                    })
                   }
                 >
                   <SelectTrigger>

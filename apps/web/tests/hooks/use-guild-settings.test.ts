@@ -126,7 +126,7 @@ describe("useGuildSettings", () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it("update() is a no-op when all fields strip away to empty", async () => {
+  it("update() sends PATCH when fields are cleared (explicit clears are sent)", async () => {
     const initial = { settings: { logChannel: "123", nickname: "bot" } };
     swrState.data = initial;
     const fetchMock = vi.fn().mockResolvedValue({
