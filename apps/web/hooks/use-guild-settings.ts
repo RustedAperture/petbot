@@ -92,52 +92,6 @@ export function useGuildSettings(options: {
 
       let payload = stripEmptyFields(values);
 
-      // If the caller explicitly provided fields but stripEmptyFields
-      // removed them all (e.g. all values trimmed to empty), we still
-      // want to send an explicit payload so the server can clear stored
-      // values. Reconstruct a minimal payload from the original values
-      // when that happens.
-      if (Object.keys(payload).length === 0 && Object.keys(values).length > 0) {
-        const recovered: Partial<GuildSettings> = {};
-        if (Object.prototype.hasOwnProperty.call(values, "nickname")) {
-          recovered.nickname =
-            typeof values.nickname === "string"
-              ? values.nickname.trim()
-              : (values.nickname as any);
-        }
-        if (Object.prototype.hasOwnProperty.call(values, "logChannel")) {
-          recovered.logChannel =
-            typeof values.logChannel === "string"
-              ? values.logChannel.trim()
-              : (values.logChannel as any);
-        }
-        if (Object.prototype.hasOwnProperty.call(values, "sleepImage")) {
-          recovered.sleepImage =
-            typeof values.sleepImage === "string"
-              ? values.sleepImage.trim()
-              : (values.sleepImage as any);
-        }
-        if (
-          Object.prototype.hasOwnProperty.call(values, "defaultImages") &&
-          values.defaultImages
-        ) {
-          const mapping: Record<string, string> = {};
-          for (const [k, v] of Object.entries(values.defaultImages)) {
-            if (typeof v === "string") mapping[k] = v.trim();
-          }
-          recovered.defaultImages =
-            mapping as unknown as GuildSettings["defaultImages"];
-        }
-        if (Object.prototype.hasOwnProperty.call(values, "restricted")) {
-          recovered.restricted =
-            typeof values.restricted === "number"
-              ? Boolean(values.restricted)
-              : (values.restricted as boolean);
-        }
-
-        payload = recovered;
-      }
-
       if (Object.keys(payload).length === 0) {
         return undefined;
       }
