@@ -96,80 +96,12 @@ vi.mock("@/components/ui/sidebar", () => {
   };
 });
 
-// Also mock the path alias used by the app code so both imports resolve to
-// the same mocked module during tests.
-vi.mock("@/components/ui/sidebar", () => {
-  const React = require("react");
-  return {
-    SidebarProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(React.Fragment, null, children),
-    useSidebar: () => sidebarState,
-    Sidebar: ({ children }: any) => React.createElement("div", null, children),
-    SidebarContent: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarFooter: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroup: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroupContent: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroupLabel: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarMenu: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarMenuButton: ({ render }: any) => render,
-    SidebarMenuItem: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarSeparator: () => React.createElement("hr", null),
-    SidebarHeader: ({ children }: any) =>
-      React.createElement("div", null, children),
-  };
-});
-vi.mock("@/components/ui/theme-toggle", () => ({
-  ThemeToggle: () => null,
-}));
 vi.mock("@/components/ui/theme-toggle", () => ({
   ThemeToggle: () => null,
 }));
 vi.mock("@/components/app-user", () => ({
   AppUser: () => null,
 }));
-vi.mock("@/components/app-user", () => ({
-  AppUser: () => null,
-}));
-vi.mock("@/components/ui/theme-toggle", () => ({
-  ThemeToggle: () => null,
-}));
-vi.mock("@/components/app-user", () => ({
-  AppUser: () => null,
-}));
-vi.mock("@/components/ui/sidebar", () => {
-  const React = require("react");
-  return {
-    SidebarProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(React.Fragment, null, children),
-    useSidebar: () => sidebarState,
-    Sidebar: ({ children }: any) => React.createElement("div", null, children),
-    SidebarContent: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarFooter: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroup: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroupContent: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarGroupLabel: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarMenu: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarMenuButton: ({ render }: any) => render,
-    SidebarMenuItem: ({ children }: any) =>
-      React.createElement("div", null, children),
-    SidebarSeparator: () => React.createElement("hr", null),
-    SidebarHeader: ({ children }: any) =>
-      React.createElement("div", null, children),
-  };
-});
 
 // DropdownMenu (ThemeToggle) and next-themes also use @base-ui/react/menu fastComponent
 vi.mock("@/components/ui/dropdown-menu", () => {
@@ -201,8 +133,7 @@ vi.mock("next-themes", () => ({
   ThemeProvider: ({ children }: any) => children,
 }));
 
-const { AppSidebar } =
-  await import("@/components/app-sidebar");
+const { AppSidebar } = await import("@/components/app-sidebar");
 const { isAdminOrOwnerGuild } = await import("@/lib/utils");
 
 vi.mock("@/hooks/use-session", () => ({
