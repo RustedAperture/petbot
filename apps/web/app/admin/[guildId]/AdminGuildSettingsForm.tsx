@@ -48,7 +48,7 @@ const ACTION_DEFAULT_IMAGE_FIELDS = Object.keys(ACTIONS) as Array<
 const actionImagesSchemaShape = ACTION_DEFAULT_IMAGE_FIELDS.reduce(
   (shape, action) => ({
     ...shape,
-    [action]: z.string().url().or(z.literal("")).optional(),
+    [action]: z.url().or(z.literal("")).optional(),
   }),
   {} as Record<keyof typeof ACTIONS, z.ZodTypeAny>,
 );
@@ -56,7 +56,7 @@ const actionImagesSchemaShape = ACTION_DEFAULT_IMAGE_FIELDS.reduce(
 const AdminGuildSettingsSchema = z.object({
   nickname: z.string().optional(),
   logChannel: z.string().optional(),
-  sleepImage: z.string().optional(),
+  sleepImage: z.url().or(z.literal("")).optional(),
   restricted: z.boolean(),
   defaultImages: z.object(actionImagesSchemaShape),
 });

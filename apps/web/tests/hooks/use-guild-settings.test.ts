@@ -150,7 +150,7 @@ describe("useGuildSettings", () => {
     // No PATCH should have been made
     expect(fetchMock).not.toHaveBeenCalled();
     expect(mockMutate).not.toHaveBeenCalled();
-    // update returns the current SWR data as-is
-    expect(ret).toEqual(initial);
+    // update is a no-op and returns undefined
+    expect(ret).toBeUndefined();
   });
 });

@@ -46,12 +46,20 @@ export async function GET(req: Request) {
     guildId,
   )}&userId=${encodeURIComponent(userId)}`;
 
-  const res = await fetch(target, {
-    headers: {
-      ...internalApiHeaders(),
-      "content-type": "application/json",
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(target, {
+      headers: {
+        ...internalApiHeaders(),
+        "content-type": "application/json",
+      },
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "upstream_unavailable" },
+      { status: 503 },
+    );
+  }
 
   const text = await res.text();
   const contentType = res.headers.get("content-type") ?? "application/json";
@@ -95,14 +103,22 @@ export async function PATCH(req: Request) {
     guildId,
   )}&userId=${encodeURIComponent(userId)}`;
 
-  const res = await fetch(target, {
-    method: "PATCH",
-    headers: {
-      ...internalApiHeaders(),
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(target, {
+      method: "PATCH",
+      headers: {
+        ...internalApiHeaders(),
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "upstream_unavailable" },
+      { status: 503 },
+    );
+  }
 
   const text = await res.text();
   const contentType = res.headers.get("content-type") ?? "application/json";

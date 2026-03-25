@@ -77,7 +77,7 @@ export function useGuildSettings(options: {
 
       const payload = stripEmptyFields(values);
       if (Object.keys(payload).length === 0) {
-        return data;
+        return undefined;
       }
 
       const res = await fetch(endpoint, {
@@ -108,7 +108,7 @@ export function useGuildSettings(options: {
       await mutate();
       return null;
     },
-    [endpoint, mutate, data],
+    [endpoint, mutate],
   );
 
   return {
