@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
-import("../../../apps/web/app/api/serverSettings/route.js").then((_mod) => {
-  // no-op to ensure module is loadable in the test runner
-});
-
 function sessionCookie(session: any) {
   return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
 }
@@ -69,6 +65,18 @@ describe("/api/serverSettings – auth and membership guards", () => {
     expect(await res.json()).toEqual({ error: "forbidden" });
   });
 
+  it("GET returns 403 when user is a member but not admin/owner", async () => {
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: false, permissions: "0" }],
+    });
+    const req = makeGetRequest("G1", "111", cookie);
+
+    const res = await GET(req as any);
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "forbidden" });
+  });
+
   it("PATCH returns 403 when userId does not match session user", async () => {
     const cookie = sessionCookie({
       user: { id: "111" },
@@ -85,6 +93,18 @@ describe("/api/serverSettings – auth and membership guards", () => {
     const cookie = sessionCookie({
       user: { id: "111" },
       guilds: [{ id: "OTHER" }],
+    });
+    const req = makePatchRequest("G1", "111", { foo: "bar" }, cookie);
+
+    const res = await PATCH(req as any);
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: "forbidden" });
+  });
+
+  it("PATCH returns 403 when user is a member but not admin/owner", async () => {
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: false, permissions: "0" }],
     });
     const req = makePatchRequest("G1", "111", { foo: "bar" }, cookie);
 

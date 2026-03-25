@@ -4,6 +4,7 @@ import {
   getInternalApiBase,
   internalApiHeaders,
 } from "../../../lib/internal-api";
+import { isAdminOrOwnerGuild } from "../../../lib/utils";
 
 function requireSession(req: Request) {
   const raw = readCookie(req);
@@ -14,7 +15,12 @@ function requireSession(req: Request) {
   try {
     return JSON.parse(raw) as {
       user?: { id?: string };
-      guilds?: Array<{ id: string; name: string }>;
+      guilds?: Array<{
+        id: string;
+        name?: string;
+        owner?: boolean;
+        permissions?: string | null;
+      }>;
     };
   } catch {
     return null;
@@ -42,7 +48,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  if (!session.guilds?.some((g) => g.id === guildId)) {
+  const guild = session.guilds?.find((g) => g.id === guildId);
+  if (!guild) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (!isAdminOrOwnerGuild(guild)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
@@ -104,7 +115,12 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  if (!session.guilds?.some((g) => g.id === guildId)) {
+  const guild = session.guilds?.find((g) => g.id === guildId);
+  if (!guild) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (!isAdminOrOwnerGuild(guild)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

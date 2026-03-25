@@ -114,7 +114,7 @@ export function useGuildSettings(options: {
   return {
     settings: data?.settings ?? null,
     isLoading,
-    error,
+    error: error ?? null,
     refresh: mutate,
     update,
   };
