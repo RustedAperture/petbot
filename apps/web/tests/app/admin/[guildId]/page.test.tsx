@@ -6,8 +6,8 @@ import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
 
-import AdminGuildPage from "../../../../app/admin/[guildId]/page";
-import AdminGuildPageContent from "../../../../app/admin/[guildId]/AdminGuildPageContent";
+import AdminGuildPage from "@/app/admin/[guildId]/page";
+import AdminGuildPageContent from "@/app/admin/[guildId]/AdminGuildPageContent";
 
 type GuildChannel = { id: string; name: string };
 
@@ -74,7 +74,7 @@ vi.mock("@/hooks/use-guild-settings", () => ({
   useGuildSettings: () => guildSettingsState,
 }));
 
-vi.mock("../../../../app/admin/[guildId]/AdminGuildSettingsForm", () => ({
+vi.mock("@/app/admin/[guildId]/AdminGuildSettingsForm", () => ({
   default: ({
     guildId,
     guild,
