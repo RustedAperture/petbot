@@ -1,9 +1,9 @@
 import http from "node:http";
 import https from "node:https";
 import fs from "node:fs";
-import crypto from "node:crypto";
 import { URL } from "node:url";
 import logger from "../logger.js";
+import { secureEqual } from "../utilities/crypto.js";
 
 // API handlers (each API is implemented in its own file)
 import healthHandler from "./api/health.js";
@@ -16,23 +16,6 @@ import setImagesHandler from "./api/setImages.js";
 import serverSettingsHandler from "./api/serverSettings.js";
 import guildChannelsHandler from "./api/guildChannels.js";
 import { Client } from "discord.js";
-
-function sha256buf(s: string) {
-  return crypto.createHash("sha256").update(String(s)).digest();
-}
-
-function secureEqual(a?: string, b?: string) {
-  if (!a || !b) {
-    return false;
-  }
-  try {
-    const ah = sha256buf(a);
-    const bh = sha256buf(b);
-    return crypto.timingSafeEqual(ah, bh);
-  } catch {
-    return false;
-  }
-}
 
 export function startHttpServer(
   port = Number(process.env.HTTP_PORT) || 3001,
