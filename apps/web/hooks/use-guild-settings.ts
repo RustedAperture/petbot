@@ -61,7 +61,7 @@ const stripEmptyFields = (values: Partial<GuildSettings>) => {
     // Always include the mapping if the form provided it (even if all
     // entries are empty strings) so the server can clear defaults.
     cleaned.defaultImages =
-      cleanedDefaultImages as GuildSettings["defaultImages"];
+      cleanedDefaultImages as unknown as GuildSettings["defaultImages"];
   }
 
   return cleaned;
@@ -125,7 +125,8 @@ export function useGuildSettings(options: {
           for (const [k, v] of Object.entries(values.defaultImages)) {
             if (typeof v === "string") mapping[k] = v.trim();
           }
-          recovered.defaultImages = mapping as GuildSettings["defaultImages"];
+          recovered.defaultImages =
+            mapping as unknown as GuildSettings["defaultImages"];
         }
         if (Object.prototype.hasOwnProperty.call(values, "restricted")) {
           recovered.restricted =
