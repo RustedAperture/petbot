@@ -129,9 +129,12 @@ describe("useGuildSettings", () => {
   it("update() is a no-op when all fields strip away to empty", async () => {
     const initial = { settings: { logChannel: "123", nickname: "bot" } };
     swrState.data = initial;
-
-    const fetchMock = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ settings: initial.settings }),
+    });
     vi.stubGlobal("fetch", fetchMock);
+    mockMutate.mockResolvedValue(undefined);
 
     const result = useGuildSettings({ guildId: makeId(), userId: makeId() });
 
@@ -147,10 +150,15 @@ describe("useGuildSettings", () => {
       },
     });
 
-    // No PATCH should have been made
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(mockMutate).not.toHaveBeenCalled();
-    // update is a no-op and returns undefined
-    expect(ret).toBeUndefined();
+    // PATCH should have been made with explicit clears
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("serverSettings"),
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(mockMutate).toHaveBeenCalledWith(
+      { settings: initial.settings },
+      { revalidate: false },
+    );
+    expect(ret).toEqual(initial.settings);
   });
 });

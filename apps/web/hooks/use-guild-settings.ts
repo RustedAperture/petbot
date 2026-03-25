@@ -24,29 +24,44 @@ const stripEmptyFields = (values: Partial<GuildSettings>) => {
     cleaned.restricted = values.restricted;
   }
 
-  if (values.nickname?.trim()) {
-    cleaned.nickname = values.nickname.trim();
+  // Preserve explicit clears: if the caller provided the field (even as
+  // an empty string), include it in the payload so the server can clear the
+  // stored value. Trim strings when present.
+  if (Object.prototype.hasOwnProperty.call(values, "nickname")) {
+    cleaned.nickname =
+      typeof values.nickname === "string"
+        ? values.nickname.trim()
+        : (values.nickname as any);
   }
 
-  if (values.logChannel?.trim()) {
-    cleaned.logChannel = values.logChannel.trim();
+  if (Object.prototype.hasOwnProperty.call(values, "logChannel")) {
+    cleaned.logChannel =
+      typeof values.logChannel === "string"
+        ? values.logChannel.trim()
+        : (values.logChannel as any);
   }
 
-  if (values.sleepImage?.trim()) {
-    cleaned.sleepImage = values.sleepImage.trim();
+  if (Object.prototype.hasOwnProperty.call(values, "sleepImage")) {
+    cleaned.sleepImage =
+      typeof values.sleepImage === "string"
+        ? values.sleepImage.trim()
+        : (values.sleepImage as any);
   }
 
   if (values.defaultImages) {
-    const cleanedDefaultImages = Object.fromEntries(
-      Object.entries(values.defaultImages).filter(
-        ([, url]) => typeof url === "string" && url.trim() !== "",
-      ),
-    ) as Partial<GuildSettings["defaultImages"]>;
-
-    if (Object.keys(cleanedDefaultImages).length > 0) {
-      cleaned.defaultImages =
-        cleanedDefaultImages as GuildSettings["defaultImages"];
+    // Include any keys the form provided. If a value is an empty string
+    // that means the user cleared it and we should send that explicitly.
+    const cleanedDefaultImages: Record<string, string> = {};
+    for (const [k, v] of Object.entries(values.defaultImages)) {
+      if (typeof v === "string") {
+        cleanedDefaultImages[k] = v.trim();
+      }
     }
+
+    // Always include the mapping if the form provided it (even if all
+    // entries are empty strings) so the server can clear defaults.
+    cleaned.defaultImages =
+      cleanedDefaultImages as GuildSettings["defaultImages"];
   }
 
   return cleaned;
@@ -75,7 +90,53 @@ export function useGuildSettings(options: {
         throw new Error("Missing guildId or userId");
       }
 
-      const payload = stripEmptyFields(values);
+      let payload = stripEmptyFields(values);
+
+      // If the caller explicitly provided fields but stripEmptyFields
+      // removed them all (e.g. all values trimmed to empty), we still
+      // want to send an explicit payload so the server can clear stored
+      // values. Reconstruct a minimal payload from the original values
+      // when that happens.
+      if (Object.keys(payload).length === 0 && Object.keys(values).length > 0) {
+        const recovered: Partial<GuildSettings> = {};
+        if (Object.prototype.hasOwnProperty.call(values, "nickname")) {
+          recovered.nickname =
+            typeof values.nickname === "string"
+              ? values.nickname.trim()
+              : (values.nickname as any);
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "logChannel")) {
+          recovered.logChannel =
+            typeof values.logChannel === "string"
+              ? values.logChannel.trim()
+              : (values.logChannel as any);
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "sleepImage")) {
+          recovered.sleepImage =
+            typeof values.sleepImage === "string"
+              ? values.sleepImage.trim()
+              : (values.sleepImage as any);
+        }
+        if (
+          Object.prototype.hasOwnProperty.call(values, "defaultImages") &&
+          values.defaultImages
+        ) {
+          const mapping: Record<string, string> = {};
+          for (const [k, v] of Object.entries(values.defaultImages)) {
+            if (typeof v === "string") mapping[k] = v.trim();
+          }
+          recovered.defaultImages = mapping as GuildSettings["defaultImages"];
+        }
+        if (Object.prototype.hasOwnProperty.call(values, "restricted")) {
+          recovered.restricted =
+            typeof values.restricted === "number"
+              ? Boolean(values.restricted)
+              : (values.restricted as boolean);
+        }
+
+        payload = recovered;
+      }
+
       if (Object.keys(payload).length === 0) {
         return undefined;
       }
