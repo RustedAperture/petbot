@@ -117,15 +117,17 @@ export const updateAction = async (
     > **Slot**: ${slot}
     > **Reason**: ${reason}`;
 
-    await log(
-      `Updated ${capitalize(config.noun)} Image`,
-      logMsg,
-      logChannel,
-      interaction.user,
-      url,
-      row,
-      [255, 165, 0] as any,
-    );
+    if (logChannel && typeof logChannel.send === "function") {
+      await log(
+        `Updated ${capitalize(config.noun)} Image`,
+        logMsg,
+        logChannel,
+        interaction.user,
+        url,
+        row,
+        [255, 165, 0] as any,
+      );
+    }
     loggermsg = `Updated ${target.username} image ${slot} to the new url in ${interaction.guild.name}`;
   } else {
     await interaction.editReply({

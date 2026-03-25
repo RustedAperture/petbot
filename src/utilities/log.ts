@@ -66,6 +66,10 @@ export const log = async (
 
   logContainer.setAccentColor(embedColor as any);
 
+  if (!channel || typeof channel.send !== "function") {
+    return;
+  }
+
   channel.send({
     components: [logContainer],
     flags: MessageFlags.IsComponentsV2,
