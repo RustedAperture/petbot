@@ -112,4 +112,68 @@ describe("/api/serverSettings – auth and membership guards", () => {
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "forbidden" });
   });
+
+  it("GET returns 401 when no session cookie is present", async () => {
+    const req = makeGetRequest("G1", "111");
+    const res = await GET(req as any);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthorized" });
+  });
+
+  it("PATCH returns 401 when no session cookie is present", async () => {
+    const req = makePatchRequest("G1", "111", { foo: "bar" });
+    const res = await PATCH(req as any);
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthorized" });
+  });
+
+  it("GET returns 400 when missing query params", async () => {
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: true, permissions: "8" }],
+    });
+    const req = new Request("http://localhost/api/serverSettings", {
+      method: "GET",
+      headers: { cookie },
+    });
+
+    const res = await GET(req as any);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "missing parameter: guildId or userId",
+    });
+  });
+
+  it("PATCH returns 400 when missing query params", async () => {
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: true, permissions: "8" }],
+    });
+    const req = new Request("http://localhost/api/serverSettings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", cookie },
+      body: JSON.stringify({}),
+    });
+
+    const res = await PATCH(req as any);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "missing parameter: guildId or userId",
+    });
+  });
+
+  it("PATCH returns 400 when body is not an object (null)", async () => {
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: true, permissions: "8" }],
+    });
+    const req = makePatchRequest("G1", "111", null, cookie);
+
+    const res = await PATCH(req as any);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "invalid_payload",
+      reason: "body_must_be_object",
+    });
+  });
 });

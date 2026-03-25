@@ -27,7 +27,11 @@ export default function AdminGuildPageContent({
   } = useGuildChannels(guildId || null, session?.user?.id ?? null);
 
   const pageLoading =
-    sessionLoading || !guildId || !session?.user?.id || channelsLoading;
+    sessionLoading ||
+    !guildId ||
+    !session?.user?.id ||
+    channelsLoading ||
+    isSettingsLoading;
 
   const channelItems =
     channels.length > 0
