@@ -280,7 +280,6 @@ export default function AdminGuildSettingsForm({
                   placeholder="PetBot"
                   aria-invalid={!!form.formState.errors.nickname}
                   {...form.register("nickname")}
-                  required
                 />
                 {form.formState.errors.nickname?.message ? (
                   <FieldError>
@@ -357,7 +356,6 @@ export default function AdminGuildSettingsForm({
                       placeholder="http://example.com/image.jpg"
                       aria-invalid={!!form.formState.errors.sleepImage}
                       {...form.register("sleepImage")}
-                      required
                     />
                     {form.formState.errors.sleepImage?.message ? (
                       <FieldError>
@@ -391,7 +389,6 @@ export default function AdminGuildSettingsForm({
                             !!form.formState.errors.defaultImages?.[action]
                           }
                           {...form.register(`defaultImages.${action}` as const)}
-                          required
                         />
                         {form.formState.errors.defaultImages?.[action]
                           ?.message ? (

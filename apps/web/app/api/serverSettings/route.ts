@@ -42,6 +42,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  if (!session.guilds?.some((g) => g.id === guildId)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const target = `${getInternalApiBase()}/api/serverSettings?guildId=${encodeURIComponent(
     guildId,
   )}&userId=${encodeURIComponent(userId)}`;
@@ -88,6 +92,10 @@ export async function PATCH(req: Request) {
   }
 
   if (userId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  if (!session.guilds?.some((g) => g.id === guildId)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
