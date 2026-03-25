@@ -74,9 +74,35 @@ vi.mock("@/hooks/use-guild-settings", () => ({
   useGuildSettings: () => guildSettingsState,
 }));
 
-vi.mock("app/admin/[guildId]/AdminGuildSettingsForm.tsx", () => ({
-  default: ({ guildId }: any) =>
-    createElement("div", null, `Mocked settings form for ${guildId}`),
+vi.mock("../../../../app/admin/[guildId]/AdminGuildSettingsForm", () => ({
+  default: ({
+    guildId,
+    guild,
+    pageLoading,
+    isLoadingAll,
+    channelsError,
+    update,
+  }: any) =>
+    createElement(
+      "div",
+      null,
+      pageLoading || isLoadingAll
+        ? createElement("div", { className: "w-full" }, "Loading")
+        : channelsError
+          ? createElement("div", null, "Bot not in server")
+          : createElement(
+              "form",
+              {
+                onSubmit: (e: any) => {
+                  e?.preventDefault?.();
+                  if (update) update({ nickname: "PetBot" });
+                },
+              },
+              createElement("h1", null, guild?.name || ""),
+              `Guild ID: ${guildId}`,
+              createElement("button", { type: "submit" }, "Save"),
+            ),
+    ),
 }));
 
 // Stub UI primitives for predictable test DOM and to avoid heavy base-ui internals.

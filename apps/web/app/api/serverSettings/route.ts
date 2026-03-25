@@ -46,18 +46,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const target = `${getInternalApiBase()}/api/serverSettings?guildId=${encodeURIComponent(
-    guildId,
-  )}&userId=${encodeURIComponent(userId)}`;
+  let target: string;
+  let headers: Record<string, string>;
+  try {
+    const base = getInternalApiBase();
+    target = `${base}/api/serverSettings?guildId=${encodeURIComponent(
+      guildId,
+    )}&userId=${encodeURIComponent(userId)}`;
+    headers = {
+      ...internalApiHeaders(),
+      "content-type": "application/json",
+    };
+  } catch (err) {
+    return NextResponse.json(
+      { error: "server_configuration" },
+      { status: 500 },
+    );
+  }
 
   let res: Response;
   try {
-    res = await fetch(target, {
-      headers: {
-        ...internalApiHeaders(),
-        "content-type": "application/json",
-      },
-    });
+    res = await fetch(target, { headers });
   } catch (err) {
     return NextResponse.json(
       { error: "upstream_unavailable" },
@@ -107,18 +116,29 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const target = `${getInternalApiBase()}/api/serverSettings?guildId=${encodeURIComponent(
-    guildId,
-  )}&userId=${encodeURIComponent(userId)}`;
+  let target: string;
+  let headers: Record<string, string>;
+  try {
+    const base = getInternalApiBase();
+    target = `${base}/api/serverSettings?guildId=${encodeURIComponent(
+      guildId,
+    )}&userId=${encodeURIComponent(userId)}`;
+    headers = {
+      ...internalApiHeaders(),
+      "content-type": "application/json",
+    };
+  } catch (err) {
+    return NextResponse.json(
+      { error: "server_configuration" },
+      { status: 500 },
+    );
+  }
 
   let res: Response;
   try {
     res = await fetch(target, {
       method: "PATCH",
-      headers: {
-        ...internalApiHeaders(),
-        "content-type": "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
   } catch (err) {
