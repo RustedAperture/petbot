@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { POST } from "../../../apps/web/app/api/setImages/route.js";
+// Mock the package alias used by the route so tests running under Node
+// (without Vite path resolution) don't fail to resolve the module.
+vi.mock("@petbot/constants", () => ({
+  ACTIONS: {
+    pet: true,
+    bite: true,
+    hug: true,
+    bonk: true,
+    squish: true,
+    explode: true,
+  },
+}));
+
+let POST: typeof import("../../../apps/web/app/api/setImages/route.js").POST;
 
 function sessionCookie(session: any) {
   return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
@@ -37,6 +50,12 @@ function makeRequest(
 beforeEach(() => {
   vi.restoreAllMocks();
   delete (process.env as any).INTERNAL_API_SECRET;
+});
+
+beforeAll(async () => {
+  // Import the route after mocking dependencies above
+  const mod = await import("../../../apps/web/app/api/setImages/route.js");
+  POST = mod.POST;
 });
 
 describe("/api/setImages proxy – auth", () => {

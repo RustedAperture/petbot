@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import useSWR from "swr";
 import type { GuildSettings } from "@/types/guild";
 
@@ -68,39 +69,47 @@ export function useGuildSettings(options: {
     fetcher,
   );
 
-  const update = async (values: Partial<GuildSettings>) => {
-    if (!endpoint) {
-      throw new Error("Missing guildId or userId");
-    }
+  const update = useCallback(
+    async (values: Partial<GuildSettings>) => {
+      if (!endpoint) {
+        throw new Error("Missing guildId or userId");
+      }
 
-    const payload = stripEmptyFields(values);
-    if (Object.keys(payload).length === 0) {
-      return data;
-    }
+      const payload = stripEmptyFields(values);
+      if (Object.keys(payload).length === 0) {
+        return data;
+      }
 
-    const res = await fetch(endpoint, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+      const res = await fetch(endpoint, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(
-        `Failed to update server settings (${res.status}): ${text}`,
-      );
-    }
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(
+          `Failed to update server settings (${res.status}): ${text}`,
+        );
+      }
 
-    const responseJson = await res.json();
+      const responseJson = await res.json();
 
-    if (responseJson?.settings) {
-      await mutate({ settings: responseJson.settings }, { revalidate: true });
-      return responseJson.settings;
-    }
+      if (responseJson?.settings) {
+        // Optimistically update the cache with the server's response; skip
+        // background revalidation since we already have the authoritative data.
+        await mutate(
+          { settings: responseJson.settings },
+          { revalidate: false },
+        );
+        return responseJson.settings;
+      }
 
-    await mutate();
-    return null;
-  };
+      await mutate();
+      return null;
+    },
+    [endpoint, mutate, data],
+  );
 
   return {
     settings: data?.settings ?? null,

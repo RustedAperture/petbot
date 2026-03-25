@@ -51,13 +51,7 @@ export default defineConfig({
     globals: true,
     setupFiles: "tests/web/setup-tests.ts",
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
-    exclude: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/data/**",
-      "apps/web/**",
-      "tests/web/**",
-    ],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/data/**", "apps/web/**"],
     // Array form with regex find-values ensures exact matching (not prefix).
     // resolve.dedupe only applies to the browser bundler, not Vitest's
     // server-side module runner, so we use explicit aliases here to force

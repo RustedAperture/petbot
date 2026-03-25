@@ -79,6 +79,10 @@ export async function PATCH(req: Request) {
     );
   }
 
+  if (userId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return NextResponse.json(

@@ -161,13 +161,16 @@ export default function AdminGuildSettingsForm({
   }, [settings, form]);
 
   const [saving, setSaving] = React.useState(false);
+  const [saveError, setSaveError] = React.useState<Error | null>(null);
 
   const onSubmit = async (values: AdminGuildSettingsFormValues) => {
     setSaving(true);
+    setSaveError(null);
     try {
       await update(values as Partial<GuildSettings>);
     } catch (error) {
       console.error(error);
+      setSaveError(error as Error);
     } finally {
       setSaving(false);
     }
@@ -248,6 +251,16 @@ export default function AdminGuildSettingsForm({
             {isBotNotInServer
               ? "Add PetBot to this server and run /server-setup, then refresh."
               : effectiveError.message || "Unable to load guild settings."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {saveError ? (
+        <Alert variant="destructive">
+          <InfoIcon className="size-4" aria-hidden="true" />
+          <AlertTitle>Failed to save settings</AlertTitle>
+          <AlertDescription>
+            {saveError.message || "Unable to save guild settings."}
           </AlertDescription>
         </Alert>
       ) : null}

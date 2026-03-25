@@ -24,6 +24,9 @@ export default defineConfig({
     setupFiles: "tests/setup-tests.ts",
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["**/node_modules/**", "**/dist/**", "**/data/**"],
+    // Use forks pool: each test file runs in an isolated child process, preventing
+    // DOM/React/SWR state from leaking across files and causing OOM crashes.
+    pool: "forks",
     css: false,
   },
 });
