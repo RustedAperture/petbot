@@ -2,6 +2,7 @@ import http from "node:http";
 import https from "node:https";
 import fs from "node:fs";
 import express from "express";
+import helmet from "helmet";
 import type { Client } from "discord.js";
 import logger from "../logger.js";
 
@@ -47,6 +48,9 @@ function resolveTls(): { key?: string; cert?: string } {
  */
 export function createApp(client?: Client<boolean>): express.Express {
   const app = express();
+
+  // --- Security headers (Helmet) ---
+  app.use(helmet());
 
   // --- Global middleware ---
   app.use(express.json({ limit: "1mb" }));
