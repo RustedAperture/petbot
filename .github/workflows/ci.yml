@@ -68,8 +68,11 @@ jobs:
       - name: Build (server-only)
         run: npm run build:server
 
-      - name: Run tests
+      - name: Run tests:server
         run: npm run test:ci
+
+      - name: Run tests:web
+        run: npm run test:web:ci
 
   docker-build:
     name: Validate Docker build (bot + web)

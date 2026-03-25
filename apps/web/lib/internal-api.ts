@@ -9,6 +9,14 @@ export function readCookie(req: Request) {
   return cookies["petbot_session"];
 }
 
+export function internalApiHeaders() {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) {
+    throw new Error("INTERNAL_API_SECRET is not set");
+  }
+  return { "x-internal-api-key": secret };
+}
+
 export function getInternalApiBase() {
   if (process.env.INTERNAL_API_URL) {
     return process.env.INTERNAL_API_URL.replace(/\/$/, "");
