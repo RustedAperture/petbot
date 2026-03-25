@@ -34,11 +34,15 @@ const client: Client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent],
 });
 
-// start the HTTP API for the web UI after the bot is ready
+// Start HTTP server immediately so /api/ready is reachable during bot startup.
+// Client-dependent routes (serverSettings, guildChannels) are registered but
+// will only function once the Discord client fires "ready".
+startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
+
+// Mark bot ready once Discord connects
 client.once("ready", () => {
-  logger.info("Discord client ready, starting HTTP API");
+  logger.info("Discord client ready");
   readiness.botReady = true;
-  startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
 });
 
 client.on("error", logger.error);

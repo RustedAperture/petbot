@@ -20,7 +20,12 @@ export function requestLogger(
   res.on("finish", () => {
     const elapsed = Date.now() - start;
     logger.info(
-      { method: req.method, pathname: req.originalUrl, elapsed },
+      {
+        method: req.method,
+        pathname: req.originalUrl,
+        statusCode: res.statusCode,
+        elapsed,
+      },
       "HTTP request handled",
     );
   });
