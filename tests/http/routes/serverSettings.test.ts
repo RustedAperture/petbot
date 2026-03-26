@@ -100,6 +100,7 @@ describe("/api/serverSettings/:guildId/:userId", () => {
       selectMock.mockImplementation(() => {
         throw new Error("db-failure");
       });
+      process.env.NODE_ENV = "development";
 
       const res = await supertest(app)
         .get("/api/serverSettings/G1/userId/U1")
@@ -108,6 +109,7 @@ describe("/api/serverSettings/:guildId/:userId", () => {
       expect(res.body).toMatchObject({
         error: "server_error",
         reason: "fetch_settings_failed",
+        details: "db-failure",
       });
     });
   });
@@ -227,6 +229,7 @@ describe("/api/serverSettings/:guildId/:userId", () => {
           where: () => Promise.reject(new Error("update_failure")),
         }),
       }));
+      process.env.NODE_ENV = "development";
 
       const res = await supertest(app)
         .patch("/api/serverSettings/G1/userId/U1")
@@ -277,7 +280,9 @@ describe("/api/serverSettings/:guildId/:userId", () => {
     });
 
     it("returns 404 for DELETE (method not registered)", async () => {
-      await supertest(app).delete("/api/serverSettings/G1/userId/U1").expect(404);
+      await supertest(app)
+        .delete("/api/serverSettings/G1/userId/U1")
+        .expect(404);
     });
   });
 });

@@ -73,11 +73,14 @@ export default function serverSettingsRouter(client: Client<boolean>) {
           .limit(1);
       } catch (err) {
         logger.error({ err }, "Error fetching server settings rows");
-        res.status(500).json({
+        const body: Record<string, unknown> = {
           error: "server_error",
           reason: "fetch_settings_failed",
-          details: err instanceof Error ? err.message : String(err),
-        });
+        };
+        if (process.env.NODE_ENV !== "production") {
+          body.details = err instanceof Error ? err.message : String(err);
+        }
+        res.status(500).json(body);
         return;
       }
 
@@ -122,11 +125,14 @@ export default function serverSettingsRouter(client: Client<boolean>) {
           .limit(1);
       } catch (err) {
         logger.error({ err }, "Error fetching server settings rows");
-        res.status(500).json({
+        const body: Record<string, unknown> = {
           error: "server_error",
           reason: "fetch_settings_failed",
-          details: err instanceof Error ? err.message : String(err),
-        });
+        };
+        if (process.env.NODE_ENV !== "production") {
+          body.details = err instanceof Error ? err.message : String(err);
+        }
+        res.status(500).json(body);
         return;
       }
 
@@ -243,11 +249,14 @@ export default function serverSettingsRouter(client: Client<boolean>) {
           .where(eq(botData.guildId, guildId));
       } catch (err) {
         logger.error({ err }, "Error updating server settings");
-        res.status(500).json({
+        const body: Record<string, unknown> = {
           error: "update_failed",
           reason: "db_update_failed",
-          details: err instanceof Error ? err.message : String(err),
-        });
+        };
+        if (process.env.NODE_ENV !== "production") {
+          body.details = err instanceof Error ? err.message : String(err);
+        }
+        res.status(500).json(body);
         return;
       }
 
