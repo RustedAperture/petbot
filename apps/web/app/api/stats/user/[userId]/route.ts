@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-function readCookie(req: Request) {
+function readSession(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
     cookieHeader.split(";").map((c) => {
@@ -8,7 +8,13 @@ function readCookie(req: Request) {
       return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
     }),
   );
-  return cookies["petbot_session"];
+  const raw = cookies["petbot_session"];
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as { user: { id: string } };
+  } catch {
+    return null;
+  }
 }
 
 function getInternalApiBase() {
@@ -31,24 +37,26 @@ function getInternalApiBase() {
   return `${protocol}://${host}:${port}`;
 }
 
-export async function GET(req: Request) {
-  // protect endpoint: require a session cookie
-  const raw = readCookie(req);
-  if (!raw) {
+/**
+ * GET /api/stats/user/:userId — user-scoped stats.
+ * Only allows the session user to fetch their own stats.
+ */
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ userId: string }> },
+) {
+  const session = readSession(req);
+  if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Parse session from cookie and extract userId
-  let session: { user?: { id?: string } } | null = null;
-  try {
-    session = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const { userId } = await params;
 
-  const userId = session?.user?.id;
-  if (!userId || !/^\d+$/.test(userId)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!/^\d+$/.test(userId)) {
+    return NextResponse.json({ error: "invalid_userId" }, { status: 400 });
+  }
+  if (userId !== session.user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   const internalSecret = process.env.INTERNAL_API_SECRET;
@@ -57,10 +65,8 @@ export async function GET(req: Request) {
     headers["x-internal-api-key"] = internalSecret;
   }
 
-  const target = `${getInternalApiBase()}/api/guilds/user/${encodeURIComponent(userId)}`;
-
+  const target = `${getInternalApiBase()}/api/stats/user/${encodeURIComponent(userId)}`;
   const res = await fetch(target, { headers });
-
   const text = await res.text();
   try {
     const json = JSON.parse(text);

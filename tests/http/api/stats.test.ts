@@ -17,7 +17,17 @@ vi.mock("../../../src/db/schema.js", () => ({
   botData: {},
 }));
 
-import statsHandler from "../../../src/http/api/stats.js";
+import statsHandler from "../../../src/http/routes/stats.js";
+
+function makeRes() {
+  const res: any = {};
+  res.status = vi.fn(() => res);
+  res.json = vi.fn((body: unknown) => {
+    res._body = body;
+    return res;
+  });
+  return res;
+}
 
 describe("/api/stats handler - DM location presence behavior", () => {
   beforeEach(() => {
@@ -31,21 +41,15 @@ describe("/api/stats handler - DM location presence behavior", () => {
     }));
 
     const req: any = {
-      method: "GET",
-      url: "/api/stats?userId=user-1&locationId=loc-99",
-      headers: { host: "localhost" },
+      params: { userId: "user-1", guildId: "loc-99" },
     };
 
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    const res = makeRes();
 
     await statsHandler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(404, {
-      "Content-Type": "application/json",
-    });
-    expect(res.end).toHaveBeenCalledWith(
-      JSON.stringify({ error: "not_found" }),
-    );
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ error: "not_found" });
   });
 
   it("when user has a row for the location, returns user-scoped aggregates for that location", async () => {
@@ -84,23 +88,15 @@ describe("/api/stats handler - DM location presence behavior", () => {
     }));
 
     const req: any = {
-      method: "GET",
-      url: "/api/stats?userId=user-1&locationId=loc-99",
-      headers: { host: "localhost" },
+      params: { userId: "user-1", guildId: "loc-99" },
     };
 
-    const res: any = { writeHead: vi.fn(), end: vi.fn() };
+    const res = makeRes();
 
     await statsHandler(req, res);
 
-    expect(res.writeHead).toHaveBeenCalledWith(200, {
-      "Content-Type": "application/json",
-    });
-
-    // parse the JSON body written by the handler
-    const bodyArg = (res.end as any).mock.calls[0][0];
-    const body = JSON.parse(bodyArg);
-    console.log("API body:", JSON.stringify(body, null, 2));
+    expect(res.json).toHaveBeenCalled();
+    const body = res._body;
 
     expect(body.totalActionsPerformed).toBe(10 + 20 + 30 + 40 + 50);
     expect(body.totalUniqueUsers).toBe(1);

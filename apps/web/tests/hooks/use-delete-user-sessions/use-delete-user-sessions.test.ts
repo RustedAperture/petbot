@@ -62,10 +62,9 @@ describe("useDeleteUserSessions", () => {
     expect(returnValue).toBe(true);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/userSessions?userId=user-123",
-      { method: "DELETE" },
-    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/userSessions/user-123", {
+      method: "DELETE",
+    });
     unmount();
   });
 
@@ -124,7 +123,7 @@ describe("useDeleteUserSessions", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/userSessions?userId=user%20with%20spaces",
+      "/api/userSessions/user%20with%20spaces",
       { method: "DELETE" },
     );
     unmount();

@@ -48,7 +48,33 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const guild = session.guilds?.find((g) => g.id === guildId);
+  // Fetch guilds from internal API (cookie only stores user object)
+  let guilds = session.guilds;
+  if (!Array.isArray(guilds)) {
+    try {
+      const base = getInternalApiBase();
+      const headers = internalApiHeaders();
+      const guildsRes = await fetch(
+        `${base}/api/userSessions/${encodeURIComponent(session.user.id)}`,
+        { headers },
+      );
+      if (guildsRes.ok) {
+        const json = (await guildsRes.json()) as {
+          guilds?: Array<{
+            id: string;
+            name?: string;
+            owner?: boolean;
+            permissions?: string | null;
+          }>;
+        };
+        if (Array.isArray(json.guilds)) guilds = json.guilds;
+      }
+    } catch {
+      // ignore — guilds stays undefined, authorization below will fail
+    }
+  }
+
+  const guild = guilds?.find((g) => g.id === guildId);
   if (!guild) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -115,7 +141,33 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const guild = session.guilds?.find((g) => g.id === guildId);
+  // Fetch guilds from internal API (cookie only stores user object)
+  let guilds = session.guilds;
+  if (!Array.isArray(guilds)) {
+    try {
+      const base = getInternalApiBase();
+      const headers = internalApiHeaders();
+      const guildsRes = await fetch(
+        `${base}/api/userSessions/${encodeURIComponent(session.user.id)}`,
+        { headers },
+      );
+      if (guildsRes.ok) {
+        const json = (await guildsRes.json()) as {
+          guilds?: Array<{
+            id: string;
+            name?: string;
+            owner?: boolean;
+            permissions?: string | null;
+          }>;
+        };
+        if (Array.isArray(json.guilds)) guilds = json.guilds;
+      }
+    } catch {
+      // ignore — guilds stays undefined, authorization below will fail
+    }
+  }
+
+  const guild = guilds?.find((g) => g.id === guildId);
   if (!guild) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

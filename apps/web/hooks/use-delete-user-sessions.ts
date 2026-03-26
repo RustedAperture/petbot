@@ -9,7 +9,7 @@ export function useDeleteUserSessions() {
     setError(null);
     try {
       const resp = await fetch(
-        `/api/userSessions?userId=${encodeURIComponent(userId)}`,
+        `/api/userSessions/${encodeURIComponent(userId)}`,
         {
           method: "DELETE",
         },

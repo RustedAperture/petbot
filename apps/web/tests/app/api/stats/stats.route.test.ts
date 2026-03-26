@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { GET } from "@/app/api/stats/route";
+import { GET as globalGet } from "@/app/api/stats/route";
+import { GET as userGuildGet } from "@/app/api/stats/user/[userId]/guild/[guildId]/route";
 
 // Helper to build a fake session cookie value
 function sessionCookie(session: any) {
@@ -12,35 +13,53 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
-  it("legacy DM flow: userId=session.user.id + guildId -> validate presence then return guild-level aggregates", async () => {
+describe("/app/api/stats proxy — global stats", () => {
+  it("forwards to internal API without auth", async () => {
+    const globalBody = { totalActionsPerformed: 100 };
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(globalBody), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const res: any = await globalGet();
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toEqual(globalBody);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const calledUrl = String(mockFetch.mock.calls[0][0]);
+    expect(calledUrl).toContain("/api/stats");
+    expect(calledUrl).not.toContain("userId");
+    expect(calledUrl).not.toContain("guildId");
+  });
+});
+
+describe("/app/api/stats/user/:userId/guild/:guildId proxy", () => {
+  it("legacy DM flow: validate presence then return guild-level aggregates", async () => {
     const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
 
-    // mock two internal fetches: presence check (user-scoped response) then guild-level response
     const presenceBody = { totalsByAction: { pet: { totalHasPerformed: 1 } } };
     const guildBody = { totalsByAction: { pet: { totalHasPerformed: 42 } } };
 
     const mockFetch = vi
       .fn()
-      // presence check -> 200
       .mockResolvedValueOnce(
         new Response(JSON.stringify(presenceBody), { status: 200 }),
       )
-      // forward guild request -> 200
       .mockResolvedValueOnce(
         new Response(JSON.stringify(guildBody), { status: 200 }),
       );
-
     (global as any).fetch = mockFetch;
 
-    const req = new Request(
-      "http://localhost/api/stats?userId=123&guildId=456",
-      {
-        headers: { cookie: sessionCookie(session) },
-      },
-    );
+    const req = new Request("http://localhost/api/stats/user/123/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
 
-    const res: any = await GET(req as any);
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "123", guildId: "456" }),
+    });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toEqual(guildBody);
@@ -49,13 +68,12 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
     const firstUrl = String(mockFetch.mock.calls[0][0]);
     const secondUrl = String(mockFetch.mock.calls[1][0]);
-    expect(firstUrl).toContain("userId=123");
-    expect(firstUrl).toContain("guildId=456");
-    expect(secondUrl).toContain("guildId=456");
-    expect(secondUrl).not.toContain("userId=");
+    expect(firstUrl).toContain("/api/stats/user/123/guild/456");
+    expect(secondUrl).toContain("/api/stats/guild/456");
+    expect(secondUrl).not.toContain("user/123");
   });
 
-  it("userScoped flow: client requests userScoped=true -> forward userId+guildId and return user-scoped data", async () => {
+  it("userScoped flow: forward userId+guildId and return user-scoped data", async () => {
     const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
 
     const userBody = {
@@ -70,22 +88,23 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
     (global as any).fetch = mockFetch;
 
     const req = new Request(
-      "http://localhost/api/stats?userId=123&guildId=456&userScoped=true",
+      "http://localhost/api/stats/user/123/guild/456?userScoped=true",
       {
         headers: { cookie: sessionCookie(session) },
       },
     );
 
-    const res: any = await GET(req as any);
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "123", guildId: "456" }),
+    });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toEqual(userBody);
 
-    // single forward with both userId+guildId
+    // single forward with user+guild path
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const calledUrl = String(mockFetch.mock.calls[0][0]);
-    expect(calledUrl).toContain("userId=123");
-    expect(calledUrl).toContain("guildId=456");
+    expect(calledUrl).toContain("/api/stats/user/123/guild/456");
   });
 
   it("presence-missing: userId present but no rows for that location -> return 404", async () => {
@@ -98,14 +117,13 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
       );
     (global as any).fetch = mockFetch;
 
-    const req = new Request(
-      "http://localhost/api/stats?userId=123&guildId=456",
-      {
-        headers: { cookie: sessionCookie(session) },
-      },
-    );
+    const req = new Request("http://localhost/api/stats/user/123/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
 
-    const res: any = await GET(req as any);
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "123", guildId: "456" }),
+    });
     expect(res.status).toBe(404);
     const json = await res.json();
     expect(json).toEqual({ error: "not_found" });
@@ -113,14 +131,12 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
     // presence check attempted once
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const firstUrl = String(mockFetch.mock.calls[0][0]);
-    expect(firstUrl).toContain("userId=123");
-    expect(firstUrl).toContain("guildId=456");
+    expect(firstUrl).toContain("/api/stats/user/123/guild/456");
   });
 
-  it("presence-check error: non-404 presence-check errors are propagated and do not forward guild request", async () => {
+  it("presence-check error: non-404 errors are propagated", async () => {
     const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
 
-    // presence check -> 500
     const mockFetch = vi
       .fn()
       .mockResolvedValueOnce(
@@ -128,19 +144,40 @@ describe("/app/api/stats proxy — userScoped vs legacy DM behavior", () => {
       );
     (global as any).fetch = mockFetch;
 
-    const req = new Request(
-      "http://localhost/api/stats?userId=123&guildId=456",
-      {
-        headers: { cookie: sessionCookie(session) },
-      },
-    );
+    const req = new Request("http://localhost/api/stats/user/123/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
 
-    const res: any = await GET(req as any);
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "123", guildId: "456" }),
+    });
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json).toEqual({ error: "internal" });
 
     // only the presence check was attempted — no forward
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 401 without session cookie", async () => {
+    const req = new Request("http://localhost/api/stats/user/123/guild/456");
+
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "123", guildId: "456" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 when userId does not match session", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
+
+    const req = new Request("http://localhost/api/stats/user/999/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await userGuildGet(req as any, {
+      params: Promise.resolve({ userId: "999", guildId: "456" }),
+    });
+    expect(res.status).toBe(403);
   });
 });

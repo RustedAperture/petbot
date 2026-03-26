@@ -53,18 +53,22 @@ export function useGlobalStats({
       setError(null);
 
       try {
-        const qs = new URLSearchParams();
-        if (userId) {
-          qs.set("userId", userId);
-        }
         const effectiveGuildId = guildId ?? locationId ?? null;
-        if (effectiveGuildId) {
-          qs.set("guildId", effectiveGuildId);
+
+        // Build REST-style URL
+        let url = "/api/stats";
+        if (userId && effectiveGuildId) {
+          url = `/api/stats/user/${encodeURIComponent(userId)}/guild/${encodeURIComponent(effectiveGuildId)}`;
+        } else if (userId) {
+          url = `/api/stats/user/${encodeURIComponent(userId)}`;
+        } else if (effectiveGuildId) {
+          url = `/api/stats/guild/${encodeURIComponent(effectiveGuildId)}`;
         }
-        if (userScoped) {
-          qs.set("userScoped", "true");
+
+        // userScoped is a behavioral modifier, kept as query param
+        if (userScoped && (userId || effectiveGuildId)) {
+          url += "?userScoped=true";
         }
-        const url = "/api/stats" + (qs.toString() ? `?${qs.toString()}` : "");
 
         // use the frontend proxy `/api/*` which is configured to forward to :3001
         const res = await fetch(url, { signal, cache: "no-store" });

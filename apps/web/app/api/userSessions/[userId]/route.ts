@@ -31,11 +31,10 @@ function getInternalApiBase() {
   return `${protocol}://${host}:${port}`;
 }
 
-/**
- * Return current user's persisted guild list.
- * (Mostly unused; stats route hits internal API directly.)
- */
-export async function GET(req: Request) {
+function getSessionAndAuth(
+  req: Request,
+  userId: string,
+): { sessionUserId: string } | NextResponse {
   const raw = readCookie(req);
   if (!raw) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -48,10 +47,29 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const userId = session?.user?.id;
-  if (!userId || !/^[0-9]+$/.test(userId)) {
+  const sessionUserId = session?.user?.id;
+  if (!sessionUserId || !/^\d+$/.test(sessionUserId)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+
+  // Authorization: only allow managing your own sessions
+  if (userId !== sessionUserId) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  return { sessionUserId };
+}
+
+/**
+ * GET /api/userSessions/:userId — proxy to internal API.
+ */
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ userId: string }> },
+) {
+  const { userId } = await params;
+  const auth = getSessionAndAuth(req, userId);
+  if (auth instanceof NextResponse) return auth;
 
   const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
@@ -59,9 +77,7 @@ export async function GET(req: Request) {
     headers["x-internal-api-key"] = internalSecret;
   }
 
-  const target = `${getInternalApiBase()}/api/userSessions?userId=${encodeURIComponent(
-    userId,
-  )}`;
+  const target = `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`;
   const res = await fetch(target, { headers });
   const text = await res.text();
   try {
@@ -72,24 +88,16 @@ export async function GET(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
-  // Only allow logged-in users to delete their own data.
-  const raw = readCookie(req);
-  if (!raw) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  let session: { user?: { id?: string } } | null = null;
-  try {
-    session = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const userId = session?.user?.id;
-  if (!userId || !/^[0-9]+$/.test(userId)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+/**
+ * DELETE /api/userSessions/:userId — proxy to internal API.
+ */
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ userId: string }> },
+) {
+  const { userId } = await params;
+  const auth = getSessionAndAuth(req, userId);
+  if (auth instanceof NextResponse) return auth;
 
   const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
@@ -97,9 +105,7 @@ export async function DELETE(req: Request) {
     headers["x-internal-api-key"] = internalSecret;
   }
 
-  const target = `${getInternalApiBase()}/api/userSessions?userId=${encodeURIComponent(
-    userId,
-  )}`;
+  const target = `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`;
   const res = await fetch(target, { method: "DELETE", headers });
   const text = await res.text();
   try {
