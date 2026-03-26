@@ -14,10 +14,8 @@ import logger from "../../logger.js";
  *   GET /api/stats/guild/:guildId           — guild-scoped stats
  *   GET /api/stats/user/:userId/guild/:guildId — user + guild stats
  *
- * Optional query param:
- *   - userScoped=true — when both userId and guildId are present, return
- *                       user-scoped aggregates (default is presence-check +
- *                       guild-level aggregates, i.e. legacy DM behavior).
+ * Note: the `userScoped` query param is handled at the Next.js proxy layer,
+ * not here. This handler always returns stats for the path params it receives.
  */
 export default async function statsHandler(
   req: Request,

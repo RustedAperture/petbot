@@ -3,6 +3,7 @@ import {
   readCookie,
   getInternalApiBase,
   internalApiHeaders,
+  internalApiHeadersOptional,
 } from "../../../lib/internal-api";
 import { isAdminOrOwnerGuild } from "../../../lib/utils";
 
@@ -37,7 +38,7 @@ async function resolveGuilds(
   try {
     const guildsRes = await fetch(
       `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
-      { headers: internalApiHeaders() },
+      { headers: internalApiHeadersOptional() },
     );
     if (guildsRes.ok) {
       const json = (await guildsRes.json()) as { guilds?: GuildInfo[] };
