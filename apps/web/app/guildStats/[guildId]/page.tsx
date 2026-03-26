@@ -47,8 +47,14 @@ export default function GuildStatsPage({
     guildId,
   });
 
+  // Handle loading and no-data states via JSX ternary (not early return)
+  // so users see "Loading..." instead of "No data" on initial load
   if (!data) {
-    return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+    return isLoading ? (
+      <p className="mt-4 text-sm text-muted-foreground">Loading guild stats…</p>
+    ) : (
+      <p className="mt-4 text-sm text-muted-foreground">No data</p>
+    );
   }
 
   const entries = Object.entries(data.totalsByAction) as Array<
@@ -57,46 +63,35 @@ export default function GuildStatsPage({
 
   return (
     <main>
-      {/* show content when we already have data; only show page-level loader when there's no data */}
-      {!data ? (
-        isLoading ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Loading guild stats…
-          </p>
-        ) : (
-          <p className="mt-4 text-sm text-muted-foreground">No data</p>
-        )
-      ) : (
-        <div
-          className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
-          aria-busy={isLoading}
-        >
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
-            <StatsCardSimple
-              statString="Total Actions Performed"
-              value={data.totalActionsPerformed}
-            />
-            <StatsCardSimple
-              statString="Total Unique Users"
-              value={data.totalUniqueUsers}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {entries.map(([actionKey, totals]) => (
-              <StatsCard
-                key={actionKey}
-                actionName={actionKey}
-                actionImageUrl={totals.imageUrl}
-                performedCount={totals.totalHasPerformed}
-                userCount={totals.totalUsers}
-                totalUniqueUsers={data.totalUniqueUsers}
-                totalActionsPerformed={data.totalActionsPerformed}
-              />
-            ))}
-          </div>
+      <div
+        className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
+        aria-busy={isLoading}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
+          <StatsCardSimple
+            statString="Total Actions Performed"
+            value={data.totalActionsPerformed}
+          />
+          <StatsCardSimple
+            statString="Total Unique Users"
+            value={data.totalUniqueUsers}
+          />
         </div>
-      )}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {entries.map(([actionKey, totals]) => (
+            <StatsCard
+              key={actionKey}
+              actionName={actionKey}
+              actionImageUrl={totals.imageUrl}
+              performedCount={totals.totalHasPerformed}
+              userCount={totals.totalUsers}
+              totalUniqueUsers={data.totalUniqueUsers}
+              totalActionsPerformed={data.totalActionsPerformed}
+            />
+          ))}
+        </div>
+      </div>
 
       {error ? (
         <div className="mt-4 text-sm text-destructive">

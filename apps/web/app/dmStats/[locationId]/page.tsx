@@ -198,7 +198,7 @@ export default function DmStatsLocationPage({
 
           <div className="mt-4 flex gap-2">
             <Input
-              value={locationId}
+              value={locationInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setLocationInput(e.target.value);
                 setLoadErrorMessage(null);

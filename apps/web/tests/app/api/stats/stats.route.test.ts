@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { GET as globalGet } from "@/app/api/stats/route";
 import { GET as userGuildGet } from "@/app/api/stats/user/[userId]/guild/[guildId]/route";
+import { GET as userLocationGet } from "@/app/api/stats/user/[userId]/location/[locationId]/route";
 
 // Helper to build a fake session cookie value
 function sessionCookie(session: any) {
@@ -179,5 +180,145 @@ describe("/app/api/stats/user/:userId/guild/:guildId proxy", () => {
       params: Promise.resolve({ userId: "999", guildId: "456" }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("/app/api/stats/user/:userId/location/:locationId proxy", () => {
+  it("returns 401 without session cookie", async () => {
+    const req = new Request("http://localhost/api/stats/user/123/location/456");
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "123", locationId: "456" }),
+    });
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json).toEqual({ error: "unauthorized" });
+  });
+
+  it("returns 401 when session cookie is invalid", async () => {
+    const req = new Request(
+      "http://localhost/api/stats/user/123/location/456",
+      {
+        headers: { cookie: "petbot_session=invalid" },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "123", locationId: "456" }),
+    });
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json).toEqual({ error: "unauthorized" });
+  });
+
+  it("returns 400 when userId is non-numeric", async () => {
+    const session = { user: { id: "123" } };
+
+    const req = new Request(
+      "http://localhost/api/stats/user/abc/location/456",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "abc", locationId: "456" }),
+    });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json).toEqual({ error: "invalid_userId" });
+  });
+
+  it("returns 400 when locationId is non-numeric", async () => {
+    const session = { user: { id: "123" } };
+
+    const req = new Request(
+      "http://localhost/api/stats/user/123/location/abc",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "123", locationId: "abc" }),
+    });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json).toEqual({ error: "invalid_locationId" });
+  });
+
+  it("returns 403 when userId does not match session", async () => {
+    const session = { user: { id: "123" } };
+
+    const req = new Request(
+      "http://localhost/api/stats/user/999/location/456",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "999", locationId: "456" }),
+    });
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json).toEqual({ error: "forbidden" });
+  });
+
+  it("forwards to internal API and returns data on success", async () => {
+    const session = { user: { id: "123" } };
+
+    const locationBody = {
+      totalsByAction: { pet: { totalHasPerformed: 42 } },
+    };
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(locationBody), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request(
+      "http://localhost/api/stats/user/123/location/456",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "123", locationId: "456" }),
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toEqual(locationBody);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const calledUrl = String(mockFetch.mock.calls[0][0]);
+    expect(calledUrl).toContain("/api/stats/user/123/location/456");
+  });
+
+  it("forwards error responses from internal API", async () => {
+    const session = { user: { id: "123" } };
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ error: "not_found" }), { status: 404 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request(
+      "http://localhost/api/stats/user/123/location/456",
+      {
+        headers: { cookie: sessionCookie(session) },
+      },
+    );
+
+    const res: any = await userLocationGet(req as any, {
+      params: Promise.resolve({ userId: "123", locationId: "456" }),
+    });
+    expect(res.status).toBe(404);
+    const json = await res.json();
+    expect(json).toEqual({ error: "not_found" });
   });
 });
