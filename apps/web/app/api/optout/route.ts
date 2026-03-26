@@ -49,7 +49,7 @@ async function proxy(
   method: string,
   headers: Record<string, string>,
 ) {
-  const target = `${getInternalApiBase()}/api/optOut?userId=${encodeURIComponent(userId)}`;
+  const target = `${getInternalApiBase()}/api/optOut/${encodeURIComponent(userId)}`;
   const res = await fetch(target, { method, headers });
   const text = await res.text();
   try {

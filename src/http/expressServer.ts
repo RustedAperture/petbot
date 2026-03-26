@@ -12,19 +12,15 @@ import { requestLogger } from "./middleware/requestLogger.js";
 import healthHandler from "./routes/health.js";
 import readyHandler from "./routes/ready.js";
 
-import { adaptLegacy } from "./adapters.js";
-
 // Migrated Express route handlers
 import statsHandler from "./routes/stats.js";
 import guildsHandler from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
-
-// Legacy API handlers (still wrapped with adaptLegacy — Phase 2b)
-import optOutHandler from "./api/optOut.js";
-import setImagesHandler from "./api/setImages.js";
-import serverSettingsHandler from "./api/serverSettings.js";
-import guildChannelsHandler from "./api/guildChannels.js";
+import optOutRouter from "./routes/optOut.js";
+import setImagesHandler from "./routes/setImages.js";
+import serverSettingsRouter from "./routes/serverSettings.js";
+import guildChannelsHandler from "./routes/guildChannels.js";
 
 /**
  * Resolve TLS key/cert from env vars.
@@ -78,19 +74,30 @@ export function createApp(client?: Client<boolean>): express.Express {
   app.get("/api/stats/user/:userId", statsHandler);
   app.get("/api/stats/guild/:guildId", statsHandler);
   app.get("/api/stats/user/:userId/guild/:guildId", statsHandler);
+  app.get(
+    "/api/stats/user/:userId/location/:locationId",
+    (req, res, next) => {
+      req.params.guildId = req.params.locationId;
+      next();
+    },
+    statsHandler,
+  );
   app.get("/api/guilds", guildsHandler);
   app.get("/api/guilds/user/:userId", guildsHandler);
   app.use("/api/userSessions", userSessionsRouter);
   app.delete("/api/userData/:userId", userDataHandler);
 
-  // --- Legacy endpoint routes (adapted from raw Node handlers — Phase 2b) ---
-  app.all("/api/optOut", adaptLegacy(optOutHandler));
-  app.all("/api/setImages", adaptLegacy(setImagesHandler));
+  // --- Phase 2b: write/update endpoints ---
+  app.use("/api/optOut", optOutRouter);
+  app.post("/api/setImages", setImagesHandler);
 
   // Routes that need the Discord client
   if (client) {
-    app.all("/api/serverSettings", adaptLegacy(serverSettingsHandler, client));
-    app.all("/api/guildChannels", adaptLegacy(guildChannelsHandler, client));
+    app.use("/api/serverSettings", serverSettingsRouter(client));
+    app.get(
+      "/api/guildChannels/:guildId/user/:userId",
+      guildChannelsHandler(client),
+    );
   }
 
   // --- 404 fallback for unmatched /api/* ---

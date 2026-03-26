@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -31,7 +31,6 @@ export function computeTitle(pathname: string, activeTitle?: string) {
 
 export function AppHeader() {
   const pathname = usePathname();
-  const params = useSearchParams();
   const router = useRouter();
   const { session } = useSession();
 
@@ -39,9 +38,21 @@ export function AppHeader() {
     (m) => m.href === pathname || pathname.startsWith(m.href + "/"),
   );
   const title = computeTitle(pathname, active?.title);
-  const queryGuildId = params.get("guildId") ?? null;
-  const queryLocationId =
-    params.get("locationId") ?? params.get("guildId") ?? "";
+
+  // Read guildId from path: /guildStats/:guildId
+  const guildIdFromPath = React.useMemo(() => {
+    if (pathname.startsWith("/guildStats/")) {
+      return pathname.split("/")[2] ?? null;
+    }
+    return null;
+  }, [pathname]);
+
+  const queryLocationId = React.useMemo(() => {
+    if (pathname.startsWith("/dmStats/")) {
+      return pathname.split("/")[2] ?? "";
+    }
+    return "";
+  }, [pathname]);
 
   const [dmInput, setDmInput] = React.useState<string>(queryLocationId ?? "");
   React.useEffect(() => setDmInput(queryLocationId ?? ""), [queryLocationId]);
@@ -58,7 +69,7 @@ export function AppHeader() {
       } catch {
         /* noop */
       }
-      router.push(`/dmStats?locationId=${encodeURIComponent(trimmed)}`);
+      router.push(`/dmStats/${encodeURIComponent(trimmed)}`);
     },
     [dmInput, router],
   );
@@ -82,7 +93,7 @@ export function AppHeader() {
 
         {active?.href === "/guildStats" && (
           <GuildSelect
-            value={queryGuildId}
+            value={guildIdFromPath}
             size="sm"
             className="min-w-[8rem] md:min-w-[12rem]"
           />

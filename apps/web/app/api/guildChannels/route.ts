@@ -49,9 +49,7 @@ export async function GET(req: Request) {
     headers["x-internal-api-key"] = internalSecret;
   }
 
-  const target = `${getInternalApiBase()}/api/guildChannels?guildId=${encodeURIComponent(
-    guildId,
-  )}&userId=${encodeURIComponent(targetUserId)}`;
+  const target = `${getInternalApiBase()}/api/guildChannels/${encodeURIComponent(guildId)}/user/${encodeURIComponent(targetUserId)}`;
 
   const res = await fetch(target, { headers });
   const text = await res.text();

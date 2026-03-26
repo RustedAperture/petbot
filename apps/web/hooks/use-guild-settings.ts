@@ -78,9 +78,7 @@ export function useGuildSettings(options: {
   const { guildId, userId } = options;
   const shouldFetch = Boolean(guildId && userId);
   const endpoint = shouldFetch
-    ? `/api/serverSettings?guildId=${encodeURIComponent(guildId!)}&userId=${encodeURIComponent(
-        userId!,
-      )}`
+    ? `/api/serverSettings/${encodeURIComponent(guildId!)}/userId/${encodeURIComponent(userId!)}`
     : null;
 
   const { data, error, isLoading, mutate } = useSWR<ServerSettingsResponse>(
