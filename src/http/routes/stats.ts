@@ -1,28 +1,32 @@
+import type { Request, Response } from "express";
 import { drizzleDb } from "../../db/connector.js";
 import { actionData, botData } from "../../db/schema.js";
 import { ACTIONS } from "../../types/constants.js";
 import { sql, eq, and } from "drizzle-orm";
 import logger from "../../logger.js";
 
-export default async function statsHandler(req: any, res: any) {
-  if (req.method !== "GET") {
-    res.writeHead(405, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "method_not_allowed" }));
-    return;
-  }
+/**
+ * GET /api/stats — aggregate action statistics.
+ *
+ * REST-style routes:
+ *   GET /api/stats                          — global stats
+ *   GET /api/stats/user/:userId             — user-scoped stats
+ *   GET /api/stats/guild/:guildId           — guild-scoped stats
+ *   GET /api/stats/user/:userId/guild/:guildId — user + guild stats
+ *
+ * Note: the `userScoped` query param is handled at the Next.js proxy layer,
+ * not here. This handler always returns stats for the path params it receives.
+ */
+export default async function statsHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = (req.params.userId as string | undefined) ?? null;
+  const guildId = (req.params.guildId as string | undefined) ?? null;
+
+  const actionKinds = Object.keys(ACTIONS);
 
   try {
-    // support optional query params to filter stats by userId and/or guildId (locationId)
-    const url = new URL(
-      req.url || "",
-      `http://${req.headers.host || "localhost"}`,
-    );
-    const userId = url.searchParams.get("userId");
-    const guildId =
-      url.searchParams.get("guildId") || url.searchParams.get("locationId");
-
-    const actionKinds = Object.keys(ACTIONS);
-
     // If both userId + guildId are supplied, interpret this as a user-scoped
     // request restricted to that location (e.g. "user X at location Y").
     // - If the user has no rows for that location, return 404.
@@ -43,8 +47,7 @@ export default async function statsHandler(req: any, res: any) {
 
       if (userRowCount === 0) {
         // user has no rows for that location — do not disclose location stats
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "not_found" }));
+        res.status(404).json({ error: "not_found" });
         return;
       }
     }
@@ -213,8 +216,7 @@ export default async function statsHandler(req: any, res: any) {
         totalGuilds: guildId ? 1 : undefined,
       };
 
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(body));
+      res.json(body);
       return;
     }
 
@@ -292,11 +294,9 @@ export default async function statsHandler(req: any, res: any) {
       totalGuilds: Number(guildCount) || 0,
     };
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(body));
+    res.json(body);
   } catch (err) {
     logger.error({ err }, "/api/stats error");
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "server_error" }));
+    res.status(500).json({ error: "server_error" });
   }
 }

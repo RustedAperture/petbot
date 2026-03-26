@@ -34,7 +34,7 @@ export async function GET(req: Request) {
           headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
         }
         const res = await fetch(
-          `${internalBase}/api/userSessions?userId=${encodeURIComponent(userId)}`,
+          `${internalBase}/api/userSessions/${encodeURIComponent(userId)}`,
           { headers },
         );
         if (res.ok) {

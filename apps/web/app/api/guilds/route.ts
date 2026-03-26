@@ -51,19 +51,13 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const allowed = new URLSearchParams();
-  allowed.set("userId", userId);
-
   const internalSecret = process.env.INTERNAL_API_SECRET;
   const headers: Record<string, string> = {};
   if (internalSecret) {
     headers["x-internal-api-key"] = internalSecret;
   }
 
-  const targetBase = `${getInternalApiBase()}/api/guilds`;
-  const target = allowed.toString()
-    ? `${targetBase}?${allowed.toString()}`
-    : targetBase;
+  const target = `${getInternalApiBase()}/api/guilds/user/${encodeURIComponent(userId)}`;
 
   const res = await fetch(target, { headers });
 

@@ -62,7 +62,7 @@ describe("useDeleteUserData", () => {
     expect(returnValue).toBe(true);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect(fetchMock).toHaveBeenCalledWith("/api/userData?userId=user-123", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/userData/user-123", {
       method: "DELETE",
     });
     unmount();
@@ -123,7 +123,7 @@ describe("useDeleteUserData", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/userData?userId=user%20with%20spaces",
+      "/api/userData/user%20with%20spaces",
       { method: "DELETE" },
     );
     unmount();

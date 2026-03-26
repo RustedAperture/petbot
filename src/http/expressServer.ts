@@ -14,11 +14,13 @@ import readyHandler from "./routes/ready.js";
 
 import { adaptLegacy } from "./adapters.js";
 
-// Legacy API handlers (raw Node http signatures)
-import statsHandler from "./api/stats.js";
-import guildsHandler from "./api/guilds.js";
-import userSessionsHandler from "./api/userSessions.js";
-import userDataHandler from "./api/userData.js";
+// Migrated Express route handlers
+import statsHandler from "./routes/stats.js";
+import guildsHandler from "./routes/guilds.js";
+import userSessionsRouter from "./routes/userSessions.js";
+import userDataHandler from "./routes/userData.js";
+
+// Legacy API handlers (still wrapped with adaptLegacy — Phase 2b)
 import optOutHandler from "./api/optOut.js";
 import setImagesHandler from "./api/setImages.js";
 import serverSettingsHandler from "./api/serverSettings.js";
@@ -71,11 +73,17 @@ export function createApp(client?: Client<boolean>): express.Express {
   // Readiness probe
   app.get("/api/ready", readyHandler);
 
-  // --- Legacy endpoint routes (adapted from raw Node handlers) ---
-  app.all("/api/stats", adaptLegacy(statsHandler));
-  app.all("/api/guilds", adaptLegacy(guildsHandler));
-  app.all("/api/userSessions", adaptLegacy(userSessionsHandler));
-  app.all("/api/userData", adaptLegacy(userDataHandler));
+  // --- Migrated Express routes ---
+  app.get("/api/stats", statsHandler);
+  app.get("/api/stats/user/:userId", statsHandler);
+  app.get("/api/stats/guild/:guildId", statsHandler);
+  app.get("/api/stats/user/:userId/guild/:guildId", statsHandler);
+  app.get("/api/guilds", guildsHandler);
+  app.get("/api/guilds/user/:userId", guildsHandler);
+  app.use("/api/userSessions", userSessionsRouter);
+  app.delete("/api/userData/:userId", userDataHandler);
+
+  // --- Legacy endpoint routes (adapted from raw Node handlers — Phase 2b) ---
   app.all("/api/optOut", adaptLegacy(optOutHandler));
   app.all("/api/setImages", adaptLegacy(setImagesHandler));
 

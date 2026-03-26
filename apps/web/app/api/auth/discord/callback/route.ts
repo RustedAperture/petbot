@@ -164,11 +164,14 @@ export async function GET(req: Request) {
     }
     // send full guilds list to internal API (upsert) — await so session is available immediately after redirect
     try {
-      const persistRes = await fetch(`${internalBase}/api/userSessions`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ userId: userJson.id, guilds: guildsJson || [] }),
-      });
+      const persistRes = await fetch(
+        `${internalBase}/api/userSessions/${encodeURIComponent(userJson.id)}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ guilds: guildsJson || [] }),
+        },
+      );
       if (!persistRes.ok) {
         console.warn(
           "failed to persist user guilds to internal API",

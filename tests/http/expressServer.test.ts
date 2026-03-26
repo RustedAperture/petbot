@@ -5,27 +5,24 @@ import supertest from "supertest";
 const {
   statsMock,
   guildsMock,
-  userSessionsMock,
   userDataMock,
   optOutMock,
   setImagesMock,
   serverSettingsMock,
   guildChannelsMock,
 } = vi.hoisted(() => {
-  const handler = () =>
+  const expressHandler = () =>
     vi.fn().mockImplementation((_req: any, res: any) => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true }));
+      res.json({ ok: true });
     });
   return {
-    statsMock: handler(),
-    guildsMock: handler(),
-    userSessionsMock: handler(),
-    userDataMock: handler(),
-    optOutMock: handler(),
-    setImagesMock: handler(),
-    serverSettingsMock: handler(),
-    guildChannelsMock: handler(),
+    statsMock: expressHandler(),
+    guildsMock: expressHandler(),
+    userDataMock: expressHandler(),
+    optOutMock: expressHandler(),
+    setImagesMock: expressHandler(),
+    serverSettingsMock: expressHandler(),
+    guildChannelsMock: expressHandler(),
   };
 });
 
@@ -38,13 +35,20 @@ vi.mock("../../src/logger.js", () => ({
   },
 }));
 
-// --- Mock legacy API handlers ---
-vi.mock("../../src/http/api/stats.js", () => ({ default: statsMock }));
-vi.mock("../../src/http/api/guilds.js", () => ({ default: guildsMock }));
-vi.mock("../../src/http/api/userSessions.js", () => ({
-  default: userSessionsMock,
-}));
-vi.mock("../../src/http/api/userData.js", () => ({ default: userDataMock }));
+// --- Mock migrated Express route handlers ---
+vi.mock("../../src/http/routes/stats.js", () => ({ default: statsMock }));
+vi.mock("../../src/http/routes/guilds.js", () => ({ default: guildsMock }));
+vi.mock("../../src/http/routes/userSessions.js", () => {
+  const { Router } = require("express");
+  const router = Router();
+  router.get("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  router.post("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  router.delete("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  return { default: router };
+});
+vi.mock("../../src/http/routes/userData.js", () => ({ default: userDataMock }));
+
+// --- Mock legacy API handlers (Phase 2b — not yet migrated) ---
 vi.mock("../../src/http/api/optOut.js", () => ({ default: optOutMock }));
 vi.mock("../../src/http/api/setImages.js", () => ({ default: setImagesMock }));
 vi.mock("../../src/http/api/serverSettings.js", () => ({
@@ -156,7 +160,7 @@ describe("expressServer - createApp", () => {
   describe("JSON body parsing", () => {
     it("accepts JSON request bodies", async () => {
       const res = await supertest(app)
-        .post("/api/stats")
+        .post("/api/optOut")
         .send({ test: true })
         .set("Content-Type", "application/json");
 
@@ -165,17 +169,46 @@ describe("expressServer - createApp", () => {
     });
   });
 
-  describe("legacy route adaptation", () => {
-    it("routes /api/stats to the legacy handler", async () => {
+  describe("migrated route wiring", () => {
+    it("routes GET /api/stats to the stats handler", async () => {
       await supertest(app).get("/api/stats").expect(200);
 
       expect(statsMock).toHaveBeenCalled();
     });
 
-    it("routes /api/guilds to the legacy handler", async () => {
+    it("routes GET /api/guilds to the guilds handler", async () => {
       await supertest(app).get("/api/guilds").expect(200);
 
       expect(guildsMock).toHaveBeenCalled();
+    });
+
+    it("routes GET /api/userSessions/:userId", async () => {
+      const res = await supertest(app).get("/api/userSessions/u1").expect(200);
+
+      expect(res.body.ok).toBe(true);
+    });
+
+    it("routes POST /api/userSessions/:userId", async () => {
+      const res = await supertest(app)
+        .post("/api/userSessions/u1")
+        .send({ guilds: [] })
+        .expect(200);
+
+      expect(res.body.ok).toBe(true);
+    });
+
+    it("routes DELETE /api/userSessions/:userId", async () => {
+      const res = await supertest(app)
+        .delete("/api/userSessions/u1")
+        .expect(200);
+
+      expect(res.body.ok).toBe(true);
+    });
+
+    it("routes DELETE /api/userData/:userId to the userData handler", async () => {
+      await supertest(app).delete("/api/userData/u1").expect(200);
+
+      expect(userDataMock).toHaveBeenCalled();
     });
   });
 });

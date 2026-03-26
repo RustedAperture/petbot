@@ -17,6 +17,12 @@ export function internalApiHeaders() {
   return { "x-internal-api-key": secret };
 }
 
+/** Like internalApiHeaders but returns empty object when secret is unset (dev mode). */
+export function internalApiHeadersOptional(): Record<string, string> {
+  const secret = process.env.INTERNAL_API_SECRET;
+  return secret ? { "x-internal-api-key": secret } : {};
+}
+
 export function getInternalApiBase() {
   if (process.env.INTERNAL_API_URL) {
     return process.env.INTERNAL_API_URL.replace(/\/$/, "");

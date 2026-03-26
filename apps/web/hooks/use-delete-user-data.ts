@@ -8,12 +8,9 @@ export function useDeleteUserData() {
     setIsLoading(true);
     setError(null);
     try {
-      const resp = await fetch(
-        `/api/userData?userId=${encodeURIComponent(userId)}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const resp = await fetch(`/api/userData/${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+      });
       if (!resp.ok) {
         const text = await resp.text();
         throw new Error(`deleteUserData failed (${resp.status}): ${text}`);

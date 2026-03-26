@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
           }
           void fetch(
-            `${internalBase}/api/userSessions?userId=${encodeURIComponent(userId)}`,
+            `${internalBase}/api/userSessions/${encodeURIComponent(userId)}`,
             { method: "DELETE", headers },
           ).catch(() => null);
         }
