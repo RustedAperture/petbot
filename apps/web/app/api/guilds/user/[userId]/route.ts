@@ -1,35 +1,9 @@
 import { NextResponse } from "next/server";
-
-function readCookie(req: Request) {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => {
-      const [k, ...v] = c.split("=");
-      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
-    }),
-  );
-  return cookies["petbot_session"];
-}
-
-function getInternalApiBase() {
-  if (process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL.replace(/\/$/, "");
-  }
-  const host = process.env.HTTP_HOST || "127.0.0.1";
-  const port = process.env.HTTP_PORT || "3001";
-  const preferHttps = Boolean(
-    process.env.HTTP_TLS_CERT ||
-    process.env.HTTP_TLS_KEY ||
-    process.env.INTERNAL_API_USE_HTTPS === "1" ||
-    process.env.INTERNAL_API_USE_HTTPS === "true" ||
-    process.env.NODE_ENV === "production",
-  );
-  const protocol =
-    preferHttps && host !== "127.0.0.1" && host !== "localhost"
-      ? "https"
-      : "http";
-  return `${protocol}://${host}:${port}`;
-}
+import {
+  readCookie,
+  getInternalApiBase,
+  internalApiHeadersOptional,
+} from "../../../../../lib/internal-api";
 
 /**
  * GET /api/guilds/user/:userId — proxy to internal API.
@@ -63,14 +37,8 @@ export async function GET(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const internalSecret = process.env.INTERNAL_API_SECRET;
-  const headers: Record<string, string> = {};
-  if (internalSecret) {
-    headers["x-internal-api-key"] = internalSecret;
-  }
-
   const target = `${getInternalApiBase()}/api/guilds/user/${encodeURIComponent(userId)}`;
-  const res = await fetch(target, { headers });
+  const res = await fetch(target, { headers: internalApiHeadersOptional() });
 
   const text = await res.text();
   try {

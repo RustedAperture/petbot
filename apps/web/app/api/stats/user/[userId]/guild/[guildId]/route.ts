@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
+import {
+  readCookie,
+  getInternalApiBase,
+  internalApiHeadersOptional,
+} from "../../../../../../../lib/internal-api";
 
-function readSession(req: Request) {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => {
-      const [k, ...v] = c.split("=");
-      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
-    }),
-  );
-  const raw = cookies["petbot_session"];
-  if (!raw) return null;
+function readSession(raw: string) {
   try {
     return JSON.parse(raw) as {
       user: { id: string };
@@ -20,24 +16,20 @@ function readSession(req: Request) {
   }
 }
 
-function getInternalApiBase() {
-  if (process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL.replace(/\/$/, "");
+async function fetchGuilds(userId: string) {
+  try {
+    const res = await fetch(
+      `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
+      { headers: internalApiHeadersOptional() },
+    );
+    if (res.ok) {
+      const json = (await res.json()) as { guilds?: Array<{ id: string }> };
+      if (Array.isArray(json.guilds)) return json.guilds;
+    }
+  } catch {
+    // ignore
   }
-  const host = process.env.HTTP_HOST || "127.0.0.1";
-  const port = process.env.HTTP_PORT || "3001";
-  const preferHttps = Boolean(
-    process.env.HTTP_TLS_CERT ||
-    process.env.HTTP_TLS_KEY ||
-    process.env.INTERNAL_API_USE_HTTPS === "1" ||
-    process.env.INTERNAL_API_USE_HTTPS === "true" ||
-    process.env.NODE_ENV === "production",
-  );
-  const protocol =
-    preferHttps && host !== "127.0.0.1" && host !== "localhost"
-      ? "https"
-      : "http";
-  return `${protocol}://${host}:${port}`;
+  return undefined;
 }
 
 /**
@@ -51,7 +43,12 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ userId: string; guildId: string }> },
 ) {
-  const session = readSession(req);
+  const raw = readCookie(req);
+  if (!raw) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const session = readSession(raw);
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -60,54 +57,26 @@ export async function GET(
   const url = new URL(req.url);
   const userScoped = url.searchParams.get("userScoped") === "true";
 
-  // Validate params
   if (!/^\d+$/.test(userId)) {
     return NextResponse.json({ error: "invalid_userId" }, { status: 400 });
   }
   if (!/^\d+$/.test(guildId)) {
     return NextResponse.json({ error: "invalid_guildId" }, { status: 400 });
   }
-
-  // Authorization: userId must match session
   if (userId !== session.user.id) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Fetch guilds for authorization if not in session
-  let guilds = session.guilds;
-  if (!Array.isArray(guilds)) {
-    try {
-      const internalSecret = process.env.INTERNAL_API_SECRET;
-      const headers: Record<string, string> = {};
-      if (internalSecret) headers["x-internal-api-key"] = internalSecret;
-
-      const res = await fetch(
-        `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
-        { headers },
-      );
-      if (res.ok) {
-        const json = (await res.json()) as { guilds?: Array<{ id: string }> };
-        if (Array.isArray(json.guilds)) guilds = json.guilds;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
+  const guilds = session.guilds ?? (await fetchGuilds(userId));
   const isMember =
     Array.isArray(guilds) && guilds.some((g) => g.id === guildId);
   if (!isMember) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const internalSecret = process.env.INTERNAL_API_SECRET;
-  const headers: Record<string, string> = {};
-  if (internalSecret) {
-    headers["x-internal-api-key"] = internalSecret;
-  }
+  const headers = internalApiHeadersOptional();
 
   if (userScoped) {
-    // User-scoped: forward both userId+guildId to internal API
     const target = `${getInternalApiBase()}/api/stats/user/${encodeURIComponent(userId)}/guild/${encodeURIComponent(guildId)}`;
     const res = await fetch(target, { headers });
     const text = await res.text();
@@ -137,7 +106,6 @@ export async function GET(
     }
   }
 
-  // Presence exists — forward guild-only request (legacy cumulative stats)
   const forwardUrl = `${getInternalApiBase()}/api/stats/guild/${encodeURIComponent(guildId)}`;
   const forwardResp = await fetch(forwardUrl, { headers });
   const forwardText = await forwardResp.text();

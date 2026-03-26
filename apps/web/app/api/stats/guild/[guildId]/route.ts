@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
+import {
+  readCookie,
+  getInternalApiBase,
+  internalApiHeadersOptional,
+} from "../../../../../lib/internal-api";
 
-function readSession(req: Request) {
-  const cookieHeader = req.headers.get("cookie") || "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split(";").map((c) => {
-      const [k, ...v] = c.split("=");
-      return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
-    }),
-  );
-  const raw = cookies["petbot_session"];
-  if (!raw) return null;
+function readSession(raw: string) {
   try {
     return JSON.parse(raw) as {
       user: { id: string };
@@ -20,24 +16,20 @@ function readSession(req: Request) {
   }
 }
 
-function getInternalApiBase() {
-  if (process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL.replace(/\/$/, "");
+async function fetchGuilds(userId: string) {
+  try {
+    const res = await fetch(
+      `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
+      { headers: internalApiHeadersOptional() },
+    );
+    if (res.ok) {
+      const json = (await res.json()) as { guilds?: Array<{ id: string }> };
+      if (Array.isArray(json.guilds)) return json.guilds;
+    }
+  } catch {
+    // ignore
   }
-  const host = process.env.HTTP_HOST || "127.0.0.1";
-  const port = process.env.HTTP_PORT || "3001";
-  const preferHttps = Boolean(
-    process.env.HTTP_TLS_CERT ||
-    process.env.HTTP_TLS_KEY ||
-    process.env.INTERNAL_API_USE_HTTPS === "1" ||
-    process.env.INTERNAL_API_USE_HTTPS === "true" ||
-    process.env.NODE_ENV === "production",
-  );
-  const protocol =
-    preferHttps && host !== "127.0.0.1" && host !== "localhost"
-      ? "https"
-      : "http";
-  return `${protocol}://${host}:${port}`;
+  return undefined;
 }
 
 /**
@@ -48,7 +40,12 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ guildId: string }> },
 ) {
-  const session = readSession(req);
+  const raw = readCookie(req);
+  if (!raw) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const session = readSession(raw);
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
@@ -59,41 +56,15 @@ export async function GET(
     return NextResponse.json({ error: "invalid_guildId" }, { status: 400 });
   }
 
-  // Fetch guilds for authorization if not in session
-  let guilds = session.guilds;
-  if (!Array.isArray(guilds)) {
-    try {
-      const internalSecret = process.env.INTERNAL_API_SECRET;
-      const headers: Record<string, string> = {};
-      if (internalSecret) headers["x-internal-api-key"] = internalSecret;
-
-      const res = await fetch(
-        `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(session.user.id)}`,
-        { headers },
-      );
-      if (res.ok) {
-        const json = (await res.json()) as { guilds?: Array<{ id: string }> };
-        if (Array.isArray(json.guilds)) guilds = json.guilds;
-      }
-    } catch {
-      // ignore
-    }
-  }
-
+  const guilds = session.guilds ?? (await fetchGuilds(session.user.id));
   const isMember =
     Array.isArray(guilds) && guilds.some((g) => g.id === guildId);
   if (!isMember) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const internalSecret = process.env.INTERNAL_API_SECRET;
-  const headers: Record<string, string> = {};
-  if (internalSecret) {
-    headers["x-internal-api-key"] = internalSecret;
-  }
-
   const target = `${getInternalApiBase()}/api/stats/guild/${encodeURIComponent(guildId)}`;
-  const res = await fetch(target, { headers });
+  const res = await fetch(target, { headers: internalApiHeadersOptional() });
   const text = await res.text();
   try {
     const json = JSON.parse(text);

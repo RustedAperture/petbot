@@ -6,25 +6,47 @@ import {
 } from "../../../lib/internal-api";
 import { isAdminOrOwnerGuild } from "../../../lib/utils";
 
-function requireSession(req: Request) {
-  const raw = readCookie(req);
-  if (!raw) {
-    return null;
-  }
+type GuildInfo = {
+  id: string;
+  name?: string;
+  owner?: boolean;
+  permissions?: string | null;
+};
 
+type Session = {
+  user?: { id?: string };
+  guilds?: GuildInfo[];
+};
+
+function requireSession(req: Request): Session | null {
+  const raw = readCookie(req);
+  if (!raw) return null;
   try {
-    return JSON.parse(raw) as {
-      user?: { id?: string };
-      guilds?: Array<{
-        id: string;
-        name?: string;
-        owner?: boolean;
-        permissions?: string | null;
-      }>;
-    };
+    return JSON.parse(raw);
   } catch {
     return null;
   }
+}
+
+/** Fetch guilds from internal API when cookie doesn't contain them. */
+async function resolveGuilds(
+  userId: string,
+  sessionGuilds: Session["guilds"],
+): Promise<GuildInfo[] | undefined> {
+  if (Array.isArray(sessionGuilds)) return sessionGuilds;
+  try {
+    const guildsRes = await fetch(
+      `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
+      { headers: internalApiHeaders() },
+    );
+    if (guildsRes.ok) {
+      const json = (await guildsRes.json()) as { guilds?: GuildInfo[] };
+      if (Array.isArray(json.guilds)) return json.guilds;
+    }
+  } catch {
+    // ignore — authorization below will fail
+  }
+  return undefined;
 }
 
 export async function GET(req: Request) {
@@ -48,32 +70,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Fetch guilds from internal API (cookie only stores user object)
-  let guilds = session.guilds;
-  if (!Array.isArray(guilds)) {
-    try {
-      const base = getInternalApiBase();
-      const headers = internalApiHeaders();
-      const guildsRes = await fetch(
-        `${base}/api/userSessions/${encodeURIComponent(session.user.id)}`,
-        { headers },
-      );
-      if (guildsRes.ok) {
-        const json = (await guildsRes.json()) as {
-          guilds?: Array<{
-            id: string;
-            name?: string;
-            owner?: boolean;
-            permissions?: string | null;
-          }>;
-        };
-        if (Array.isArray(json.guilds)) guilds = json.guilds;
-      }
-    } catch {
-      // ignore — guilds stays undefined, authorization below will fail
-    }
-  }
-
+  const guilds = await resolveGuilds(session.user.id, session.guilds);
   const guild = guilds?.find((g) => g.id === guildId);
   if (!guild) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -141,32 +138,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Fetch guilds from internal API (cookie only stores user object)
-  let guilds = session.guilds;
-  if (!Array.isArray(guilds)) {
-    try {
-      const base = getInternalApiBase();
-      const headers = internalApiHeaders();
-      const guildsRes = await fetch(
-        `${base}/api/userSessions/${encodeURIComponent(session.user.id)}`,
-        { headers },
-      );
-      if (guildsRes.ok) {
-        const json = (await guildsRes.json()) as {
-          guilds?: Array<{
-            id: string;
-            name?: string;
-            owner?: boolean;
-            permissions?: string | null;
-          }>;
-        };
-        if (Array.isArray(json.guilds)) guilds = json.guilds;
-      }
-    } catch {
-      // ignore — guilds stays undefined, authorization below will fail
-    }
-  }
-
+  const guilds = await resolveGuilds(session.user.id, session.guilds);
   const guild = guilds?.find((g) => g.id === guildId);
   if (!guild) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
