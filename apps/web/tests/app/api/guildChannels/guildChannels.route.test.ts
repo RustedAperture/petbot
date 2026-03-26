@@ -48,7 +48,7 @@ describe("/api/guildChannels proxy", () => {
     expect(await res.json()).toEqual({ channels: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toContain(
-      "/api/guildChannels?guildId=G1&userId=123",
+      "/api/guildChannels/G1/user/123",
     );
   });
 
@@ -79,7 +79,7 @@ describe("/api/guildChannels proxy", () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toContain(
-      "/api/guildChannels?guildId=G1&userId=123",
+      "/api/guildChannels/G1/user/123",
     );
   });
 
@@ -106,7 +106,7 @@ describe("/api/guildChannels proxy", () => {
     expect(await res.json()).toEqual({ channels: [] });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toContain(
-      "/api/guildChannels?guildId=G1&userId=123",
+      "/api/guildChannels/G1/user/123",
     );
   });
 

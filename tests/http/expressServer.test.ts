@@ -2,29 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
 // --- Hoisted mock functions (survive vi.resetAllMocks) ---
-const {
-  statsMock,
-  guildsMock,
-  userDataMock,
-  optOutMock,
-  setImagesMock,
-  serverSettingsMock,
-  guildChannelsMock,
-} = vi.hoisted(() => {
-  const expressHandler = () =>
-    vi.fn().mockImplementation((_req: any, res: any) => {
-      res.json({ ok: true });
-    });
-  return {
-    statsMock: expressHandler(),
-    guildsMock: expressHandler(),
-    userDataMock: expressHandler(),
-    optOutMock: expressHandler(),
-    setImagesMock: expressHandler(),
-    serverSettingsMock: expressHandler(),
-    guildChannelsMock: expressHandler(),
-  };
-});
+const { statsMock, guildsMock, userDataMock, setImagesMock } = vi.hoisted(
+  () => {
+    const expressHandler = () =>
+      vi.fn().mockImplementation((_req: any, res: any) => {
+        res.json({ ok: true });
+      });
+    return {
+      statsMock: expressHandler(),
+      guildsMock: expressHandler(),
+      userDataMock: expressHandler(),
+      setImagesMock: expressHandler(),
+    };
+  },
+);
 
 // --- Mock logger to suppress output ---
 vi.mock("../../src/logger.js", () => ({
@@ -47,15 +38,32 @@ vi.mock("../../src/http/routes/userSessions.js", () => {
   return { default: router };
 });
 vi.mock("../../src/http/routes/userData.js", () => ({ default: userDataMock }));
-
-// --- Mock legacy API handlers (Phase 2b — not yet migrated) ---
-vi.mock("../../src/http/api/optOut.js", () => ({ default: optOutMock }));
-vi.mock("../../src/http/api/setImages.js", () => ({ default: setImagesMock }));
-vi.mock("../../src/http/api/serverSettings.js", () => ({
-  default: serverSettingsMock,
+vi.mock("../../src/http/routes/optOut.js", () => {
+  const { Router } = require("express");
+  const router = Router();
+  router.get("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  router.post("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  router.delete("/:userId", (_req: any, res: any) => res.json({ ok: true }));
+  return { default: router };
+});
+vi.mock("../../src/http/routes/setImages.js", () => ({
+  default: setImagesMock,
 }));
-vi.mock("../../src/http/api/guildChannels.js", () => ({
-  default: guildChannelsMock,
+vi.mock("../../src/http/routes/serverSettings.js", () => ({
+  default: (_client: any) => {
+    const { Router } = require("express");
+    const router = Router();
+    router.get("/:guildId/userId/:userId", (_req: any, res: any) =>
+      res.json({ ok: true }),
+    );
+    router.patch("/:guildId/userId/:userId", (_req: any, res: any) =>
+      res.json({ ok: true }),
+    );
+    return router;
+  },
+}));
+vi.mock("../../src/http/routes/guildChannels.js", () => ({
+  default: (_client: any) => (_req: any, res: any) => res.json({ ok: true }),
 }));
 
 import { createApp } from "../../src/http/expressServer.js";
@@ -223,25 +231,29 @@ describe("expressServer - createApp with client", () => {
     const mockClient = { id: "bot-123" } as any;
     const appWithClient = createApp(mockClient);
 
-    await supertest(appWithClient).get("/api/serverSettings").expect(200);
+    const res = await supertest(appWithClient)
+      .get("/api/serverSettings/G1/userId/U1")
+      .expect(200);
 
-    expect(serverSettingsMock).toHaveBeenCalled();
+    expect(res.body.ok).toBe(true);
   });
 
   it("registers /api/guildChannels when client is provided", async () => {
     const mockClient = { id: "bot-123" } as any;
     const appWithClient = createApp(mockClient);
 
-    await supertest(appWithClient).get("/api/guildChannels").expect(200);
+    const res = await supertest(appWithClient)
+      .get("/api/guildChannels/G1/user/U1")
+      .expect(200);
 
-    expect(guildChannelsMock).toHaveBeenCalled();
+    expect(res.body.ok).toBe(true);
   });
 
   it("does not register /api/serverSettings when client is not provided", async () => {
     const appNoClient = createApp();
 
     const res = await supertest(appNoClient)
-      .get("/api/serverSettings")
+      .get("/api/serverSettings/G1/userId/U1")
       .expect(404);
 
     expect(res.body).toEqual({ error: "not_found" });

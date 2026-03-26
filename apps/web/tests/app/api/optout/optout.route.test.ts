@@ -43,9 +43,7 @@ describe("/api/optout proxy", () => {
     const res = await GET(req as any);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ optedOut: true });
-    expect(String(mockFetch.mock.calls[0][0])).toContain(
-      "/api/optOut?userId=123",
-    );
+    expect(String(mockFetch.mock.calls[0][0])).toContain("/api/optOut/123");
   });
 
   it("POST forwards userId with POST method", async () => {
@@ -63,7 +61,7 @@ describe("/api/optout proxy", () => {
     const res = await POST(req as any);
     expect(res.status).toBe(200);
     expect(mockFetch.mock.calls[0][1].method).toBe("POST");
-    expect(String(mockFetch.mock.calls[0][0])).toContain("userId=456");
+    expect(String(mockFetch.mock.calls[0][0])).toContain("/api/optOut/456");
   });
 
   it("DELETE forwards userId with DELETE method", async () => {
@@ -99,6 +97,6 @@ describe("/api/optout proxy", () => {
 
     const res = await GET(req as any);
     expect(res.status).toBe(200);
-    expect(String(mockFetch.mock.calls[0][0])).toContain("userId=999");
+    expect(String(mockFetch.mock.calls[0][0])).toContain("/api/optOut/999");
   });
 });

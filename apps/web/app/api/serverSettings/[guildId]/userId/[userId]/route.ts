@@ -4,8 +4,8 @@ import {
   getInternalApiBase,
   internalApiHeaders,
   internalApiHeadersOptional,
-} from "../../../lib/internal-api";
-import { isAdminOrOwnerGuild } from "../../../lib/utils";
+} from "../../../../../../lib/internal-api";
+import { isAdminOrOwnerGuild } from "../../../../../../lib/utils";
 
 type GuildInfo = {
   id: string;
@@ -50,15 +50,15 @@ async function resolveGuilds(
   return undefined;
 }
 
-export async function GET(req: Request) {
+export async function GET(req: Request, context: any) {
+  const params = (await context?.params) || {};
+  const guildId = params.guildId as string | undefined;
+  const userId = params.userId as string | undefined;
+
   const session = requireSession(req);
   if (!session || !session.user?.id || !/^[0-9]+$/.test(session.user.id)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-
-  const url = new URL(req.url);
-  const guildId = url.searchParams.get("guildId");
-  const userId = url.searchParams.get("userId");
 
   if (!guildId || !userId) {
     return NextResponse.json(
@@ -85,9 +85,7 @@ export async function GET(req: Request) {
   let headers: Record<string, string>;
   try {
     const base = getInternalApiBase();
-    target = `${base}/api/serverSettings?guildId=${encodeURIComponent(
-      guildId,
-    )}&userId=${encodeURIComponent(userId)}`;
+    target = `${base}/api/serverSettings/${encodeURIComponent(guildId)}/userId/${encodeURIComponent(userId)}`;
     headers = {
       ...internalApiHeaders(),
       "content-type": "application/json",
@@ -118,15 +116,15 @@ export async function GET(req: Request) {
   });
 }
 
-export async function PATCH(req: Request) {
+export async function PATCH(req: Request, context: any) {
+  const params = (await context?.params) || {};
+  const guildId = params.guildId as string | undefined;
+  const userId = params.userId as string | undefined;
+
   const session = requireSession(req);
   if (!session || !session.user?.id || !/^[0-9]+$/.test(session.user.id)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-
-  const url = new URL(req.url);
-  const guildId = url.searchParams.get("guildId");
-  const userId = url.searchParams.get("userId");
 
   if (!guildId || !userId) {
     return NextResponse.json(
@@ -161,9 +159,7 @@ export async function PATCH(req: Request) {
   let headers: Record<string, string>;
   try {
     const base = getInternalApiBase();
-    target = `${base}/api/serverSettings?guildId=${encodeURIComponent(
-      guildId,
-    )}&userId=${encodeURIComponent(userId)}`;
+    target = `${base}/api/serverSettings/${encodeURIComponent(guildId)}/userId/${encodeURIComponent(userId)}`;
     headers = {
       ...internalApiHeaders(),
       "content-type": "application/json",

@@ -57,7 +57,10 @@ export function useGlobalStats({
 
         // Build REST-style URL
         let url = "/api/stats";
-        if (userId && effectiveGuildId) {
+        if (userId && locationId) {
+          // DM stats: use dedicated location path
+          url = `/api/stats/user/${encodeURIComponent(userId)}/location/${encodeURIComponent(locationId)}`;
+        } else if (userId && effectiveGuildId) {
           url = `/api/stats/user/${encodeURIComponent(userId)}/guild/${encodeURIComponent(effectiveGuildId)}`;
         } else if (userId) {
           url = `/api/stats/user/${encodeURIComponent(userId)}`;

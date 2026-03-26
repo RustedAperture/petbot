@@ -66,7 +66,7 @@ function GuildSelect({
       if (onChange) {
         return onChange(v);
       }
-      router.push(`/guildStats?guildId=${v}`);
+      router.push(`/guildStats/${v}`);
     },
     [onChange, router],
   );
