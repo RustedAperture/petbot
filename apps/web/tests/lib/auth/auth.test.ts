@@ -44,6 +44,7 @@ describe("requireSession", () => {
   });
 
   it("throws 401 when session JSON is invalid", () => {
+    expect.assertions(2);
     mockReadCookie.mockReturnValue("not-json");
     try {
       requireSession(makeRequest());
@@ -54,6 +55,7 @@ describe("requireSession", () => {
   });
 
   it("throws 401 when session has no user.id", () => {
+    expect.assertions(2);
     mockReadCookie.mockReturnValue(sessionCookie({ user: {} }));
     try {
       requireSession(makeRequest());
@@ -64,6 +66,7 @@ describe("requireSession", () => {
   });
 
   it("throws 401 when user.id is not a numeric string", () => {
+    expect.assertions(2);
     mockReadCookie.mockReturnValue(sessionCookie({ user: { id: "abc" } }));
     try {
       requireSession(makeRequest());
@@ -88,6 +91,7 @@ describe("assertSelf", () => {
   });
 
   it("throws 403 when userId does not match", () => {
+    expect.assertions(2);
     const session = { user: { id: "123" } };
     try {
       assertSelf(session, "456");
@@ -105,6 +109,7 @@ describe("assertGuildMembership", () => {
   });
 
   it("throws 403 when guild is not in session", () => {
+    expect.assertions(2);
     const session = { guilds: [{ id: "guild-1" }] };
     try {
       assertGuildMembership(session, "guild-2");
@@ -115,6 +120,7 @@ describe("assertGuildMembership", () => {
   });
 
   it("throws 403 when session has no guilds", () => {
+    expect.assertions(2);
     const session = {};
     try {
       assertGuildMembership(session, "guild-1");

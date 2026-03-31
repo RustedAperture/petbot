@@ -52,7 +52,7 @@ describe("proxyRequest", () => {
     expect(res.status).toBe(404);
   });
 
-  it("sends correct method and body", async () => {
+  it("sends correct method, body, and Content-Type header", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       status: 200,
       text: () => Promise.resolve("{}"),
@@ -66,6 +66,9 @@ describe("proxyRequest", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ key: "value" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
       }),
     );
   });

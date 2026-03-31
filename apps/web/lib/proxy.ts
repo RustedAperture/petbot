@@ -19,6 +19,9 @@ export async function proxyRequest(
 
   const headers: Record<string, string> = {
     ...internalApiHeadersOptional(),
+    ...(options?.body !== undefined
+      ? { "Content-Type": "application/json" }
+      : {}),
     ...options?.headers,
   };
 

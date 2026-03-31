@@ -36,10 +36,4 @@ export const setImagesBody = z
     "guildId is required when everywhere is false",
   );
 
-export const serverSettingsBody = z
-  .object({})
-  .passthrough()
-  .refine(
-    (v) => typeof v === "object" && v !== null && !Array.isArray(v),
-    "Body must be a JSON object",
-  );
+export const serverSettingsBody = z.object({}).passthrough();
