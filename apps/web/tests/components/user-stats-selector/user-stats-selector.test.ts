@@ -3,8 +3,8 @@ import { getScopeDisplay } from "@/components/user-stats-selector";
 
 describe("getScopeDisplay", () => {
   const guilds = [
-    { id: "123", name: "GuildAlpha" },
-    { id: "456", name: "GuildBeta" },
+    { label: "GuildAlpha", value: "123" },
+    { label: "GuildBeta", value: "456" },
   ];
 
   it("returns the input unchanged when no matching guild exists", () => {
