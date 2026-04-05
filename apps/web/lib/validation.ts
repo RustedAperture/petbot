@@ -31,9 +31,9 @@ export const setImagesBody = z
       .max(4),
     everywhere: z.boolean().optional().default(false),
   })
-  .refine(
-    (data) => data.everywhere || data.guildId,
-    "guildId is required when everywhere is false",
-  );
+  .refine((data) => data.everywhere || data.guildId, {
+    message: "guildId is required when everywhere is false",
+    path: ["guildId"],
+  });
 
 export const serverSettingsBody = z.object({}).passthrough();

@@ -34,15 +34,8 @@ export async function POST(req: Request) {
     parsed = setImagesBody.parse(body);
   } catch (e) {
     if (e instanceof ZodError) {
-      const issue = e.issues[0];
-      const field = issue?.path[0] as string | undefined;
-      // Cross-field refine for "guildId required when everywhere is false"
-      // has no path — map it to invalid_guildId.
-      const errorKey = field
-        ? `invalid_${field}`
-        : issue?.message?.includes("guildId")
-          ? "invalid_guildId"
-          : "invalid_request";
+      const field = e.issues[0]?.path[0] as string | undefined;
+      const errorKey = field ? `invalid_${field}` : "invalid_request";
       return NextResponse.json({ error: errorKey }, { status: 400 });
     }
     throw e;
