@@ -13,15 +13,17 @@ import { Button } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
 import { useBotGuilds } from "@/hooks/use-bot-guilds";
 
+type GuildItem = { label: string; value: string };
+
 // helper used by the component and exported for testing.  Given a raw
 // scope value (guild id or location id) and the list of guilds the session
 // knows about, return the text that should be shown to the user.
 export function getScopeDisplay(
   value: string,
-  availableGuilds: Array<{ id: string; name: string }>,
+  availableGuilds: GuildItem[],
 ): string {
-  const guild = availableGuilds.find((g) => g.id === value);
-  return guild ? guild.name : value;
+  const guild = availableGuilds.find((g) => g.value === value);
+  return guild ? guild.label : value;
 }
 
 export default function UserStatsSelector() {
@@ -50,9 +52,14 @@ export default function UserStatsSelector() {
   );
 
   // Memoize the filtered list so downstream hooks don't fire on every render.
+  // Prepend a "Global" option so it appears first in the combobox.
   const availableGuilds = React.useMemo(
-    () =>
-      (session?.guilds ?? []).filter((g) => (botGuildIds ?? []).includes(g.id)),
+    () => [
+      { label: "Global", value: "" } as GuildItem,
+      ...(session?.guilds ?? [])
+        .filter((g) => (botGuildIds ?? []).includes(g.id))
+        .map((g) => ({ label: g.name, value: g.id })),
+    ],
     [session?.guilds, botGuildIds],
   );
 
@@ -100,7 +107,7 @@ export default function UserStatsSelector() {
       // use the explicit selected value when available else fall back to
       // whatever the user typed
       const valueToUse = userScopeValue ?? trimmedInput;
-      const isGuild = availableGuilds.some((g) => g.id === valueToUse);
+      const isGuild = availableGuilds.some((g) => g.value === valueToUse);
       if (isGuild) {
         router.push(
           `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(valueToUse)}&userScoped=true`,
@@ -122,13 +129,13 @@ export default function UserStatsSelector() {
   );
 
   const handleUserScopeSelect = React.useCallback(
-    (val: string | null) => {
+    (item: GuildItem | null) => {
       const resolvedUserId = queryUserId ?? session?.user.id ?? null;
       if (!resolvedUserId) {
         return;
       }
 
-      if (!val) {
+      if (!item) {
         setUserScopeValue(null);
         setUserScopeInput("");
         router.push(
@@ -137,28 +144,24 @@ export default function UserStatsSelector() {
         return;
       }
 
-      const guild = availableGuilds.find((g) => g.id === val);
-      const display = guild ? guild.name : val;
-      setUserScopeValue(val);
-      setUserScopeInput(display);
+      setUserScopeValue(item.value);
+      setUserScopeInput(item.label);
 
-      if (guild) {
-        router.push(
-          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(val)}&userScoped=true`,
-        );
-      } else {
-        router.push(
-          `/userStats?userId=${encodeURIComponent(resolvedUserId)}&locationId=${encodeURIComponent(val)}&userScoped=true`,
-        );
-      }
+      router.push(
+        `/userStats?userId=${encodeURIComponent(resolvedUserId)}&guildId=${encodeURIComponent(item.value)}&userScoped=true`,
+      );
     },
-    [queryUserId, session, availableGuilds, router],
+    [queryUserId, session, router],
   );
 
   // Render — single freeform Combobox (accepts typed location id OR select a guild/global)
   return (
     <form className="flex items-center gap-4" onSubmit={submitUserScope}>
-      <Combobox onValueChange={handleUserScopeSelect}>
+      <Combobox
+        items={availableGuilds}
+        onValueChange={handleUserScopeSelect}
+        itemToStringValue={(guild: GuildItem) => guild.label}
+      >
         <ComboboxInput
           placeholder="Global / guild / location id"
           aria-label="user stats scope"
@@ -173,13 +176,11 @@ export default function UserStatsSelector() {
 
         <ComboboxContent>
           <ComboboxList>
-            <ComboboxItem value="">Global</ComboboxItem>
-            {!botGuildsLoading &&
-              availableGuilds.map((g) => (
-                <ComboboxItem key={g.id} value={g.id}>
-                  {g.name}
-                </ComboboxItem>
-              ))}
+            {availableGuilds.map((guild) => (
+              <ComboboxItem key={guild.value} value={guild}>
+                {guild.label}
+              </ComboboxItem>
+            ))}
           </ComboboxList>
         </ComboboxContent>
       </Combobox>
