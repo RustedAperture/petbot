@@ -13,13 +13,13 @@ export async function DELETE(
     const session = requireSession(req);
     const { userId } = await params;
     assertSelf(session, userId);
-    return proxyRequest(`/api/userData/${encodeURIComponent(userId)}`, {
+    return await proxyRequest(`/api/userData/${encodeURIComponent(userId)}`, {
       method: "DELETE",
     });
-  } catch (res) {
-    if (res instanceof Response) {
-      return res;
+  } catch (err) {
+    if (err instanceof Response) {
+      return err;
     }
-    throw res;
+    throw err;
   }
 }

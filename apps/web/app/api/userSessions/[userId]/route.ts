@@ -12,12 +12,14 @@ export async function GET(
     const session = requireSession(req);
     const { userId } = await params;
     assertSelf(session, userId);
-    return proxyRequest(`/api/userSessions/${encodeURIComponent(userId)}`);
-  } catch (res) {
-    if (res instanceof Response) {
-      return res;
+    return await proxyRequest(
+      `/api/userSessions/${encodeURIComponent(userId)}`,
+    );
+  } catch (err) {
+    if (err instanceof Response) {
+      return err;
     }
-    throw res;
+    throw err;
   }
 }
 
@@ -32,13 +34,16 @@ export async function DELETE(
     const session = requireSession(req);
     const { userId } = await params;
     assertSelf(session, userId);
-    return proxyRequest(`/api/userSessions/${encodeURIComponent(userId)}`, {
-      method: "DELETE",
-    });
-  } catch (res) {
-    if (res instanceof Response) {
-      return res;
+    return await proxyRequest(
+      `/api/userSessions/${encodeURIComponent(userId)}`,
+      {
+        method: "DELETE",
+      },
+    );
+  } catch (err) {
+    if (err instanceof Response) {
+      return err;
     }
-    throw res;
+    throw err;
   }
 }
