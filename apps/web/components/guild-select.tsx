@@ -10,6 +10,7 @@ import {
   SelectContent,
   SelectItem,
   SelectValue,
+  SelectGroup,
 } from "@/components/ui/select";
 
 type Props = {
@@ -87,11 +88,13 @@ function GuildSelect({
               </SelectTrigger>
 
               <SelectContent className="min-w-xs">
-                {availableGuilds.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>
-                    {g.name}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {availableGuilds.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           ) : (
