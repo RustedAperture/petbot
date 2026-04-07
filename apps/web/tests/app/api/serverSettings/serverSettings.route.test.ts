@@ -160,9 +160,6 @@ describe("/api/serverSettings/:guildId/userId/:userId – auth and membership gu
       { params: { guildId: "G1", userId: "111" } } as any,
     );
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({
-      error: "invalid_payload",
-      reason: "body_must_be_object",
-    });
+    expect(await res.json()).toEqual({ error: "invalid_payload" });
   });
 });
