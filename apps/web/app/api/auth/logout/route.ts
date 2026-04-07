@@ -3,9 +3,8 @@ import {
   readCookie,
   getInternalApiBase,
   internalApiHeadersOptional,
+  SESSION_COOKIE_NAME,
 } from "../../../../lib/internal-api";
-
-const COOKIE_NAME = "petbot_session";
 
 export async function GET(req: Request) {
   const siteUrl = new URL(
@@ -13,7 +12,7 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   );
   const secureAttr = siteUrl.protocol === "https:" ? "; Secure" : "";
-  const cookie = `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`;
+  const cookie = `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secureAttr}`;
 
   // Best-effort: clear persisted server-side session for this user
   try {

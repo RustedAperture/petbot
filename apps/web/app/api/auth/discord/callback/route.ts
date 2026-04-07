@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import {
+  getInternalApiBase,
+  internalApiHeadersOptional,
+  SESSION_COOKIE_NAME,
+} from "../../../../../lib/internal-api";
+import crypto from "node:crypto";
 
-const COOKIE_NAME = "petbot_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 function makeCookieValue(obj: unknown) {
@@ -9,14 +14,8 @@ function makeCookieValue(obj: unknown) {
 
 function makeCookieHeader(value: string) {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  return `${COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
 }
-
-import {
-  getInternalApiBase,
-  internalApiHeadersOptional,
-} from "../../../../../lib/internal-api";
-import crypto from "node:crypto";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);

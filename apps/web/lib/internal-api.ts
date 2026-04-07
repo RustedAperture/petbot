@@ -1,3 +1,5 @@
+export const SESSION_COOKIE_NAME = "petbot_session";
+
 export function readCookie(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
@@ -6,7 +8,7 @@ export function readCookie(req: Request) {
       return [k?.trim(), decodeURIComponent((v || []).join("=") || "")];
     }),
   );
-  return cookies["petbot_session"];
+  return cookies[SESSION_COOKIE_NAME];
 }
 
 export function internalApiHeaders() {
