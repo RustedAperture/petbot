@@ -14,6 +14,10 @@ export async function GET(
     const session = requireSession(req);
     const { guildId } = await params;
 
+    if (!/^\d+$/.test(guildId)) {
+      throw apiError(400, "invalid_guildId");
+    }
+
     const guilds = await resolveGuilds(session);
     if (!guilds.some((g) => g.id === guildId)) {
       throw apiError(403, "forbidden");

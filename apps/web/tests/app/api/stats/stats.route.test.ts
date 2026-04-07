@@ -61,6 +61,21 @@ describe("/app/api/stats/guild/:guildId proxy", () => {
     expect(res.status).toBe(401);
   });
 
+  it("returns 400 when guildId is non-numeric", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
+
+    const req = new Request("http://localhost/api/stats/guild/abc", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "abc" }),
+    });
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json).toEqual({ error: "invalid_guildId" });
+  });
+
   it("returns 403 when user is not a guild member", async () => {
     const session = { user: { id: "123" }, guilds: [{ id: "789" }] };
 
