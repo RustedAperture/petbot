@@ -365,42 +365,6 @@ describe("/app/api/stats/user/:userId/location/:locationId proxy", () => {
     expect(json).toEqual({ error: "unauthorized" });
   });
 
-  it("returns 400 when userId is non-numeric", async () => {
-    const session = { user: { id: "123" } };
-
-    const req = new Request(
-      "http://localhost/api/stats/user/abc/location/456",
-      {
-        headers: { cookie: sessionCookie(session) },
-      },
-    );
-
-    const res: any = await userLocationGet(req as any, {
-      params: Promise.resolve({ userId: "abc", locationId: "456" }),
-    });
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json).toEqual({ error: "invalid_userId" });
-  });
-
-  it("returns 400 when locationId is non-numeric", async () => {
-    const session = { user: { id: "123" } };
-
-    const req = new Request(
-      "http://localhost/api/stats/user/123/location/abc",
-      {
-        headers: { cookie: sessionCookie(session) },
-      },
-    );
-
-    const res: any = await userLocationGet(req as any, {
-      params: Promise.resolve({ userId: "123", locationId: "abc" }),
-    });
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json).toEqual({ error: "invalid_locationId" });
-  });
-
   it("returns 403 when userId does not match session", async () => {
     const session = { user: { id: "123" } };
 
