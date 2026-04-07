@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
+import {
+  getInternalApiBase,
+  internalApiHeadersOptional,
+  SESSION_COOKIE_NAME,
+} from "../../../../../lib/internal-api";
+import crypto from "node:crypto";
 
-const COOKIE_NAME = "petbot_session";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 function makeCookieValue(obj: unknown) {
@@ -9,10 +14,8 @@ function makeCookieValue(obj: unknown) {
 
 function makeCookieHeader(value: string) {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  return `${COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
+  return `${SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${COOKIE_MAX_AGE}${secure}`;
 }
-
-import crypto from "node:crypto";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -153,19 +156,14 @@ export async function GET(req: Request) {
 
   // Persist the user's guild list to the internal API (server-side storage)
   try {
-    const internalBase =
-      process.env.INTERNAL_API_URL ||
-      `${process.env.HTTP_TLS_CERT || process.env.HTTP_TLS_KEY || process.env.NODE_ENV === "production" ? "https" : "http"}://${process.env.HTTP_HOST || "127.0.0.1"}:${process.env.HTTP_PORT || "3001"}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      ...internalApiHeadersOptional(),
     };
-    if (process.env.INTERNAL_API_SECRET) {
-      headers["x-internal-api-key"] = process.env.INTERNAL_API_SECRET;
-    }
     // send full guilds list to internal API (upsert) — await so session is available immediately after redirect
     try {
       const persistRes = await fetch(
-        `${internalBase}/api/userSessions/${encodeURIComponent(userJson.id)}`,
+        `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userJson.id)}`,
         {
           method: "POST",
           headers,
