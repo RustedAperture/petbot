@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { GET as globalGet } from "@/app/api/stats/route";
+import { GET as guildGet } from "@/app/api/stats/guild/[guildId]/route";
 import { GET as userGuildGet } from "@/app/api/stats/user/[userId]/guild/[guildId]/route";
 import { GET as userLocationGet } from "@/app/api/stats/user/[userId]/location/[locationId]/route";
 
@@ -34,6 +35,144 @@ describe("/app/api/stats proxy — global stats", () => {
     expect(calledUrl).toContain("/api/stats");
     expect(calledUrl).not.toContain("userId");
     expect(calledUrl).not.toContain("guildId");
+  });
+});
+
+describe("/app/api/stats/guild/:guildId proxy", () => {
+  it("returns 401 without session cookie", async () => {
+    const req = new Request("http://localhost/api/stats/guild/456");
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json).toEqual({ error: "unauthorized" });
+  });
+
+  it("returns 401 when session cookie is invalid", async () => {
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: "petbot_session=invalid" },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 when user is not a guild member", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "789" }] };
+
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("forwards to internal API and returns data on success", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
+    const guildBody = { totalsByAction: { pet: { totalHasPerformed: 42 } } };
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify(guildBody), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toEqual(guildBody);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const calledUrl = String(mockFetch.mock.calls[0][0]);
+    expect(calledUrl).toContain("/api/stats/guild/456");
+  });
+
+  it("fetches guilds from internal API when not in session", async () => {
+    const session = { user: { id: "123" } };
+    const guildBody = { totalsByAction: { pet: { totalHasPerformed: 42 } } };
+    const userSessionsBody = { guilds: [{ id: "456" }] };
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(userSessionsBody), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(guildBody), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(200);
+
+    // first call: resolveGuilds → userSessions, second: proxyRequest → stats/guild
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const firstUrl = String(mockFetch.mock.calls[0][0]);
+    const secondUrl = String(mockFetch.mock.calls[1][0]);
+    expect(firstUrl).toContain("/api/userSessions/123");
+    expect(secondUrl).toContain("/api/stats/guild/456");
+  });
+
+  it("returns 403 when guilds fetch returns no matching guild", async () => {
+    const session = { user: { id: "123" } };
+
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ guilds: [{ id: "789" }] }), {
+        status: 200,
+      }),
+    );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("forwards error responses from internal API", async () => {
+    const session = { user: { id: "123" }, guilds: [{ id: "456" }] };
+
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ error: "not_found" }), { status: 404 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const req = new Request("http://localhost/api/stats/guild/456", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildGet(req as any, {
+      params: Promise.resolve({ guildId: "456" }),
+    });
+    expect(res.status).toBe(404);
+    const json = await res.json();
+    expect(json).toEqual({ error: "not_found" });
   });
 });
 
