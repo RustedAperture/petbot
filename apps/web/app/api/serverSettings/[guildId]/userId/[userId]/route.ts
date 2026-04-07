@@ -62,7 +62,9 @@ export async function PATCH(
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return apiError(400, "invalid_payload");
+      return apiError(400, "invalid_payload", {
+        reason: "body_must_be_object",
+      });
     }
 
     return proxyRequest(
