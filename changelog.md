@@ -1,3 +1,51 @@
+## v8.6.0 - Apr 07, 2026
+
+### What You'll Notice
+
+- New server settings page in the web dashboard for managing bot configuration
+- Server settings can now be updated directly from the dashboard
+- Improved error messages and validation on the admin settings form
+- User stats selector uses a cleaner dropdown format
+- Security improvements to the website and API
+
+### Under the Hood
+
+**HTTP Server Migration**
+
+- Migrated the HTTP API from raw Node.js http to Express 5
+- All API routes converted to Express with RESTful URL patterns
+- Added Helmet middleware for secure HTTP headers
+- Disabled X-Powered-By header to reduce server fingerprinting
+- Sensitive error details hidden in production 500 responses
+
+**Refactoring**
+
+- Created shared utility modules for authentication, proxy requests, error handling, and URL building
+- Refactored guilds, stats, auth, opt-out, and server settings routes to use shared helpers, eliminating significant code duplication
+- Improved TypeScript type safety across response types and hooks
+- Enhanced useGuildSettings and useServerSettings hooks with better error handling, cache management, and explicit field clearing
+
+**Testing**
+
+- Set up Vitest and happy-dom testing infrastructure in apps/web
+- Consolidated all frontend tests into apps/web/tests/ mirroring the source directory
+- Added tests for guilds, stats, user routes, server settings API, bot data functions, and UI components
+- Updated test mocks for SWR, session hooks, and sidebar state for more reliable runs
+
+**Developer Experience**
+
+- Pre-commit hook now auto-fixes linting issues and re-checks before committing
+- Upgraded to Vite 8.0.7 with native tsconfigPaths support
+- Removed unused dependencies and eliminated frontend-only packages from root to fix npm hoisting issues
+
+**Dependencies**
+
+- Upgraded express to v5.2.1
+- Upgraded helmet to v8.1.0
+- Upgraded vite to v8.0.7
+- Upgraded vitest to v4.1.3
+- Various dependency updates across root and web packages
+
 ## v8.5.0 - Mar 17, 2026
 
 ### Enhancements
