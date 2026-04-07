@@ -165,4 +165,30 @@ describe("/api/serverSettings/:guildId/userId/:userId – auth and membership gu
       reason: "body_must_be_object",
     });
   });
+
+  it("GET returns 400 when guildId is missing", async () => {
+    const cookie = sessionCookie({ user: { id: "111" } });
+    const req = makeGetRequest("", "111", cookie);
+    const res = await GET(
+      req as any,
+      { params: { guildId: "", userId: "111" } } as any,
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "missing parameter: guildId or userId",
+    });
+  });
+
+  it("PATCH returns 400 when guildId is missing", async () => {
+    const cookie = sessionCookie({ user: { id: "111" } });
+    const req = makePatchRequest("", "111", { foo: "bar" }, cookie);
+    const res = await PATCH(
+      req as any,
+      { params: { guildId: "", userId: "111" } } as any,
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: "missing parameter: guildId or userId",
+    });
+  });
 });
