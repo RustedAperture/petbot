@@ -2,8 +2,6 @@ import crypto from "node:crypto";
 
 export const SESSION_COOKIE_NAME = "petbot_session";
 const SESSION_COOKIE_VERSION = "v1";
-const DEV_SESSION_COOKIE_SECRET = "petbot-dev-session-secret";
-
 export function readCookie(req: Request) {
   const cookieHeader = req.headers.get("cookie") || "";
   const cookies = Object.fromEntries(
@@ -16,11 +14,7 @@ export function readCookie(req: Request) {
 }
 
 function getSessionCookieSecret(): string | null {
-  const secret = process.env.SESSION_COOKIE_SECRET || process.env.INTERNAL_API_SECRET;
-  if (secret) {
-    return secret;
-  }
-  return process.env.NODE_ENV === "production" ? null : DEV_SESSION_COOKIE_SECRET;
+  return process.env.SESSION_COOKIE_SECRET || process.env.INTERNAL_API_SECRET || null;
 }
 
 function signSessionPayload(payload: string, secret: string): string {
