@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@v5.0.3
         with:
           path: apps/web/.next
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json', 'apps/web/package-lock.json', 'apps/web/package.json') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json', 'apps/web/package.json') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-
 
