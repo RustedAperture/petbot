@@ -43,13 +43,13 @@ WORKDIR /app
 
 RUN npm install -g npm@11.16.0
 
-# Install only web dependencies (cached). This keeps web build isolated.
+# Install dependencies via root lockfile (single source of truth for workspaces).
 COPY apps/web/package*.json ./apps/web/
 
 # Make root package.json available to the web build (some client code imports it)
 COPY package*.json ./
 
-RUN --mount=type=cache,target=/root/.npm npm --prefix apps/web ci --no-audit --no-fund --ignore-scripts
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund --ignore-scripts
 
 # Copy web sources and the shared constants the web app imports, then build
 COPY apps/web ./apps/web
