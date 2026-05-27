@@ -10,7 +10,6 @@ function sessionCookie(session: any) {
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  delete (process.env as any).INTERNAL_API_SECRET;
 });
 
 describe("/api/guildChannels proxy", () => {
@@ -113,6 +112,7 @@ describe("/api/guildChannels proxy", () => {
 
   it("GET by path strips details from 500 proxied responses in production", async () => {
     const originalEnv = process.env.NODE_ENV;
+    const originalSecret = process.env.INTERNAL_API_SECRET;
     process.env.NODE_ENV = "production";
     process.env.INTERNAL_API_SECRET = "super-secret";
 
@@ -145,7 +145,7 @@ describe("/api/guildChannels proxy", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
       process.env.NODE_ENV = originalEnv;
-      delete process.env.INTERNAL_API_SECRET;
+      process.env.INTERNAL_API_SECRET = originalSecret;
     }
   });
 });

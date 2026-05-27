@@ -21,7 +21,8 @@ export PATH="/opt/homebrew/bin:$PATH"
 npm run lint -- --fix
 
 # re-stage only files that were staged before lint (preserve original staged set)
-STAGED_FILES=$(git diff --name-only --cached)
+# Re-stage only files that still exist (handle deletions gracefully)
+STAGED_FILES=$(git diff --name-only --cached --diff-filter=ACM)
 if [ -n "$STAGED_FILES" ]; then
   echo "$STAGED_FILES" | xargs git add
 fi

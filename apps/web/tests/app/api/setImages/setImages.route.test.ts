@@ -51,7 +51,6 @@ function makeRequest(
 
 beforeEach(() => {
   vi.restoreAllMocks();
-  delete (process.env as any).INTERNAL_API_SECRET;
 });
 
 beforeAll(async () => {
@@ -258,20 +257,25 @@ describe("/api/setImages proxy – forwarding", () => {
   });
 
   it("POST attaches x-internal-api-key header when INTERNAL_API_SECRET is set", async () => {
+    const origSecret = process.env.INTERNAL_API_SECRET;
     process.env.INTERNAL_API_SECRET = "super-secret";
     const signedCookie = sessionCookie({ user: { id: "123456789" } });
 
-    const mockFetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ ok: true }), { status: 200 }),
-      );
-    (global as any).fetch = mockFetch;
+    try {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ ok: true }), { status: 200 }),
+        );
+      (global as any).fetch = mockFetch;
 
-    await POST(makeRequest({ cookie: signedCookie }) as any);
+      await POST(makeRequest({ cookie: signedCookie }) as any);
 
-    const calledHeaders = mockFetch.mock.calls[0][1].headers;
-    expect(calledHeaders["x-internal-api-key"]).toBe("super-secret");
+      const calledHeaders = mockFetch.mock.calls[0][1].headers;
+      expect(calledHeaders["x-internal-api-key"]).toBe("super-secret");
+    } finally {
+      process.env.INTERNAL_API_SECRET = origSecret;
+    }
   });
 
   it("POST proxies a non-JSON text response from internal API", async () => {
