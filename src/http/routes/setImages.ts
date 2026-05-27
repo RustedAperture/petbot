@@ -4,6 +4,7 @@ import { actionData } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 import logger from "../../logger.js";
+import { checkImage } from "../../utilities/check_image.js";
 
 const MAX_URL_LENGTH = 2048;
 const ALLOWED_SCHEMES = /^https?:\/\//i;
@@ -52,6 +53,12 @@ export default async function setImagesHandler(
       (images as string[]).map((url) => url.trim()).filter((url) => url !== ""),
     ),
   ];
+  const imageChecks = await Promise.all(imagesArray.map((url) => checkImage(url)));
+  if (imageChecks.some((isValid) => !isValid)) {
+    res.status(400).json({ error: "invalid_images" });
+    return;
+  }
+
   const isEverywhere = Boolean(everywhere);
 
   try {

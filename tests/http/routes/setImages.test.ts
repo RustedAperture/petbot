@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
-const { selectMock, updateMock, insertMock } = vi.hoisted(() => ({
+const { selectMock, updateMock, insertMock, checkImageMock } = vi.hoisted(() => ({
   selectMock: vi.fn(),
   updateMock: vi.fn(),
   insertMock: vi.fn(),
+  checkImageMock: vi.fn(),
 }));
 
 vi.mock("../../../src/db/connector.js", () => ({
@@ -26,6 +27,9 @@ vi.mock("../../../src/db/schema.js", () => ({
 vi.mock("../../../src/logger.js", () => ({
   default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
+vi.mock("../../../src/utilities/check_image.js", () => ({
+  checkImage: checkImageMock,
+}));
 
 import { createApp } from "../../../src/http/expressServer.js";
 
@@ -41,6 +45,7 @@ describe("POST /api/setImages", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    checkImageMock.mockResolvedValue(true);
     delete process.env.INTERNAL_API_SECRET;
     app = createApp();
   });
@@ -107,6 +112,20 @@ describe("POST /api/setImages", () => {
         .expect(400);
 
       expect(res.body).toEqual({ error: "invalid_guildId" });
+    });
+
+    it("rejects image URLs that fail image validation", async () => {
+      checkImageMock.mockResolvedValue(false);
+
+      const res = await supertest(app)
+        .post("/api/setImages")
+        .send(validBody)
+        .expect(400);
+
+      expect(res.body).toEqual({ error: "invalid_images" });
+      expect(selectMock).not.toHaveBeenCalled();
+      expect(updateMock).not.toHaveBeenCalled();
+      expect(insertMock).not.toHaveBeenCalled();
     });
   });
 

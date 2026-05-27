@@ -3,10 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { GET as guildsGet } from "@/app/api/guilds/route";
 import { GET as guildsUserGet } from "@/app/api/guilds/user/[userId]/route";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 // Helper to build a fake session cookie value
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 beforeEach(() => {

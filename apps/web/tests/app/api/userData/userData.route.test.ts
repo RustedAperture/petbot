@@ -2,9 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { DELETE } from "@/app/api/userData/[userId]/route";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 beforeEach(() => {

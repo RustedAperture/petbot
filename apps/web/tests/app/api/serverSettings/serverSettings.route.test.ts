@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 function makeGetRequest(guildId: string, userId: string, cookie?: string) {

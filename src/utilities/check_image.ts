@@ -127,9 +127,7 @@ export async function checkImage(urlStr: string) {
       method: "HEAD",
       redirect: "manual",
       signal: controller.signal,
-    } as any);
-
-    clearTimeout(timeout);
+    } as any).finally(() => clearTimeout(timeout));
 
     // if redirect -> disallow
     if (res.status >= 300 && res.status < 400) {

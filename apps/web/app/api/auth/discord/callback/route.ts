@@ -2,15 +2,12 @@ import { NextResponse } from "next/server";
 import {
   getInternalApiBase,
   internalApiHeadersOptional,
+  createSessionCookieValue,
   SESSION_COOKIE_NAME,
 } from "../../../../../lib/internal-api";
 import crypto from "node:crypto";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
-
-function makeCookieValue(obj: unknown) {
-  return encodeURIComponent(JSON.stringify(obj));
-}
 
 function makeCookieHeader(value: string) {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
@@ -183,7 +180,7 @@ export async function GET(req: Request) {
     console.warn("error while persisting user guilds", err);
   }
 
-  const cookieVal = makeCookieValue(session);
+  const cookieVal = encodeURIComponent(createSessionCookieValue(session));
   const sessionCookieHeader = makeCookieHeader(cookieVal);
 
   const redirect = NextResponse.redirect(new URL("/", siteUrl));

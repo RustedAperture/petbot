@@ -1,9 +1,11 @@
 import { describe, it, expect, afterEach } from "vitest";
 import {
   SESSION_COOKIE_NAME,
+  createSessionCookieValue,
   internalApiHeaders,
   internalApiHeadersOptional,
   getInternalApiBase,
+  parseSessionCookieValue,
 } from "@/lib/internal-api";
 
 describe("SESSION_COOKIE_NAME", () => {
@@ -33,6 +35,48 @@ describe("internalApiHeaders", () => {
   });
 });
 
+describe("signed session cookies", () => {
+  const originalEnv = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  it("round-trips signed session values", () => {
+    process.env.SESSION_COOKIE_SECRET = "session-secret";
+    const session = { user: { id: "123456789" } };
+
+    const cookieValue = createSessionCookieValue(session);
+
+    expect(parseSessionCookieValue(cookieValue)).toEqual(session);
+  });
+
+  it("rejects tampered signed session values", () => {
+    process.env.SESSION_COOKIE_SECRET = "session-secret";
+    const cookieValue = createSessionCookieValue({ user: { id: "123456789" } });
+    const [version, payload, signature] = cookieValue.split(".");
+    const parsedPayload = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
+    parsedPayload.user.id = "987654321";
+    const tamperedPayload = Buffer.from(
+      JSON.stringify(parsedPayload),
+      "utf8",
+    ).toString("base64url");
+    const tampered = `${version}.${tamperedPayload}.${signature}`;
+
+    expect(parseSessionCookieValue(tampered)).toBeNull();
+  });
+
+  it("rejects unsigned JSON session values", () => {
+    process.env.SESSION_COOKIE_SECRET = "session-secret";
+
+    expect(
+      parseSessionCookieValue(JSON.stringify({ user: { id: "123456789" } })),
+    ).toBeNull();
+  });
+});
+
 describe("internalApiHeadersOptional", () => {
   const originalSecret = process.env.INTERNAL_API_SECRET;
 
@@ -48,8 +92,18 @@ describe("internalApiHeadersOptional", () => {
 
   it("returns empty object when secret is not set", () => {
     delete process.env.INTERNAL_API_SECRET;
+    process.env.NODE_ENV = "test";
     const headers = internalApiHeadersOptional();
     expect(headers).toEqual({});
+  });
+
+  it("throws in production when secret is not set", () => {
+    delete process.env.INTERNAL_API_SECRET;
+    process.env.NODE_ENV = "production";
+
+    expect(() => internalApiHeadersOptional()).toThrow(
+      "INTERNAL_API_SECRET is not set",
+    );
   });
 });
 

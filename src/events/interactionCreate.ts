@@ -5,6 +5,7 @@ import {
   type ButtonInteraction,
   type Client,
 } from "discord.js";
+import logger from "../logger.js";
 
 interface Executable {
   name: string;
@@ -65,8 +66,9 @@ const interactionCreate = {
       }
 
       if (!command) {
-        console.error(
-          `No command matching ${interaction.commandName} was found.`,
+        logger.error(
+          { commandName: interaction.commandName },
+          "No command matching interaction was found.",
         );
         return;
       }
@@ -74,7 +76,7 @@ const interactionCreate = {
       try {
         await command.execute(interaction);
       } catch (error) {
-        console.error(error);
+        logger.error({ error, commandName: interaction.commandName }, "Command failed");
         if (!interaction.replied && !interaction.deferred) {
           try {
             await interaction.reply({
@@ -82,7 +84,7 @@ const interactionCreate = {
               flags: MessageFlags.Ephemeral,
             });
           } catch (replyError) {
-            console.error("Failed to send error reply:", replyError);
+            logger.error({ error: replyError }, "Failed to send error reply");
           }
         } else if (interaction.deferred) {
           try {
@@ -90,7 +92,7 @@ const interactionCreate = {
               content: "There was an error while executing this command!",
             });
           } catch (editError) {
-            console.error("Failed to edit error reply:", editError);
+            logger.error({ error: editError }, "Failed to edit error reply");
           }
         }
       }
@@ -105,7 +107,10 @@ const interactionCreate = {
         try {
           await handler.execute(buttonInteraction);
         } catch (err) {
-          console.error(err);
+          logger.error(
+            { error: err, customId: buttonInteraction.customId },
+            "Button handler failed",
+          );
           if (!buttonInteraction.replied && !buttonInteraction.deferred) {
             await buttonInteraction.reply({
               content: "There was an error while handling this button.",
@@ -129,7 +134,10 @@ const interactionCreate = {
         try {
           await handler.execute(modal);
         } catch (err) {
-          console.error(err);
+          logger.error(
+            { error: err, customId: modal.customId },
+            "Modal handler failed",
+          );
           if (!modal.replied && !modal.deferred) {
             await modal.reply({
               content: "There was an error while handling this modal.",

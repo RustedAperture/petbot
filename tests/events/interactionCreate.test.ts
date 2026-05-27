@@ -1,9 +1,13 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
+vi.mock("../../src/logger.js", () => ({
+  default: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
 
 import interactionCreate from "../../src/events/interactionCreate.js";
 import { resetAction } from "../../src/utilities/resetAction.js";
+import logger from "../../src/logger.js";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -118,8 +122,6 @@ describe("interactionCreate", () => {
   });
 
   it("returns early when command not found", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
     const client: any = { slashCommands: new Map() };
     const interaction: any = {
       client,
@@ -131,6 +133,6 @@ describe("interactionCreate", () => {
 
     await interactionCreate.execute(interaction);
 
-    expect(console.error).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
   });
 });

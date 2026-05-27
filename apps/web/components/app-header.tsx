@@ -10,7 +10,7 @@ import { STATS_MENU } from "@/types/menu-config";
 import GuildSelect from "@/components/guild-select";
 import UserStatsSelector from "@/components/user-stats-selector";
 import { useSession } from "@/hooks/use-session";
-import { Github } from "lucide-react";
+import { GitFork } from "lucide-react";
 import Link from "next/link";
 
 export function computeTitle(pathname: string, activeTitle?: string) {
@@ -130,7 +130,7 @@ export function AppHeader() {
               rel="noopener noreferrer"
               className="dark:text-foreground"
             >
-              <Github /> GitHub
+              <GitFork /> GitHub
             </Link>
           }
         />

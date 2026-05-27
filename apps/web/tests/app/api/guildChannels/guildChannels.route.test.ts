@@ -2,9 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getByQuery } from "@/app/api/guildChannels/route";
 import { GET as getByPath } from "@/app/api/guildChannels/[guildId]/user/[userId]/route";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 beforeEach(() => {
@@ -113,6 +114,7 @@ describe("/api/guildChannels proxy", () => {
   it("GET by path strips details from 500 proxied responses in production", async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
+    process.env.INTERNAL_API_SECRET = "super-secret";
 
     try {
       const cookie = sessionCookie({ user: { id: "123" } });
@@ -143,6 +145,7 @@ describe("/api/guildChannels proxy", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
       process.env.NODE_ENV = originalEnv;
+      delete process.env.INTERNAL_API_SECRET;
     }
   });
 });

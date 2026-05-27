@@ -5,6 +5,39 @@ import { ACTIONS } from "../../types/constants.js";
 import { sql, eq, and } from "drizzle-orm";
 import logger from "../../logger.js";
 
+type ActionAggregate = {
+  actionType: string;
+  totalHasPerformed: unknown;
+  totalUsers: unknown;
+};
+
+async function getActionAggregates(
+  whereClauses: unknown[] = [],
+): Promise<Record<string, { totalHasPerformed: number; totalUsers: number }>> {
+  let query: any = drizzleDb
+    .select({
+      actionType: actionData.actionType,
+      totalHasPerformed: sql`SUM(${actionData.hasPerformed})`,
+      totalUsers: sql`COUNT(DISTINCT CASE WHEN ${actionData.hasPerformed} > 0 THEN ${actionData.userId} END)`,
+    })
+    .from(actionData);
+
+  if (whereClauses.length > 0) {
+    query = query.where(and(...(whereClauses as any[])));
+  }
+
+  const rows: ActionAggregate[] = await query.groupBy(actionData.actionType);
+  return rows.reduce<
+    Record<string, { totalHasPerformed: number; totalUsers: number }>
+  >((acc, row) => {
+    acc[row.actionType] = {
+      totalHasPerformed: Number(row.totalHasPerformed ?? 0),
+      totalUsers: Number(row.totalUsers ?? 0),
+    };
+    return acc;
+  }, {});
+}
+
 /**
  * GET /api/stats — aggregate action statistics.
  *
@@ -54,40 +87,14 @@ export default async function statsHandler(
 
     if (userId || guildId) {
       // Filtered response (user or guild specific)
-      const sums: number[] = await Promise.all(
-        actionKinds.map(async (k) => {
-          const whereClauses: any[] = [eq(actionData.actionType, k)];
-          if (effectiveUserId) {
-            whereClauses.push(eq(actionData.userId, effectiveUserId));
-          }
-          if (guildId) {
-            whereClauses.push(eq(actionData.locationId, guildId));
-          }
-          const r: any = await drizzleDb
-            .select({ s: sql`SUM(${actionData.hasPerformed})` })
-            .from(actionData)
-            .where(and(...whereClauses));
-          return Number(r?.[0]?.s ?? 0);
-        }),
-      );
-
-      const users: number[] = await Promise.all(
-        actionKinds.map(async (k) => {
-          const whereClauses: any[] = [eq(actionData.actionType, k)];
-          if (effectiveUserId) {
-            whereClauses.push(eq(actionData.userId, effectiveUserId));
-          }
-          if (guildId) {
-            whereClauses.push(eq(actionData.locationId, guildId));
-          }
-          whereClauses.push(sql`${actionData.hasPerformed} > 0`);
-          const r: any = await drizzleDb
-            .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
-            .from(actionData)
-            .where(and(...whereClauses));
-          return Number(r?.[0]?.cnt ?? 0);
-        }),
-      );
+      const whereClauses: any[] = [];
+      if (effectiveUserId) {
+        whereClauses.push(eq(actionData.userId, effectiveUserId));
+      }
+      if (guildId) {
+        whereClauses.push(eq(actionData.locationId, guildId));
+      }
+      const aggregatesByAction = await getActionAggregates(whereClauses);
 
       const totalsByAction: Record<
         string,
@@ -131,17 +138,21 @@ export default async function statsHandler(
         }
       }
 
-      actionKinds.forEach((k, i) => {
+      actionKinds.forEach((k) => {
+        const aggregate = aggregatesByAction[k] ?? {
+          totalHasPerformed: 0,
+          totalUsers: 0,
+        };
         totalsByAction[k] = {
-          totalHasPerformed: Number(sums[i]) || 0,
-          totalUsers: Number(users[i]) || 0,
+          totalHasPerformed: aggregate.totalHasPerformed,
+          totalUsers: aggregate.totalUsers,
           imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
           ...(imagesByAction[k] ? { images: imagesByAction[k] } : {}),
         };
       });
 
-      const totalActionsPerformed = sums.reduce(
-        (acc, v) => acc + (Number(v) || 0),
+      const totalActionsPerformed = actionKinds.reduce(
+        (acc, k) => acc + (aggregatesByAction[k]?.totalHasPerformed ?? 0),
         0,
       );
 
@@ -221,30 +232,7 @@ export default async function statsHandler(
     }
 
     // Unfiltered (global) response — existing behavior
-    const sums: number[] = await Promise.all(
-      actionKinds.map(async (k) => {
-        const r: any = await drizzleDb
-          .select({ s: sql`SUM(${actionData.hasPerformed})` })
-          .from(actionData)
-          .where(eq(actionData.actionType, k));
-        return Number(r?.[0]?.s ?? 0);
-      }),
-    );
-
-    const users: number[] = await Promise.all(
-      actionKinds.map(async (k) => {
-        const r: any = await drizzleDb
-          .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
-          .from(actionData)
-          .where(
-            and(
-              eq(actionData.actionType, k),
-              sql`${actionData.hasPerformed} > 0`,
-            ),
-          );
-        return Number(r?.[0]?.cnt ?? 0);
-      }),
-    );
+    const aggregatesByAction = await getActionAggregates();
 
     const rl: any = await drizzleDb
       .select({ cnt: sql`COUNT(DISTINCT ${actionData.locationId})` })
@@ -272,17 +260,21 @@ export default async function statsHandler(
       }
     > = {};
 
-    actionKinds.forEach((k, i) => {
+    actionKinds.forEach((k) => {
+      const aggregate = aggregatesByAction[k] ?? {
+        totalHasPerformed: 0,
+        totalUsers: 0,
+      };
       totalsByAction[k] = {
-        totalHasPerformed: Number(sums[i]) || 0,
-        totalUsers: Number(users[i]) || 0,
+        totalHasPerformed: aggregate.totalHasPerformed,
+        totalUsers: aggregate.totalUsers,
         imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
       };
     });
 
     // total actions performed across all action kinds (sum of per-action `has_performed`)
-    const totalActionsPerformed = sums.reduce(
-      (acc, v) => acc + (Number(v) || 0),
+    const totalActionsPerformed = actionKinds.reduce(
+      (acc, k) => acc + (aggregatesByAction[k]?.totalHasPerformed ?? 0),
       0,
     );
 

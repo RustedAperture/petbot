@@ -6,10 +6,11 @@ import { GET as guildGet } from "@/app/api/stats/guild/[guildId]/route";
 import { GET as userGet } from "@/app/api/stats/user/[userId]/route";
 import { GET as userGuildGet } from "@/app/api/stats/user/[userId]/guild/[guildId]/route";
 import { GET as userLocationGet } from "@/app/api/stats/user/[userId]/location/[locationId]/route";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 // Helper to build a fake session cookie value
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 beforeEach(() => {

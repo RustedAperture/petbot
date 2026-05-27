@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock internal-api module
 vi.mock("@/lib/internal-api", () => ({
   readCookie: vi.fn(),
+  parseSessionCookieValue: vi.fn(),
   getInternalApiBase: vi.fn(() => "http://127.0.0.1:3001"),
   internalApiHeadersOptional: vi.fn(() => ({
     "x-internal-api-key": "test-key",
   })),
 }));
 
-import { readCookie } from "@/lib/internal-api";
+import { parseSessionCookieValue, readCookie } from "@/lib/internal-api";
 import {
   requireSession,
   assertSelf,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/auth";
 
 const mockReadCookie = vi.mocked(readCookie);
+const mockParseSessionCookieValue = vi.mocked(parseSessionCookieValue);
 
 function makeRequest(): Request {
   return new Request("http://localhost/api/test");
@@ -29,6 +31,7 @@ function sessionCookie(session: object): string {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mockParseSessionCookieValue.mockImplementation((raw) => JSON.parse(raw));
 });
 
 describe("requireSession", () => {
@@ -46,6 +49,7 @@ describe("requireSession", () => {
   it("throws 401 when session JSON is invalid", () => {
     expect.assertions(2);
     mockReadCookie.mockReturnValue("not-json");
+    mockParseSessionCookieValue.mockImplementation(() => null);
     try {
       requireSession(makeRequest());
     } catch (res) {
@@ -81,6 +85,19 @@ describe("requireSession", () => {
     mockReadCookie.mockReturnValue(sessionCookie(session));
     const result = requireSession(makeRequest());
     expect(result.user?.id).toBe("123456789");
+  });
+
+  it("throws 401 when the cookie signature is invalid", () => {
+    expect.assertions(2);
+    mockReadCookie.mockReturnValue("tampered-cookie");
+    mockParseSessionCookieValue.mockReturnValue(null);
+
+    try {
+      requireSession(makeRequest());
+    } catch (res) {
+      expect(res).toBeInstanceOf(Response);
+      expect((res as Response).status).toBe(401);
+    }
   });
 });
 

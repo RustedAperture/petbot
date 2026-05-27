@@ -57,18 +57,14 @@ describe("/api/stats handler - DM location presence behavior", () => {
     // the handler for a user+location filtered request.
     const seq: any[] = [
       [{ c: 1 }], // presence check
-      [{ s: 10 }], // pet sum
-      [{ s: 20 }], // bite sum
-      [{ s: 30 }], // hug sum
-      [{ s: 40 }], // bonk sum
-      [{ s: 50 }], // squish sum
-      [{ s: 0 }], // explode sum
-      [{ cnt: 1 }], // pet distinct users
-      [{ cnt: 1 }], // bite
-      [{ cnt: 1 }], // hug
-      [{ cnt: 1 }], // bonk
-      [{ cnt: 1 }], // squish
-      [{ cnt: 0 }], // explode
+      [
+        { actionType: "pet", totalHasPerformed: 10, totalUsers: 1 },
+        { actionType: "bite", totalHasPerformed: 20, totalUsers: 1 },
+        { actionType: "hug", totalHasPerformed: 30, totalUsers: 1 },
+        { actionType: "bonk", totalHasPerformed: 40, totalUsers: 1 },
+        { actionType: "squish", totalHasPerformed: 50, totalUsers: 1 },
+        { actionType: "explode", totalHasPerformed: 0, totalUsers: 0 },
+      ],
       // consolidated image query returns multiple rows at once
       [
         { actionType: "pet", images: ["u1"] },
@@ -84,7 +80,13 @@ describe("/api/stats handler - DM location presence behavior", () => {
 
     let call = 0;
     (selectMock as any).mockImplementation(() => ({
-      from: () => ({ where: () => Promise.resolve(seq[call++] || [{ c: 0 }]) }),
+      from: () => ({
+        where: () => ({
+          groupBy: () => Promise.resolve(seq[call++] || []),
+          then: (resolve: any) => resolve(seq[call++] || [{ c: 0 }]),
+        }),
+        groupBy: () => Promise.resolve(seq[call++] || []),
+      }),
     }));
 
     const req: any = {

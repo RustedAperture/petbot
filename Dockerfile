@@ -8,6 +8,8 @@ WORKDIR /app
 ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
 ENV PATH=/home/node/.npm-global/bin:${PATH}
 
+RUN mkdir -p /home/node/.npm-global && npm install -g npm@11.16.0
+
 # Copy package manifests early so dependency layers are cached separately.
 COPY package*.json ./
 COPY apps/web/package*.json apps/web/
@@ -38,6 +40,8 @@ RUN ./node_modules/.bin/tsc && npm prune --production
 # `bot` builds are not affected by the expensive frontend build.
 FROM node:24-bullseye-slim AS web-builder
 WORKDIR /app
+
+RUN npm install -g npm@11.16.0
 
 # Install only web dependencies (cached). This keeps web build isolated.
 COPY apps/web/package*.json ./apps/web/

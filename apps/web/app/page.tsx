@@ -5,7 +5,7 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/hooks/use-session";
 import Link from "next/link";
-import { Coffee, Palette, Github } from "lucide-react";
+import { Coffee, GitFork, Palette } from "lucide-react";
 
 export default function Home() {
   const { session, loading } = useSession();
@@ -84,7 +84,7 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github />
+                  <GitFork />
                   GitHub
                 </Link>
               }

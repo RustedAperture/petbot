@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET, POST, DELETE } from "@/app/api/optout/route";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 beforeEach(() => vi.restoreAllMocks());
@@ -89,10 +90,9 @@ describe("/api/optout proxy", () => {
       );
     (global as any).fetch = mockFetch;
 
-    // value includes '=' inside JSON string
-    const sessionStr = '{"user":{"id":"999"},"foo":"a=b"}';
+    const session = sessionCookie({ user: { id: "999" }, foo: "a=b" });
     const req = new Request("http://localhost/api/optout", {
-      headers: { cookie: `petbot_session=${sessionStr}` },
+      headers: { cookie: `other=a=b; ${session}` },
     });
 
     const res = await GET(req as any);

@@ -18,6 +18,7 @@
     "target": "ES2022",
     "lib": ["ES2022"],
     "moduleResolution": "NodeNext",
+    "ignoreDeprecations": "6.0",
 
     // Typechecking
     "strict": true,

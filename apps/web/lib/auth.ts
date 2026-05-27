@@ -2,6 +2,7 @@ import {
   readCookie,
   getInternalApiBase,
   internalApiHeadersOptional,
+  parseSessionCookieValue,
 } from "./internal-api";
 import { apiError } from "./errors";
 
@@ -21,7 +22,7 @@ export function requireSession(req: Request): Session {
     throw apiError(401, "unauthorized");
   }
   try {
-    const session = JSON.parse(raw) as Session;
+    const session = parseSessionCookieValue(raw) as Session | null;
     if (!session?.user?.id || !/^\d+$/.test(session.user.id)) {
       throw apiError(401, "unauthorized");
     }

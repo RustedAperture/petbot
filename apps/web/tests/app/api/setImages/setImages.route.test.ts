@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createSessionCookieValue } from "@/lib/internal-api";
 
 // Mock the package alias used by the route so tests running under Node
 // (without Vite path resolution) don't fail to resolve the module.
@@ -17,7 +18,7 @@ vi.mock("@petbot/constants", () => ({
 let POST: typeof import("@/app/api/setImages/route").POST;
 
 function sessionCookie(session: any) {
-  return `petbot_session=${encodeURIComponent(JSON.stringify(session))}`;
+  return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
 }
 
 function validBody(overrides: Record<string, unknown> = {}) {
@@ -258,6 +259,7 @@ describe("/api/setImages proxy – forwarding", () => {
 
   it("POST attaches x-internal-api-key header when INTERNAL_API_SECRET is set", async () => {
     process.env.INTERNAL_API_SECRET = "super-secret";
+    const signedCookie = sessionCookie({ user: { id: "123456789" } });
 
     const mockFetch = vi
       .fn()
@@ -266,7 +268,7 @@ describe("/api/setImages proxy – forwarding", () => {
       );
     (global as any).fetch = mockFetch;
 
-    await POST(makeRequest({ cookie }) as any);
+    await POST(makeRequest({ cookie: signedCookie }) as any);
 
     const calledHeaders = mockFetch.mock.calls[0][1].headers;
     expect(calledHeaders["x-internal-api-key"]).toBe("super-secret");
