@@ -83,7 +83,6 @@ export function createApp(client?: Client<boolean>): express.Express {
     },
     statsHandler,
   );
-  app.get("/api/leaderboard", leaderboardHandler);
   app.get("/api/guilds", guildsHandler);
   app.get("/api/guilds/user/:userId", guildsHandler);
   app.use("/api/userSessions", userSessionsRouter);
@@ -100,6 +99,7 @@ export function createApp(client?: Client<boolean>): express.Express {
       "/api/guildChannels/:guildId/user/:userId",
       guildChannelsHandler(client),
     );
+    app.get("/api/leaderboard", leaderboardHandler(client));
   }
 
   // --- 404 fallback for unmatched /api/* ---

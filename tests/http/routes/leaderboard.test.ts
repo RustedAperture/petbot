@@ -9,6 +9,8 @@ vi.mock("../../../src/logger.js", () => ({ default: { error: vi.fn() } }));
 import leaderboardHandler from "../../../src/http/routes/leaderboard.js";
 import { getLeaderboard } from "../../../src/utilities/leaderboard.js";
 
+const mockClient = {} as any;
+
 function makeRes() {
   const res: any = {};
   res._status = 200;
@@ -30,28 +32,20 @@ describe("GET /api/leaderboard", () => {
   });
 
   it("returns 400 when locationId is missing", async () => {
+    const handler = leaderboardHandler(mockClient);
     const req = { query: {} } as any;
     const res = makeRes();
-    await leaderboardHandler(req, res);
+    await handler(req, res);
     expect(res._status).toBe(400);
     expect(res._body.error).toBe("missing_locationId");
   });
 
   it("returns 400 for invalid actionType", async () => {
+    const handler = leaderboardHandler(mockClient);
     const req = { query: { locationId: "g1", actionType: "invalid" } } as any;
     const res = makeRes();
-    await leaderboardHandler(req, res);
+    await handler(req, res);
     expect(res._status).toBe(400);
-  });
-
-  it("returns 503 when client is missing", async () => {
-    const req = {
-      query: { locationId: "g1" },
-      app: { locals: {} },
-    } as any;
-    const res = makeRes();
-    await leaderboardHandler(req, res);
-    expect(res._status).toBe(503);
   });
 
   it("returns leaderboard data on success", async () => {
@@ -69,12 +63,12 @@ describe("GET /api/leaderboard", () => {
       ],
     });
 
+    const handler = leaderboardHandler(mockClient);
     const req = {
       query: { locationId: "g1" },
-      app: { locals: { client: {} } },
     } as any;
     const res = makeRes();
-    await leaderboardHandler(req, res);
+    await handler(req, res);
 
     expect(res._body.entries).toHaveLength(1);
     expect(res._body.entries[0].rank).toBe(1);
@@ -87,12 +81,12 @@ describe("GET /api/leaderboard", () => {
       entries: [],
     });
 
+    const handler = leaderboardHandler(mockClient);
     const req = {
       query: { locationId: "g1", limit: "100" },
-      app: { locals: { client: {} } },
     } as any;
     const res = makeRes();
-    await leaderboardHandler(req, res);
+    await handler(req, res);
 
     expect(getLeaderboard).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 25 }),
@@ -106,12 +100,12 @@ describe("GET /api/leaderboard", () => {
       entries: [],
     });
 
+    const handler = leaderboardHandler(mockClient);
     const req = {
       query: { locationId: "g1" },
-      app: { locals: { client: {} } },
     } as any;
     const res = makeRes();
-    await leaderboardHandler(req, res);
+    await handler(req, res);
 
     expect(getLeaderboard).toHaveBeenCalledWith(
       expect.objectContaining({ limit: 10 }),
