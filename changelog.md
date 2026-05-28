@@ -1,3 +1,10 @@
+## v8.6.3 - May 27, 2026
+
+### Fixes
+
+- Fixed sign-in not working after the session cookie security improvements.
+- Fixed some navigation links not being clickable.
+
 ## v8.6.2 - May 27, 2026
 
 ### Fixes

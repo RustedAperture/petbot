@@ -123,6 +123,7 @@ export function AppHeader() {
           variant="outline"
           size="sm"
           className="hidden sm:flex"
+          nativeButton={false}
           render={
             <Link
               href="https://github.com/RustedAperture/petbot"

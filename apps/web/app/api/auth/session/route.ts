@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   readCookie,
+  parseSessionCookieValue,
   getInternalApiBase,
   internalApiHeadersOptional,
 } from "../../../../lib/internal-api";
@@ -12,11 +13,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const session = JSON.parse(raw);
+    const session = parseSessionCookieValue(raw) as Record<string, unknown> | null;
+    if (!session) {
+      return NextResponse.json({ session: null });
+    }
 
     // Augment session with server‑persisted guilds (if any)
     try {
-      const userId = session?.user?.id;
+      const userId = (session as any)?.user?.id;
       if (userId) {
         const res = await fetch(
           `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
