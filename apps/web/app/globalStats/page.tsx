@@ -66,7 +66,7 @@ export default function GlobalStatsPage() {
           <Leaderboard
             locationId={null}
             actionType={hoveredAction}
-            className="w-72 flex-shrink-0 hidden lg:block"
+            className="w-80 flex-shrink-0 hidden lg:block"
           />
         </div>
       )}
