@@ -10,4 +10,5 @@ dist/
 app.json.log
 .DS_Store
 .next/
+.superpowers/
 docs/
