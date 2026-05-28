@@ -19,6 +19,7 @@ import guildsHandler from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
 import optOutRouter from "./routes/optOut.js";
+import leaderboardConsentRouter from "./routes/leaderboardConsent.js";
 import setImagesHandler from "./routes/setImages.js";
 import serverSettingsRouter from "./routes/serverSettings.js";
 import guildChannelsHandler from "./routes/guildChannels.js";
@@ -90,6 +91,7 @@ export function createApp(client?: Client<boolean>): express.Express {
 
   // --- Phase 2b: write/update endpoints ---
   app.use("/api/optOut", optOutRouter);
+  app.use("/api/leaderboardConsent", leaderboardConsentRouter);
   app.post("/api/setImages", setImagesHandler);
 
   // Routes that need the Discord client
