@@ -25,6 +25,8 @@ interface StatsCardProps {
   userImages?: string[];
   guildId?: string | null;
   hideUserCount?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export default function StatsCard({
@@ -37,6 +39,8 @@ export default function StatsCard({
   userImages,
   guildId,
   hideUserCount,
+  onMouseEnter,
+  onMouseLeave,
 }: StatsCardProps) {
   const displayName = actionName
     ? actionName[0].toUpperCase() + actionName.slice(1)
@@ -59,7 +63,11 @@ export default function StatsCard({
 
   return (
     <>
-      <Card className="py-0 dark:bg-linear-to-t from-primary/20 to-15%">
+      <Card
+        className="py-0 dark:bg-linear-to-t from-primary/20 to-15%"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         {displayImages.length > 0 ? (
           <Carousel
             setApi={setCarouselApi}
