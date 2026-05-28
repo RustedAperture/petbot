@@ -52,3 +52,10 @@ export const userSessions = sqliteTable("userSessions", {
   createdAt: numeric().notNull(),
   updatedAt: numeric().notNull(),
 });
+
+export const leaderboardConsent = sqliteTable("leaderboardConsent", {
+  hashedUserId: text("hashed_user_id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  createdAt: numeric().notNull(),
+  updatedAt: numeric().notNull(),
+});

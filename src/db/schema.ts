@@ -57,3 +57,10 @@ export const optOut = sqliteTable("optOut", {
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });
+
+export const leaderboardConsent = sqliteTable("leaderboardConsent", {
+  hashedUserId: text("hashed_user_id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  createdAt: text().notNull(),
+  updatedAt: text().notNull(),
+});
