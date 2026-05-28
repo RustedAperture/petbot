@@ -14,6 +14,7 @@ import readyHandler from "./routes/ready.js";
 
 // Migrated Express route handlers
 import statsHandler from "./routes/stats.js";
+import leaderboardHandler from "./routes/leaderboard.js";
 import guildsHandler from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
@@ -82,6 +83,7 @@ export function createApp(client?: Client<boolean>): express.Express {
     },
     statsHandler,
   );
+  app.get("/api/leaderboard", leaderboardHandler);
   app.get("/api/guilds", guildsHandler);
   app.get("/api/guilds/user/:userId", guildsHandler);
   app.use("/api/userSessions", userSessionsRouter);
