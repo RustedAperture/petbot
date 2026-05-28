@@ -56,11 +56,12 @@ export async function getLeaderboard(opts: {
     // bot may not be in this guild
   }
 
-  // Pre-fetch all guild members in a single API call to avoid N+1 serial fetches
+  // Fetch only the members we need for the leaderboard entries
   const displayNameByUserId = new Map<string, string | null>();
-  if (guild) {
+  if (guild && rows.length > 0) {
+    const userIds = rows.map((r) => r.userId);
     try {
-      const members = await guild.members.fetch();
+      const members = await guild.members.fetch({ user: userIds });
       for (const [userId, member] of members) {
         displayNameByUserId.set(
           userId,
