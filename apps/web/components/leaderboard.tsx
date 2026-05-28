@@ -96,7 +96,7 @@ export default function Leaderboard({
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                     responsiveClass(i),
-                    isCurrentUser && "bg-accent",
+                    isCurrentUser && "bg-amber-500/10",
                   )}
                 >
                   <span className="w-5 text-center">
@@ -115,7 +115,7 @@ export default function Leaderboard({
                   <span
                     className={cn(
                       "flex-1 truncate",
-                      isCurrentUser && "font-medium",
+                      isCurrentUser && "font-medium text-amber-500",
                     )}
                   >
                     {label}
