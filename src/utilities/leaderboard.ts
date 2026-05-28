@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import { Client, Guild } from "discord.js";
+import type { Client, Guild } from "discord.js";
 import { drizzleDb } from "../db/connector.js";
 import { actionData } from "../db/schema.js";
-import { eq, and, desc, sum } from "drizzle-orm";
+import { eq, and, desc, sum, type SQL } from "drizzle-orm";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -30,7 +30,7 @@ export async function getLeaderboard(opts: {
 }): Promise<LeaderboardResult> {
   const { locationId, actionType, limit = 10, discordClient } = opts;
 
-  const whereClauses = [];
+  const whereClauses: SQL[] = [];
   if (locationId) {
     whereClauses.push(eq(actionData.locationId, locationId));
   }
