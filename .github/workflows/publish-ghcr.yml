@@ -3,13 +3,13 @@ name: Publish Docker image
 on:
   push:
     branches: [main]
-    tags: ["v*.*.*"]
     paths:
       - "Dockerfile"
       - "src/**"
       - "apps/**"
       - "package.json"
       - "package-lock.json"
+    tags: ["v*.*.*"]
   workflow_dispatch:
 
 permissions:
