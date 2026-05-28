@@ -1,8 +1,8 @@
-import { createHash } from "node:crypto";
 import type { Client, Guild } from "discord.js";
 import { drizzleDb } from "../db/connector.js";
-import { actionData } from "../db/schema.js";
-import { eq, and, desc, sum, gt, type SQL } from "drizzle-orm";
+import { actionData, leaderboardConsent } from "../db/schema.js";
+import { eq, and, desc, sum, gt, inArray, type SQL } from "drizzle-orm";
+import { hashUserId } from "./crypto.js";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -16,10 +16,6 @@ export interface LeaderboardResult {
   locationId: string | null;
   actionType: string | null;
   entries: LeaderboardEntry[];
-}
-
-function hashUserId(userId: string): string {
-  return createHash("sha256").update(userId).digest("hex").slice(0, 4);
 }
 
 export async function getLeaderboard(opts: {
@@ -78,15 +74,35 @@ export async function getLeaderboard(opts: {
     }
   }
 
+  // Look up consent records for all hashed user IDs
+  const consentDisplayNames = new Map<string, string>();
+  try {
+    const hashedIds = rows.map((r) => hashUserId(r.userId));
+    const consentRows = await drizzleDb
+      .select({
+        hashedUserId: leaderboardConsent.hashedUserId,
+        displayName: leaderboardConsent.displayName,
+      })
+      .from(leaderboardConsent)
+      .where(inArray(leaderboardConsent.hashedUserId, hashedIds));
+    for (const row of consentRows) {
+      consentDisplayNames.set(row.hashedUserId, row.displayName);
+    }
+  } catch {
+    // failed to fetch consent, proceed without display names
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const displayName = displayNameByUserId.get(row.userId) ?? null;
+    const hashed = hashUserId(row.userId);
+    const consentName = consentDisplayNames.get(hashed) ?? null;
+    const displayName = consentName ?? displayNameByUserId.get(row.userId) ?? null;
 
     entries.push({
       rank: i + 1,
       userId: row.userId,
       displayName,
-      anonymousLabel: hashUserId(row.userId),
+      anonymousLabel: hashed,
       totalActions: row.totalActions ?? 0,
     });
   }
