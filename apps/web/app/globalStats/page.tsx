@@ -9,6 +9,7 @@ import Leaderboard from "@/components/leaderboard";
 
 export default function GlobalStatsPage() {
   const { data, isLoading, error, refresh } = useGlobalStats();
+  const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
 
   if (!data) {
     return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
@@ -53,6 +54,8 @@ export default function GlobalStatsPage() {
                     userCount={totals.totalUsers}
                     totalUniqueUsers={data.totalUniqueUsers}
                     totalActionsPerformed={data.totalActionsPerformed}
+                    onMouseEnter={() => setHoveredAction(actionKey)}
+                    onMouseLeave={() => setHoveredAction(null)}
                   />
                 ))}
               </div>
@@ -62,7 +65,7 @@ export default function GlobalStatsPage() {
           {/* Right: leaderboard (desktop) */}
           <Leaderboard
             locationId={null}
-            actionType={null}
+            actionType={hoveredAction}
             className="w-72 flex-shrink-0 hidden lg:block"
           />
         </div>
@@ -70,7 +73,7 @@ export default function GlobalStatsPage() {
 
       {/* Leaderboard below on mobile */}
       <div className="lg:hidden mt-4">
-        <Leaderboard locationId={null} actionType={null} />
+        <Leaderboard locationId={null} actionType={hoveredAction} />
       </div>
 
       {error ? (
