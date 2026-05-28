@@ -17,6 +17,10 @@ vi.mock("../../src/db/schema.js", () => ({
     actionType: "actionType",
     hasPerformed: "hasPerformed",
   },
+  leaderboardConsent: {
+    hashedUserId: "hashedUserId",
+    displayName: "displayName",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -26,6 +30,7 @@ vi.mock("drizzle-orm", () => ({
   desc: vi.fn((col) => ({ type: "desc", col })),
   sum: sumMock,
   gt: vi.fn((a, b) => ({ type: "gt", a, b })),
+  inArray: vi.fn((a, b) => ({ type: "inArray", a, b })),
 }));
 
 vi.mock("../../src/logger.js", () => ({ default: { error: vi.fn() } }));
@@ -46,6 +51,14 @@ describe("getLeaderboard", () => {
     return chain;
   }
 
+  function makeConsentChain(resolvedRows: any[]) {
+    const chain: any = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue(resolvedRows),
+    };
+    return chain;
+  }
+
   const noGuildClient = {
     guilds: {
       cache: new Map(),
@@ -59,7 +72,14 @@ describe("getLeaderboard", () => {
   });
 
   it("returns empty entries when no data exists", async () => {
-    (drizzleDb.select as any).mockReturnValue(makeChain([]));
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -72,12 +92,17 @@ describe("getLeaderboard", () => {
   });
 
   it("returns ranked entries with anonymous labels when bot not in guild", async () => {
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([
-        { userId: "user-1", totalActions: 100 },
-        { userId: "user-2", totalActions: 50 },
-      ]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([
+          { userId: "user-1", totalActions: 100 },
+          { userId: "user-2", totalActions: 50 },
+        ]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -88,14 +113,19 @@ describe("getLeaderboard", () => {
     expect(result.entries[0].rank).toBe(1);
     expect(result.entries[0].userId).toBe("user-1");
     expect(result.entries[0].displayName).toBeNull();
-    expect(result.entries[0].anonymousLabel).toHaveLength(4);
+    expect(result.entries[0].anonymousLabel).toHaveLength(6);
     expect(result.entries[1].rank).toBe(2);
   });
 
   it("filters by actionType when provided", async () => {
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([{ userId: "user-1", totalActions: 20 }]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([{ userId: "user-1", totalActions: 20 }]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -109,8 +139,15 @@ describe("getLeaderboard", () => {
   });
 
   it("respects the limit parameter", async () => {
+    let callCount = 0;
     const chain = makeChain([]);
-    (drizzleDb.select as any).mockReturnValue(chain);
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return chain;
+      }
+      return makeConsentChain([]);
+    });
 
     await getLeaderboard({
       locationId: "guild-1",
@@ -122,8 +159,15 @@ describe("getLeaderboard", () => {
   });
 
   it("caps limit at 25", async () => {
+    let callCount = 0;
     const chain = makeChain([]);
-    (drizzleDb.select as any).mockReturnValue(chain);
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return chain;
+      }
+      return makeConsentChain([]);
+    });
 
     await getLeaderboard({
       locationId: "guild-1",
@@ -135,8 +179,15 @@ describe("getLeaderboard", () => {
   });
 
   it("defaults limit to 10", async () => {
+    let callCount = 0;
     const chain = makeChain([]);
-    (drizzleDb.select as any).mockReturnValue(chain);
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return chain;
+      }
+      return makeConsentChain([]);
+    });
 
     await getLeaderboard({
       locationId: "guild-1",
@@ -152,12 +203,17 @@ describe("getLeaderboard", () => {
       guilds: { cache: new Map(), fetch: guildFetch },
     } as any;
 
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([
-        { userId: "user-1", totalActions: 100 },
-        { userId: "user-2", totalActions: 50 },
-      ]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([
+          { userId: "user-1", totalActions: 100 },
+          { userId: "user-2", totalActions: 50 },
+        ]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -189,9 +245,14 @@ describe("getLeaderboard", () => {
       guilds: { cache: new Map(), fetch: guildFetch },
     } as any;
 
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([{ userId: "user-1", totalActions: 100 }]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([{ userId: "user-1", totalActions: 100 }]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -221,9 +282,14 @@ describe("getLeaderboard", () => {
       guilds: { cache: new Map(), fetch: guildFetch },
     } as any;
 
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([{ userId: "user-1", totalActions: 100 }]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([{ userId: "user-1", totalActions: 100 }]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       locationId: "guild-1",
@@ -234,12 +300,17 @@ describe("getLeaderboard", () => {
   });
 
   it("works without locationId for global scope", async () => {
-    (drizzleDb.select as any).mockReturnValue(
-      makeChain([
-        { userId: "user-1", totalActions: 200 },
-        { userId: "user-2", totalActions: 150 },
-      ]),
-    );
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([
+          { userId: "user-1", totalActions: 200 },
+          { userId: "user-2", totalActions: 150 },
+        ]);
+      }
+      return makeConsentChain([]);
+    });
 
     const result = await getLeaderboard({
       discordClient: noGuildClient,
@@ -250,6 +321,37 @@ describe("getLeaderboard", () => {
     expect(result.entries[0].totalActions).toBe(200);
     // No guild to resolve names from, so all entries are anonymous
     expect(result.entries[0].displayName).toBeNull();
-    expect(result.entries[0].anonymousLabel).toHaveLength(4);
+    expect(result.entries[0].anonymousLabel).toHaveLength(6);
+  });
+
+  it("uses consent display name over guild display name", async () => {
+    const guildFetch = vi.fn().mockResolvedValue({
+      members: {
+        fetch: vi.fn().mockResolvedValue(
+          new Map([
+            ["user-1", { displayName: "GuildName", user: { displayName: "notused" } }],
+          ]),
+        ),
+      },
+    });
+    const client = { guilds: { cache: new Map(), fetch: guildFetch } } as any;
+
+    let callCount = 0;
+    (drizzleDb.select as any).mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return makeChain([{ userId: "user-1", totalActions: 100 }]);
+      }
+      return makeConsentChain([
+        { hashedUserId: "c6c289", displayName: "ConsentName" },
+      ]);
+    });
+
+    const result = await getLeaderboard({
+      locationId: "guild-1",
+      discordClient: client,
+    });
+
+    expect(result.entries[0].displayName).toBe("ConsentName");
   });
 });
