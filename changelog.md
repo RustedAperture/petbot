@@ -2,35 +2,21 @@
 
 ### Fixes
 
-- Fixed bot login crash caused by undici v8 incompatibility with discord.js. Pinned undici to `^7.25.0`.
-- Fixed deprecation warning: renamed `ready` event to `ClientReady` for discord.js v15 compatibility.
-
-### Dependencies
-
-- Pinned undici to `^7.25.0` (discord.js compatibility).
-- Updated transitive deps: qs (6.15.2), postcss (8.5.10+), ws (8.20.1).
+- Fixed bot login crash on startup.
+- Fixed deprecation warning for the ready event.
 
 ## v8.6.1 - May 27, 2026
 
 ### Security
 
-- Removed hardcoded `DEV_SESSION_COOKIE_SECRET` from web app — resolves bearer scan CRITICAL finding (CWE-798). Now reads only from env vars.
+- Fixed a critical security finding from the Bearer security scanner.
 
 ### Under the Hood
 
-**Workspace Restructuring**
-
-- Removed stale `apps/web/package-lock.json` — root lockfile is the single source of truth for npm workspaces.
-- Updated CI workflow: removed redundant `npm ci --prefix apps/web` step.
-- Updated publish workflow: removed paths filter blocking tag-triggered Docker builds; switched to root `npm ci` in build-web job.
-- Fixed Dockerfile web-builder stage: uses root `npm ci` with post-install to populate workspace `node_modules`.
-- Fixed Next.js build cache key to no longer reference deleted lockfile.
-
-**Developer Experience**
-
-- Fixed pre-commit hook to handle deleted files gracefully.
-- Added `INTERNAL_API_SECRET` to web test environment setup.
-- Fixed test env pollution: tests no longer leave env vars modified.
+- Fixed CI, Docker build, and deployment workflows for the new npm workspace setup.
+- Fixed the pre-commit hook to handle deleted files.
+- Improved test reliability by adding proper environment setup.
+- Various dependency updates.
 
 ## v8.6.0 - Apr 07, 2026
 
