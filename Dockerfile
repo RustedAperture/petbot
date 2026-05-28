@@ -51,6 +51,11 @@ COPY package*.json ./
 
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund --ignore-scripts
 
+# Populate apps/web/node_modules so the web runtime stage can copy it.
+# Root npm ci hoists all workspace deps; this ensures the web workspace
+# has its own node_modules directory for the standalone next start.
+RUN npm install --prefix apps/web --no-audit --no-fund --ignore-scripts
+
 # Copy web sources and the shared constants the web app imports, then build
 COPY apps/web ./apps/web
 COPY src/types/constants.ts ./src/types/constants.ts
