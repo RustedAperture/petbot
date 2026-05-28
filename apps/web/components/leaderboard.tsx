@@ -22,10 +22,19 @@ interface LeaderboardProps {
   className?: string;
 }
 
+const MAX_LIMIT = 25;
+
+function responsiveClass(index: number): string {
+  if (index < 10) return "";
+  if (index < 15) return "hidden sm:flex";
+  if (index < 20) return "hidden md:flex";
+  return "hidden lg:flex";
+}
+
 export default function Leaderboard({
   locationId,
   actionType,
-  limit = 10,
+  limit = MAX_LIMIT,
   className,
 }: LeaderboardProps) {
   const { session } = useSession();
@@ -48,13 +57,9 @@ export default function Leaderboard({
           ? "All actions"
           : "All actions · Global";
 
-  const rankVariants: Record<number, "default" | "secondary" | "outline"> = {
-    1: "default",
-    2: "secondary",
-    3: "outline",
-  };
-
   const rankEmojis = ["🥇", "🥈", "🥉"];
+
+  const visibleCount = data?.entries.length ?? 0;
 
   return (
     <Card className={cn("w-full", className)} size="sm">
@@ -65,9 +70,9 @@ export default function Leaderboard({
 
       <CardContent className="pb-2">
         {isLoading ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 py-1">
+              <div key={i} className="flex items-center gap-3 py-1.5">
                 <Skeleton className="h-5 w-8" />
                 <Skeleton className="h-4 flex-1" />
                 <Skeleton className="h-4 w-10" />
@@ -76,11 +81,11 @@ export default function Leaderboard({
           </div>
         ) : error ? (
           <p className="text-sm text-destructive">Failed to load.</p>
-        ) : !data || data.entries.length === 0 ? (
+        ) : !data || visibleCount === 0 ? (
           <p className="text-sm text-muted-foreground">No actions yet.</p>
         ) : (
           <div className="flex flex-col gap-1">
-            {data.entries.map((entry) => {
+            {data.entries.map((entry, i) => {
               const isCurrentUser = session?.user.id === entry.userId;
               const label =
                 entry.displayName ?? `User #${entry.anonymousLabel}`;
@@ -90,6 +95,7 @@ export default function Leaderboard({
                   key={entry.userId}
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                    responsiveClass(i),
                     isCurrentUser && "bg-accent",
                   )}
                 >
@@ -97,7 +103,10 @@ export default function Leaderboard({
                     {entry.rank <= 3 ? (
                       rankEmojis[entry.rank - 1]
                     ) : (
-                      <Badge variant="outline" className="h-4 px-1 text-[10px] font-mono">
+                      <Badge
+                        variant="outline"
+                        className="h-4 px-1 text-[10px] font-mono"
+                      >
                         {entry.rank}
                       </Badge>
                     )}
@@ -127,7 +136,7 @@ export default function Leaderboard({
 
       <CardFooter className="pt-2">
         <p className="text-xs text-muted-foreground">
-          Top {data?.entries.length ?? 0}
+          Top {visibleCount}
           {locationId ? " · hover an action card to filter" : " · global"}
         </p>
       </CardFooter>
