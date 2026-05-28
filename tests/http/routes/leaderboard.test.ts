@@ -31,15 +31,6 @@ describe("GET /api/leaderboard", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 400 when locationId is missing", async () => {
-    const handler = leaderboardHandler(mockClient);
-    const req = { query: {} } as any;
-    const res = makeRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-    expect(res._body.error).toBe("missing_locationId");
-  });
-
   it("returns 400 for invalid actionType", async () => {
     const handler = leaderboardHandler(mockClient);
     const req = { query: { locationId: "g1", actionType: "invalid" } } as any;
@@ -48,7 +39,27 @@ describe("GET /api/leaderboard", () => {
     expect(res._status).toBe(400);
   });
 
-  it("returns leaderboard data on success", async () => {
+  it("returns global leaderboard when no locationId", async () => {
+    (getLeaderboard as any).mockResolvedValue({
+      locationId: null,
+      actionType: null,
+      entries: [
+        { rank: 1, userId: "u1", displayName: null, anonymousLabel: "abcd", totalActions: 100 },
+      ],
+    });
+
+    const handler = leaderboardHandler(mockClient);
+    const req = { query: {} } as any;
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(getLeaderboard).toHaveBeenCalledWith(
+      expect.not.objectContaining({ locationId: expect.anything() }),
+    );
+    expect(res._body.entries).toHaveLength(1);
+  });
+
+  it("returns leaderboard data for a specific location", async () => {
     (getLeaderboard as any).mockResolvedValue({
       locationId: "g1",
       actionType: null,
@@ -70,6 +81,9 @@ describe("GET /api/leaderboard", () => {
     const res = makeRes();
     await handler(req, res);
 
+    expect(getLeaderboard).toHaveBeenCalledWith(
+      expect.objectContaining({ locationId: "g1" }),
+    );
     expect(res._body.entries).toHaveLength(1);
     expect(res._body.entries[0].rank).toBe(1);
   });

@@ -13,7 +13,7 @@ export interface LeaderboardEntry {
 }
 
 export interface LeaderboardResult {
-  locationId: string;
+  locationId: string | null;
   actionType: string | null;
   entries: LeaderboardEntry[];
 }
@@ -23,14 +23,17 @@ function hashUserId(userId: string): string {
 }
 
 export async function getLeaderboard(opts: {
-  locationId: string;
+  locationId?: string;
   actionType?: string;
   limit?: number;
   discordClient: Client;
 }): Promise<LeaderboardResult> {
   const { locationId, actionType, limit = 10, discordClient } = opts;
 
-  const whereClauses = [eq(actionData.locationId, locationId)];
+  const whereClauses = [];
+  if (locationId) {
+    whereClauses.push(eq(actionData.locationId, locationId));
+  }
   if (actionType) {
     whereClauses.push(eq(actionData.actionType, actionType));
   }
@@ -48,15 +51,16 @@ export async function getLeaderboard(opts: {
 
   const entries: LeaderboardEntry[] = [];
 
-  // Try to resolve display names from Discord
+  // Only resolve display names when scoped to a specific guild
   let guild: Guild | null = null;
-  try {
-    guild = await discordClient.guilds.fetch(locationId);
-  } catch {
-    // bot may not be in this guild
+  if (locationId) {
+    try {
+      guild = await discordClient.guilds.fetch(locationId);
+    } catch {
+      // bot may not be in this guild
+    }
   }
 
-  // Fetch only the members we need for the leaderboard entries
   const displayNameByUserId = new Map<string, string | null>();
   if (guild && rows.length > 0) {
     const userIds = rows.map((r) => r.userId);
@@ -86,5 +90,5 @@ export async function getLeaderboard(opts: {
     });
   }
 
-  return { locationId, actionType: actionType ?? null, entries };
+  return { locationId: locationId ?? null, actionType: actionType ?? null, entries };
 }

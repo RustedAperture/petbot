@@ -230,4 +230,24 @@ describe("getLeaderboard", () => {
 
     expect(result.entries[0].displayName).toBe("FallbackName");
   });
+
+  it("works without locationId for global scope", async () => {
+    (drizzleDb.select as any).mockReturnValue(
+      makeChain([
+        { userId: "user-1", totalActions: 200 },
+        { userId: "user-2", totalActions: 150 },
+      ]),
+    );
+
+    const result = await getLeaderboard({
+      discordClient: noGuildClient,
+    });
+
+    expect(result.locationId).toBeNull();
+    expect(result.entries).toHaveLength(2);
+    expect(result.entries[0].totalActions).toBe(200);
+    // No guild to resolve names from, so all entries are anonymous
+    expect(result.entries[0].displayName).toBeNull();
+    expect(result.entries[0].anonymousLabel).toHaveLength(4);
+  });
 });

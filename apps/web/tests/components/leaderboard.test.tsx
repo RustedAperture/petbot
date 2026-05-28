@@ -25,14 +25,27 @@ describe("Leaderboard component", () => {
     vi.clearAllMocks();
   });
 
-  it("shows placeholder when no locationId", () => {
+  it("shows global leaderboard when no locationId", async () => {
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        locationId: null,
+        actionType: null,
+        entries: [
+          { rank: 1, userId: "u1", displayName: null, anonymousLabel: "abcd", totalActions: 200 },
+        ],
+      }),
+    });
+
     render(
       React.createElement(Wrapper, null,
         React.createElement(Leaderboard, { locationId: null, actionType: null }),
       ),
     );
 
-    expect(screen.getByText(/select a location/i)).toBeDefined();
+    expect(await screen.findByText("User #abcd")).toBeDefined();
+    const globalHints = await screen.findAllByText(/global/i);
+    expect(globalHints.length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows empty state when no entries", async () => {

@@ -25,16 +25,6 @@ export default function Leaderboard({
     limit,
   });
 
-  if (!locationId) {
-    return (
-      <div className={cn("rounded-lg border p-4", className)}>
-        <p className="text-sm text-muted-foreground">
-          Select a location to view the leaderboard.
-        </p>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className={cn("rounded-lg border p-4", className)}>
@@ -78,12 +68,19 @@ export default function Leaderboard({
     ? `Leaderboard — ${data.actionType}`
     : "Leaderboard";
 
+  const scope =
+    data.actionType && locationId
+      ? `Filtered by action`
+      : data.actionType
+        ? `Filtered by action`
+        : locationId
+          ? `All actions`
+          : `All actions · Global`;
+
   return (
     <div className={cn("rounded-lg border p-4", className)}>
       <h3 className="font-semibold text-sm mb-1">{title}</h3>
-      <p className="text-[10px] text-muted-foreground mb-3">
-        {data.actionType ? "Filtered by action" : "All actions"}
-      </p>
+      <p className="text-[10px] text-muted-foreground mb-3">{scope}</p>
 
       <div className="flex flex-col gap-0.5">
         {data.entries.map((entry) => {
@@ -128,7 +125,8 @@ export default function Leaderboard({
       </div>
 
       <p className="text-[10px] text-muted-foreground mt-3">
-        Top {data.entries.length} &middot; hover an action card to filter
+        Top {data.entries.length}
+        {locationId ? " · hover an action card to filter" : " · global"}
       </p>
     </div>
   );

@@ -2,13 +2,13 @@ import useSWR from "swr";
 import type { LeaderboardEntry } from "@/types/leaderboard";
 
 interface LeaderboardData {
-  locationId: string;
+  locationId: string | null;
   actionType: string | null;
   entries: LeaderboardEntry[];
 }
 
 interface UseLeaderboardOptions {
-  locationId: string | null;
+  locationId?: string | null;
   actionType?: string | null;
   limit?: number;
 }
@@ -19,15 +19,15 @@ export function useLeaderboard({
   limit = 10,
 }: UseLeaderboardOptions) {
   const params = new URLSearchParams();
+  params.set("limit", String(limit));
   if (locationId) {
     params.set("locationId", locationId);
-    params.set("limit", String(limit));
-    if (actionType) {
-      params.set("actionType", actionType);
-    }
+  }
+  if (actionType) {
+    params.set("actionType", actionType);
   }
 
-  const key = locationId ? `/api/leaderboard?${params.toString()}` : null;
+  const key = `/api/leaderboard?${params.toString()}`;
 
   const { data, error, isLoading, mutate } = useSWR<LeaderboardData>(
     key,
@@ -45,7 +45,7 @@ export function useLeaderboard({
 
   return {
     data: data ?? null,
-    isLoading: key ? isLoading : false,
+    isLoading,
     error: error ?? null,
     refresh: () => mutate(),
   };

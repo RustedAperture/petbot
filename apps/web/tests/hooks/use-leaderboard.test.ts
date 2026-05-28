@@ -21,14 +21,27 @@ describe("useLeaderboard", () => {
     vi.clearAllMocks();
   });
 
-  it("returns null key when locationId is null", () => {
+  it("fetches global leaderboard when locationId is null", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        locationId: null,
+        actionType: null,
+        entries: [{ rank: 1, userId: "u1", displayName: null, anonymousLabel: "abcd", totalActions: 100 }],
+      }),
+    });
+
     const { result } = renderHook(
       () => useLeaderboard({ locationId: null }),
       { wrapper },
     );
 
-    expect(result.current.data).toBeNull();
-    expect(result.current.isLoading).toBe(false);
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.data?.entries).toHaveLength(1);
+    expect(result.current.data?.locationId).toBeNull();
   });
 
   it("fetches and returns leaderboard data", async () => {

@@ -7,11 +7,6 @@ export default function leaderboardHandler(client: Client) {
   return async function (req: Request, res: Response): Promise<void> {
     try {
       const locationId = req.query.locationId as string | undefined;
-      if (!locationId) {
-        res.status(400).json({ error: "missing_locationId" });
-        return;
-      }
-
       const actionType = (req.query.actionType as string | undefined) ?? undefined;
       const limit = Math.min(
         parseInt(req.query.limit as string, 10) || 10,

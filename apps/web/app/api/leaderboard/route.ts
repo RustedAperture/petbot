@@ -10,19 +10,18 @@ export async function GET(req: Request) {
     const actionType = url.searchParams.get("actionType");
     const limit = url.searchParams.get("limit") ?? "10";
 
-    if (!locationId) {
-      throw apiError(400, "missing_locationId");
-    }
-
-    // If locationId looks like a guild ID (all digits), check guild membership
-    if (/^\d+$/.test(locationId)) {
+    // If locationId is provided and looks like a guild ID, check membership
+    if (locationId && /^\d+$/.test(locationId)) {
       const guilds = await resolveGuilds(session);
       if (!guilds.some((g) => g.id === locationId)) {
         throw apiError(403, "forbidden");
       }
     }
 
-    const params = new URLSearchParams({ locationId, limit });
+    const params = new URLSearchParams({ limit });
+    if (locationId) {
+      params.set("locationId", locationId);
+    }
     if (actionType) {
       params.set("actionType", actionType);
     }
