@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { Client, Guild } from "discord.js";
 import { drizzleDb } from "../db/connector.js";
 import { actionData } from "../db/schema.js";
-import { eq, and, desc, sum, type SQL } from "drizzle-orm";
+import { eq, and, desc, sum, gt, type SQL } from "drizzle-orm";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -46,6 +46,7 @@ export async function getLeaderboard(opts: {
     .from(actionData)
     .where(and(...whereClauses))
     .groupBy(actionData.userId)
+    .having(gt(sum(actionData.hasPerformed), 0))
     .orderBy(desc(sum(actionData.hasPerformed)))
     .limit(Math.min(limit, 25));
 

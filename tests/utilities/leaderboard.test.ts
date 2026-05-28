@@ -25,6 +25,7 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: unknown[]) => args),
   desc: vi.fn((col) => ({ type: "desc", col })),
   sum: sumMock,
+  gt: vi.fn((a, b) => ({ type: "gt", a, b })),
 }));
 
 vi.mock("../../src/logger.js", () => ({ default: { error: vi.fn() } }));
@@ -38,6 +39,7 @@ describe("getLeaderboard", () => {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnThis(),
       groupBy: vi.fn().mockReturnThis(),
+      having: vi.fn().mockReturnThis(),
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue(resolvedRows),
     };
