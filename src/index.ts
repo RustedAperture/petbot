@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Client, Collection, GatewayIntentBits } from "discord.js";
+import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
 
 import config from "./config.js";
 import logger from "./logger.js";
@@ -40,7 +40,7 @@ const client: Client = new Client({
 startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
 
 // Mark bot ready once Discord connects
-client.once("ready", () => {
+client.once(Events.ClientReady, () => {
   logger.info("Discord client ready");
   readiness.botReady = true;
 });

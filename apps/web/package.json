@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "8.6.1",
+  "version": "8.6.2",
   "private": true,
   "engines": {
     "node": ">=24",
