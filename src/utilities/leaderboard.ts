@@ -51,23 +51,30 @@ export async function getLeaderboard(opts: {
   // Try to resolve display names from Discord
   let guild: Guild | null = null;
   try {
-    guild = discordClient.guilds.cache.get(locationId) ?? null;
+    guild = await discordClient.guilds.fetch(locationId);
   } catch {
     // bot may not be in this guild
   }
 
+  // Pre-fetch all guild members in a single API call to avoid N+1 serial fetches
+  const displayNameByUserId = new Map<string, string | null>();
+  if (guild) {
+    try {
+      const members = await guild.members.fetch();
+      for (const [userId, member] of members) {
+        displayNameByUserId.set(
+          userId,
+          member.displayName ?? member.user.displayName ?? null,
+        );
+      }
+    } catch {
+      // failed to fetch members, proceed without display names
+    }
+  }
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    let displayName: string | null = null;
-
-    if (guild && row.userId) {
-      try {
-        const member = await guild.members.fetch(row.userId);
-        displayName = member.displayName ?? member.user.displayName ?? null;
-      } catch {
-        // user may have left the guild or fetch failed
-      }
-    }
+    const displayName = displayNameByUserId.get(row.userId) ?? null;
 
     entries.push({
       rank: i + 1,
