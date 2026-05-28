@@ -8,6 +8,7 @@ import { type ActionTotals } from "@/types/stats";
 import { useBotGuilds } from "@/hooks/use-bot-guilds";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
+import Leaderboard from "@/components/leaderboard";
 
 export default function GuildStatsPage({
   params,
@@ -47,6 +48,8 @@ export default function GuildStatsPage({
     guildId,
   });
 
+  const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
+
   // Handle loading and no-data states via JSX ternary (not early return)
   // so users see "Loading..." instead of "No data" on initial load
   if (!data) {
@@ -63,41 +66,60 @@ export default function GuildStatsPage({
 
   return (
     <main>
-      <div
-        className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
-        aria-busy={isLoading}
-      >
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
-          <StatsCardSimple
-            statString="Total Actions Performed"
-            value={data.totalActionsPerformed}
-          />
-          <StatsCardSimple
-            statString="Total Unique Users"
-            value={data.totalUniqueUsers}
-          />
+      <div className="flex gap-6">
+        {/* Left: stats */}
+        <div className="flex-1 min-w-0">
+          <div
+            className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
+            aria-busy={isLoading}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
+              <StatsCardSimple
+                statString="Total Actions Performed"
+                value={data.totalActionsPerformed}
+              />
+              <StatsCardSimple
+                statString="Total Unique Users"
+                value={data.totalUniqueUsers}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {entries.map(([actionKey, totals]) => (
+                <StatsCard
+                  key={actionKey}
+                  actionName={actionKey}
+                  actionImageUrl={totals.imageUrl}
+                  performedCount={totals.totalHasPerformed}
+                  userCount={totals.totalUsers}
+                  totalUniqueUsers={data.totalUniqueUsers}
+                  totalActionsPerformed={data.totalActionsPerformed}
+                  onMouseEnter={() => setHoveredAction(actionKey)}
+                  onMouseLeave={() => setHoveredAction(null)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {error ? (
+            <div className="mt-4 text-sm text-destructive">
+              Failed to load stats: {error.message}
+            </div>
+          ) : null}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {entries.map(([actionKey, totals]) => (
-            <StatsCard
-              key={actionKey}
-              actionName={actionKey}
-              actionImageUrl={totals.imageUrl}
-              performedCount={totals.totalHasPerformed}
-              userCount={totals.totalUsers}
-              totalUniqueUsers={data.totalUniqueUsers}
-              totalActionsPerformed={data.totalActionsPerformed}
-            />
-          ))}
-        </div>
+        {/* Right: leaderboard (desktop) */}
+        <Leaderboard
+          locationId={guildId}
+          actionType={hoveredAction}
+          className="w-72 flex-shrink-0 hidden lg:block"
+        />
       </div>
 
-      {error ? (
-        <div className="mt-4 text-sm text-destructive">
-          Failed to load stats: {error.message}
-        </div>
-      ) : null}
+      {/* Leaderboard below on mobile */}
+      <div className="lg:hidden mt-4">
+        <Leaderboard locationId={guildId} actionType={hoveredAction} />
+      </div>
     </main>
   );
 }
