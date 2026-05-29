@@ -25,6 +25,8 @@ interface StatsCardProps {
   userImages?: string[];
   guildId?: string | null;
   hideUserCount?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export default function StatsCard({
@@ -37,6 +39,8 @@ export default function StatsCard({
   userImages,
   guildId,
   hideUserCount,
+  onMouseEnter,
+  onMouseLeave,
 }: StatsCardProps) {
   const displayName = actionName
     ? actionName[0].toUpperCase() + actionName.slice(1)
@@ -59,7 +63,11 @@ export default function StatsCard({
 
   return (
     <>
-      <Card className="py-0 dark:bg-linear-to-t from-primary/20 to-15%">
+      <Card
+        className="py-0 dark:bg-linear-to-t from-primary/20 to-15%"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         {displayImages.length > 0 ? (
           <Carousel
             setApi={setCarouselApi}
@@ -143,10 +151,6 @@ export default function StatsCard({
                   value={performedCount}
                   className="font-normal"
                 />
-                <Badge variant="outline">
-                  {formatPercentage(performedCount, totalActionsPerformed)} of
-                  actions
-                </Badge>
               </div>
             </div>
             {!hideUserCount && (
@@ -154,14 +158,16 @@ export default function StatsCard({
                 <p className="shrink">
                   <b>Users:</b>
                 </p>
-                <div className="flex justify-between grow">
-                  <NativeCounterUp value={userCount} className="font-normal" />
-                  <Badge variant="outline">
-                    {formatPercentage(userCount, totalUniqueUsers)} of users
-                  </Badge>
+                <div className="flex grow gap-1">
+                  <NativeCounterUp value={userCount} className="font-normal" />{" "}
+                  ({formatPercentage(userCount, totalUniqueUsers)})
                 </div>
               </div>
             )}
+            <p>
+              {formatPercentage(performedCount, totalActionsPerformed)} of
+              actions
+            </p>
           </div>
         </CardFooter>
       </Card>

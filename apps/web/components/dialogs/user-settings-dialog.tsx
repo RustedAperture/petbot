@@ -18,6 +18,8 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
+import { useLeaderboardConsent } from "@/hooks/use-leaderboard-consent";
+import { Switch } from "../ui/switch";
 
 export function UserSettingsDialog({
   open,
@@ -36,16 +38,44 @@ export function UserSettingsDialog({
     fetchStatus,
     toggle,
   } = useOptOut();
+  const {
+    enabled: consentEnabled,
+    displayName: consentDisplayName,
+    hashLabel,
+    isLoading: consentLoading,
+    fetchStatus: fetchConsent,
+    update: updateConsent,
+    disable: disableConsent,
+  } = useLeaderboardConsent();
   const [typedId, setTypedId] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [finalText, setFinalText] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [leaderboardName, setLeaderboardName] = useState("");
+  const [leaderboardNameTouched, setLeaderboardNameTouched] = useState(false);
+
+  const saveLeaderboardName = async (name: string) => {
+    const trimmed = name.trim();
+    if (trimmed.length === 0) return;
+    await updateConsent(trimmed);
+  };
 
   useEffect(() => {
-    if (open) void fetchStatus();
-  }, [open, fetchStatus]);
+    if (!leaderboardNameTouched) {
+      setLeaderboardName(
+        consentDisplayName ?? session?.user.username ?? ""
+      );
+    }
+  }, [consentDisplayName, session?.user.username, leaderboardNameTouched]);
+
+  useEffect(() => {
+    if (open) {
+      void fetchStatus();
+      void fetchConsent();
+    }
+  }, [open, fetchStatus, fetchConsent]);
 
   // load initial opt-out state when dialog opens
   const handleDeleteClick = () => {
@@ -111,6 +141,60 @@ export function UserSettingsDialog({
                   {optOutError.message}
                 </p>
               )}
+            </FieldSet>
+          </FieldGroup>
+          <Separator />
+          <FieldGroup className="px-6">
+            <FieldSet>
+              <FieldLegend>Leaderboard Display</FieldLegend>
+              <FieldDescription>
+                Choose how your name appears on leaderboards. When disabled,
+                you&apos;ll appear anonymously.
+              </FieldDescription>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  Show my name on leaderboards
+                </label>
+                <Switch
+                  checked={consentEnabled === true}
+                  onCheckedChange={async (checked) => {
+                    if (checked) {
+                      const name = leaderboardName || session?.user.username || "";
+                      setLeaderboardName(name);
+                      await updateConsent(name);
+                    } else {
+                      await disableConsent();
+                    }
+                  }}
+                  disabled={consentEnabled === null || consentLoading}
+                />
+              </div>
+              <Field>
+                <Input
+                  type="text"
+                  placeholder="Display name"
+                  value={
+                    consentEnabled
+                      ? leaderboardName
+                      : (hashLabel ?? "")
+                  }
+                  disabled={!consentEnabled || consentLoading}
+                  onChange={(e) => {
+                    setLeaderboardName(e.target.value);
+                    setLeaderboardNameTouched(true);
+                  }}
+                  onBlur={(e) => {
+                    if (consentEnabled) {
+                      void saveLeaderboardName(e.target.value);
+                    }
+                  }}
+                />
+                {consentEnabled && (
+                  <FieldDescription>
+                    Defaults to your Discord username
+                  </FieldDescription>
+                )}
+              </Field>
             </FieldSet>
           </FieldGroup>
           <Separator />

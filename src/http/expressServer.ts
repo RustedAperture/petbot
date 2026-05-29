@@ -14,10 +14,12 @@ import readyHandler from "./routes/ready.js";
 
 // Migrated Express route handlers
 import statsHandler from "./routes/stats.js";
+import leaderboardHandler from "./routes/leaderboard.js";
 import guildsHandler from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
 import optOutRouter from "./routes/optOut.js";
+import leaderboardConsentRouter from "./routes/leaderboardConsent.js";
 import setImagesHandler from "./routes/setImages.js";
 import serverSettingsRouter from "./routes/serverSettings.js";
 import guildChannelsHandler from "./routes/guildChannels.js";
@@ -89,6 +91,7 @@ export function createApp(client?: Client<boolean>): express.Express {
 
   // --- Phase 2b: write/update endpoints ---
   app.use("/api/optOut", optOutRouter);
+  app.use("/api/leaderboardConsent", leaderboardConsentRouter);
   app.post("/api/setImages", setImagesHandler);
 
   // Routes that need the Discord client
@@ -98,6 +101,7 @@ export function createApp(client?: Client<boolean>): express.Express {
       "/api/guildChannels/:guildId/user/:userId",
       guildChannelsHandler(client),
     );
+    app.get("/api/leaderboard", leaderboardHandler(client));
   }
 
   // --- 404 fallback for unmatched /api/* ---

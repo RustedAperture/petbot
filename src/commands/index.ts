@@ -20,6 +20,7 @@ import serverSetup from "./slash/serverSetup.js";
 import setCmd from "./slash/set.js";
 import squish from "./slash/squish.js";
 import stats from "./slash/stats.js";
+import leaderboard from "./slash/leaderboard.js";
 
 // Context commands
 import biteContext from "./context/biteContext.js";
@@ -42,6 +43,7 @@ export const slashCommands = [
   setCmd,
   squish,
   stats,
+  leaderboard,
 ];
 
 export const contextCommands = [
