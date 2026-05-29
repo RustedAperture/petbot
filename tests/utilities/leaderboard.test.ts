@@ -343,7 +343,7 @@ describe("getLeaderboard", () => {
         return makeChain([{ userId: "user-1", totalActions: 100 }]);
       }
       return makeConsentChain([
-        { hashedUserId: "c6c289", displayName: "ConsentName" },
+        { hashedUserId: "c6c289e49e9c05b2", displayName: "ConsentName" },
       ]);
     });
 

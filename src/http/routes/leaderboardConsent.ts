@@ -38,6 +38,11 @@ router.post("/:hashedUserId", async (req: Request, res: Response) => {
     return;
   }
 
+  if (displayName.trim().length > 100) {
+    res.status(400).json({ error: "displayName_too_long" });
+    return;
+  }
+
   const now = new Date().toISOString();
 
   try {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession } from "@/hooks/use-session";
+import * as React from "react";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 import {
   Card,
@@ -36,7 +37,6 @@ export default function Leaderboard({
   limit = MAX_LIMIT,
   className,
 }: LeaderboardProps) {
-  const { session } = useSession();
   const { data, isLoading, error } = useLeaderboard({
     locationId,
     actionType,
@@ -90,17 +90,18 @@ export default function Leaderboard({
         ) : (
           <div className="flex flex-col gap-1">
             {data.entries.map((entry, i) => {
-              const isCurrentUser = session?.user.id === entry.userId;
               const label =
                 entry.displayName ?? `User #${entry.anonymousLabel}`;
+              const isOutsideTopN = entry.isCurrentUser && entry.rank !== i + 1;
 
               return (
+                <React.Fragment key={`${entry.anonymousLabel}-${i}`}>
+                  {isOutsideTopN && <Separator className="my-1" />}
                 <div
-                  key={entry.userId}
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                     responsiveClass(i),
-                    isCurrentUser && "bg-amber-500/10",
+                    entry.isCurrentUser && "bg-amber-500/10",
                   )}
                 >
                   <span className="w-5 text-center">
@@ -116,17 +117,18 @@ export default function Leaderboard({
                   <span
                     className={cn(
                       "flex-1 truncate",
-                      isCurrentUser && "font-medium text-amber-500",
+                      entry.isCurrentUser && "font-medium text-amber-500",
                     )}
                   >
                     {label}
-                    {isCurrentUser ? " (you)" : ""}
+                    {entry.isCurrentUser ? " (you)" : ""}
                   </span>
 
                   <span className="font-mono text-xs text-muted-foreground tabular-nums">
                     {entry.totalActions.toLocaleString()}
                   </span>
                 </div>
+                </React.Fragment>
               );
             })}
           </div>

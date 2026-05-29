@@ -8,6 +8,7 @@ export default function leaderboardHandler(client: Client) {
     try {
       const locationId = req.query.locationId as string | undefined;
       const actionType = (req.query.actionType as string | undefined) ?? undefined;
+      const currentUserId = req.query.currentUserId as string | undefined;
       const limit = Math.min(
         parseInt(req.query.limit as string, 10) || 10,
         25,
@@ -25,6 +26,7 @@ export default function leaderboardHandler(client: Client) {
         locationId,
         actionType,
         limit,
+        currentUserId,
         discordClient: client,
       });
 

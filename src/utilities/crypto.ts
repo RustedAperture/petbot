@@ -28,6 +28,6 @@ export function secureEqual(a?: string, b?: string): boolean {
  * Hash a user ID for anonymous display and consent lookup.
  * Returns the first `len` hex characters of the SHA-256 digest.
  */
-export function hashUserId(userId: string, len = 6): string {
+export function hashUserId(userId: string, len = 16): string {
   return crypto.createHash("sha256").update(userId).digest("hex").slice(0, len);
 }

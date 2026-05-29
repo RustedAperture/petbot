@@ -3,7 +3,7 @@ import { proxyRequest } from "../../../lib/proxy";
 import { createHash } from "node:crypto";
 
 function hashUserId(userId: string): string {
-  return createHash("sha256").update(userId).digest("hex").slice(0, 6);
+  return createHash("sha256").update(userId).digest("hex").slice(0, 16);
 }
 
 export async function GET(req: Request) {
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       `/api/leaderboardConsent/${encodeURIComponent(hashed)}`,
     );
     const json = (await res.json()) as { enabled: boolean; displayName: string | null };
-    return Response.json({ ...json, hashLabel: `User #${hashed}` });
+    return Response.json({ ...json, hashLabel: `User #${hashed.slice(0, 6)}` });
   } catch (res) {
     if (res instanceof Response) return res;
     throw res;

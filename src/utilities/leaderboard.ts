@@ -22,9 +22,10 @@ export async function getLeaderboard(opts: {
   locationId?: string;
   actionType?: string;
   limit?: number;
+  currentUserId?: string;
   discordClient: Client;
 }): Promise<LeaderboardResult> {
-  const { locationId, actionType, limit = 10, discordClient } = opts;
+  const { locationId, actionType, limit = 10, currentUserId, discordClient } = opts;
 
   const whereClauses: SQL[] = [];
   if (locationId) {
@@ -46,23 +47,16 @@ export async function getLeaderboard(opts: {
     .orderBy(desc(sum(actionData.hasPerformed)))
     .limit(Math.min(limit, 25));
 
-  const entries: LeaderboardEntry[] = [];
-
-  // Only resolve display names when scoped to a specific guild
-  let guild: Guild | null = null;
-  if (locationId) {
-    try {
-      guild = await discordClient.guilds.fetch(locationId);
-    } catch {
-      // bot may not be in this guild
-    }
+  if (rows.length === 0) {
+    return { locationId: locationId ?? null, actionType: actionType ?? null, entries: [] };
   }
 
+  // Resolve guild display names when scoped to a specific guild
   const displayNameByUserId = new Map<string, string | null>();
-  if (guild && rows.length > 0) {
-    const userIds = rows.map((r) => r.userId);
+  if (locationId) {
     try {
-      const members = await guild.members.fetch({ user: userIds });
+      const guild: Guild = await discordClient.guilds.fetch(locationId);
+      const members = await guild.members.fetch({ user: rows.map((r) => r.userId) });
       for (const [userId, member] of members) {
         displayNameByUserId.set(
           userId,
@@ -70,7 +64,7 @@ export async function getLeaderboard(opts: {
         );
       }
     } catch {
-      // failed to fetch members, proceed without display names
+      // bot may not be in this guild, or failed to fetch members
     }
   }
 
@@ -92,19 +86,88 @@ export async function getLeaderboard(opts: {
     // failed to fetch consent, proceed without display names
   }
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  const entries: LeaderboardEntry[] = rows.map((row, i) => {
     const hashed = hashUserId(row.userId);
     const consentName = consentDisplayNames.get(hashed) ?? null;
     const displayName = consentName ?? displayNameByUserId.get(row.userId) ?? null;
 
-    entries.push({
+    return {
       rank: i + 1,
       userId: row.userId,
       displayName,
-      anonymousLabel: hashed,
+      anonymousLabel: hashed.slice(0, 6),
       totalActions: row.totalActions ?? 0,
-    });
+    };
+  });
+
+  // If current user is not in the top N, add them at the bottom
+  if (currentUserId && !entries.some((e) => e.userId === currentUserId)) {
+    try {
+      const userRows = await drizzleDb
+        .select({
+          totalActions: sum(actionData.hasPerformed).mapWith(Number),
+        })
+        .from(actionData)
+        .where(and(...whereClauses, eq(actionData.userId, currentUserId)))
+        .groupBy(actionData.userId)
+        .having(gt(sum(actionData.hasPerformed), 0));
+
+      const userTotal = userRows[0]?.totalActions ?? 0;
+
+      if (userTotal > 0) {
+        // Count how many have more actions to determine rank
+        const rankRows = await drizzleDb
+          .select({
+            count: sum(actionData.hasPerformed).mapWith(Number),
+          })
+          .from(actionData)
+          .where(and(...whereClauses))
+          .groupBy(actionData.userId)
+          .having(gt(sum(actionData.hasPerformed), userTotal));
+
+        const rank = rankRows.length + 1;
+
+        const hashed = hashUserId(currentUserId);
+        let displayName = consentDisplayNames.get(hashed) ?? null;
+
+        // Look up consent specifically if not in the top N map
+        if (!displayName) {
+          try {
+            const consentRow = await drizzleDb
+              .select({ displayName: leaderboardConsent.displayName })
+              .from(leaderboardConsent)
+              .where(eq(leaderboardConsent.hashedUserId, hashed))
+              .limit(1);
+            if (consentRow.length > 0) {
+              displayName = consentRow[0].displayName;
+            }
+          } catch {
+            // failed to fetch consent
+          }
+        }
+
+        // Try guild display name if not consented
+        if (!displayName && locationId) {
+          try {
+            const guild: Guild = await discordClient.guilds.fetch(locationId);
+            const member = await guild.members.fetch(currentUserId);
+            displayName = member.displayName ?? member.user.displayName ?? null;
+          } catch {
+            // couldn't resolve guild name
+          }
+        }
+
+        entries.push({
+          rank,
+          userId: currentUserId,
+          displayName,
+          anonymousLabel: hashed.slice(0, 6),
+          totalActions: userTotal,
+        });
+      }
+    } catch {
+      // failed to include current user, proceed without
+    }
   }
 
   return { locationId: locationId ?? null, actionType: actionType ?? null, entries };
