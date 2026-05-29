@@ -7,7 +7,7 @@
 - Hovering an action card on the global stats page filters the leaderboard to that action.
 - Added a leaderboard display name setting — choose to show your name instead of appearing anonymous. Defaults to your Discord username.
 - Current user is highlighted with an amber tint on the leaderboard.
-- Leaderboard shows up to 25 entries on larger screens.
+- Leaderboard shows up to 15 entries.
 - Stats cards have a cleaner footer layout.
 
 ### Under the Hood
