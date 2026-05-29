@@ -11,12 +11,14 @@ interface UseLeaderboardOptions {
   locationId?: string | null;
   actionType?: string | null;
   limit?: number;
+  scope?: "guild";
 }
 
 export function useLeaderboard({
   locationId,
   actionType = null,
   limit = 10,
+  scope,
 }: UseLeaderboardOptions) {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
@@ -25,6 +27,9 @@ export function useLeaderboard({
   }
   if (actionType) {
     params.set("actionType", actionType);
+  }
+  if (scope) {
+    params.set("scope", scope);
   }
 
   const key = `/api/leaderboard?${params.toString()}`;

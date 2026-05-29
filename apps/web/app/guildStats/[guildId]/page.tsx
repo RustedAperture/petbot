@@ -113,6 +113,7 @@ export default function GuildStatsPage({
           locationId={guildId}
           actionType={hoveredAction}
           className="col-span-4 xl:col-span-1"
+          context="guild"
         />
       </div>
     </main>

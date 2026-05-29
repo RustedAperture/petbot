@@ -20,6 +20,7 @@ interface LeaderboardProps {
   actionType: string | null;
   limit?: number;
   className?: string;
+  context?: "guild";
 }
 
 const MAX_LIMIT = 15;
@@ -36,11 +37,13 @@ export default function Leaderboard({
   actionType,
   limit = MAX_LIMIT,
   className,
+  context,
 }: LeaderboardProps) {
   const { data, isLoading, error } = useLeaderboard({
     locationId,
     actionType,
     limit,
+    scope: context,
   });
 
   const title = data?.actionType

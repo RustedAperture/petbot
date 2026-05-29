@@ -11,7 +11,9 @@ export async function GET(req: Request) {
     const actionType = url.searchParams.get("actionType");
     const limit = url.searchParams.get("limit") ?? "10";
 
-    if (locationId && /^\d+$/.test(locationId)) {
+    const scope = url.searchParams.get("scope");
+
+    if (scope === "guild" && locationId) {
       const guilds = await resolveGuilds(session);
       if (!guilds.some((g) => g.id === locationId)) {
         throw apiError(403, "forbidden");
