@@ -151,10 +151,6 @@ export default function StatsCard({
                   value={performedCount}
                   className="font-normal"
                 />
-                <Badge variant="outline">
-                  {formatPercentage(performedCount, totalActionsPerformed)} of
-                  actions
-                </Badge>
               </div>
             </div>
             {!hideUserCount && (
@@ -162,14 +158,16 @@ export default function StatsCard({
                 <p className="shrink">
                   <b>Users:</b>
                 </p>
-                <div className="flex justify-between grow">
-                  <NativeCounterUp value={userCount} className="font-normal" />
-                  <Badge variant="outline">
-                    {formatPercentage(userCount, totalUniqueUsers)} of users
-                  </Badge>
+                <div className="flex grow gap-1">
+                  <NativeCounterUp value={userCount} className="font-normal" />{" "}
+                  ({formatPercentage(userCount, totalUniqueUsers)})
                 </div>
               </div>
             )}
+            <p>
+              {formatPercentage(performedCount, totalActionsPerformed)} of
+              actions
+            </p>
           </div>
         </CardFooter>
       </Card>

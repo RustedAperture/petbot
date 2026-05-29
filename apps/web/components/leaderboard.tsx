@@ -3,8 +3,7 @@
 import { useSession } from "@/hooks/use-session";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
 import {
   Card,
   CardHeader,
@@ -22,7 +21,7 @@ interface LeaderboardProps {
   className?: string;
 }
 
-const MAX_LIMIT = 25;
+const MAX_LIMIT = 15;
 
 function responsiveClass(index: number): string {
   if (index < 10) return "";
@@ -62,13 +61,18 @@ export default function Leaderboard({
   const visibleCount = data?.entries.length ?? 0;
 
   return (
-    <Card className={cn("w-full", className)} size="sm">
-      <CardHeader className="pb-2">
+    <Card
+      className={cn(
+        "self-start pb-0 bg-linear-to-b from-primary/10 to-25% dark:from-primary/15",
+        className,
+      )}
+    >
+      <CardHeader className="pb-6 border-b">
         <CardTitle>{title}</CardTitle>
         <CardDescription>{scope}</CardDescription>
       </CardHeader>
 
-      <CardContent className="pb-2">
+      <CardContent>
         {isLoading ? (
           <div className="flex flex-col gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -103,12 +107,9 @@ export default function Leaderboard({
                     {entry.rank <= 3 ? (
                       rankEmojis[entry.rank - 1]
                     ) : (
-                      <Badge
-                        variant="outline"
-                        className="h-4 px-1 text-[10px] font-mono"
-                      >
+                      <span className="text-[10px] font-mono text-muted-foreground">
                         {entry.rank}
-                      </Badge>
+                      </span>
                     )}
                   </span>
 
@@ -132,9 +133,7 @@ export default function Leaderboard({
         )}
       </CardContent>
 
-      <Separator />
-
-      <CardFooter className="pt-2">
+      <CardFooter className="border-t bg-muted/50 pb-6">
         <p className="text-xs text-muted-foreground">
           Top {visibleCount}
           {locationId ? " · hover an action card to filter" : " · global"}

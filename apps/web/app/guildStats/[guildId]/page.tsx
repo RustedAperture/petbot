@@ -66,9 +66,9 @@ export default function GuildStatsPage({
 
   return (
     <main>
-      <div className="flex gap-6">
+      <div className="grid gap-4 grid-cols-4">
         {/* Left: stats */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 col-span-4 xl:col-span-3">
           <div
             className={`flex flex-col gap-4 ${isLoading ? "opacity-80" : ""}`}
             aria-busy={isLoading}
@@ -112,13 +112,8 @@ export default function GuildStatsPage({
         <Leaderboard
           locationId={guildId}
           actionType={hoveredAction}
-          className="w-80 flex-shrink-0 hidden lg:block"
+          className="col-span-4 xl:col-span-1"
         />
-      </div>
-
-      {/* Leaderboard below on mobile */}
-      <div className="lg:hidden mt-4">
-        <Leaderboard locationId={guildId} actionType={hoveredAction} />
       </div>
     </main>
   );

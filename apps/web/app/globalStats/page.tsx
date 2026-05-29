@@ -26,9 +26,9 @@ export default function GlobalStatsPage() {
           Loading global stats…
         </p>
       ) : (
-        <div className="flex gap-6">
+        <div className="grid gap-4 grid-cols-4">
           {/* Left: stats */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 col-span-4 xl:col-span-3">
             <div className="flex flex-col gap-4">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
                 <StatsCardSimple
@@ -66,15 +66,10 @@ export default function GlobalStatsPage() {
           <Leaderboard
             locationId={null}
             actionType={hoveredAction}
-            className="w-80 flex-shrink-0 hidden lg:block"
+            className="col-span-4 xl:col-span-1"
           />
         </div>
       )}
-
-      {/* Leaderboard below on mobile */}
-      <div className="lg:hidden mt-4">
-        <Leaderboard locationId={null} actionType={hoveredAction} />
-      </div>
 
       {error ? (
         <div className="mt-4 text-sm text-destructive">

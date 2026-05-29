@@ -1,3 +1,25 @@
+## v8.7.0 - May 28, 2026
+
+### What You'll Notice
+
+- Added leaderboards to the web dashboard, showing top users by action count on global, guild, and DM stats pages.
+- Added a `/leaderboard` Discord slash command.
+- Hovering an action card on the global stats page filters the leaderboard to that action.
+- Added a leaderboard display name setting — choose to show your name instead of appearing anonymous. Defaults to your Discord username.
+- Current user is highlighted with an amber tint on the leaderboard.
+- Leaderboard shows up to 25 entries on larger screens.
+- Stats cards have a cleaner footer layout.
+
+### Under the Hood
+
+- Added `leaderboardConsent` table for storing display name consent against hashed user IDs, keeping raw Discord IDs and display names in separate tables.
+- Leaderboard consent CRUD follows the existing opt-out pattern (Express route + Next.js proxy + React hook).
+- Extracted shared `hashUserId` utility for consistent hashing.
+- Global stats page uses a responsive grid layout so the leaderboard reflows below stats on smaller screens.
+- Migrated leaderboard to shadcn Card components.
+- Anonymous user labels now show 6 hex characters instead of 4.
+- Comprehensive tests for leaderboard backend, frontend, consent routes, and hooks.
+
 ## v8.6.3 - May 27, 2026
 
 ### Fixes
