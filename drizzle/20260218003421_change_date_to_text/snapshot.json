@@ -2,9 +2,7 @@
   "version": "7",
   "dialect": "sqlite",
   "id": "cf531141-7818-47af-b0fc-925e25d0f7e6",
-  "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
-  ],
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
       "name": "actionData",
@@ -243,36 +241,28 @@
       "table": "userSessions"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "actionData_pk",
       "table": "actionData",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "botData_pk",
       "table": "botData",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "name"
-      ],
+      "columns": ["name"],
       "nameExplicit": false,
       "name": "SequelizeMeta_pk",
       "table": "SequelizeMeta",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "nameExplicit": false,
       "name": "userSessions_pk",
       "table": "userSessions",

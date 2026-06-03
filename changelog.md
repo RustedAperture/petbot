@@ -1,3 +1,18 @@
+## v8.8.0 - Jun 02, 2026
+
+### What You'll Notice
+
+- **New User Stats Chart:** Added a new grouped horizontal bar chart to the user stats page, letting you directly compare how many actions you've performed vs. how many you've received.
+- **Redesigned Distribution Chart:** The global and guild action distribution chart is now a sleek radial ring chart with log-scaling to visualize highly skewed data.
+- **Dashboard Layout Polish:** Reorganized the stats dashboards by moving the distribution chart into the right-hand sidebar above the leaderboard.
+- Reduced the leaderboard size from Top 15 to Top 10.
+- Improved gradient matching and UI sizing across all stats components.
+
+### Under the Hood
+
+- **API Updates:** The `/api/stats` backend route now properly aggregates and returns both `totalHasPerformed` and `totalHasReceived` from the database.
+- Chart components have been refactored to consume the new dual-aggregation data format.
+
 ## v8.7.0 - May 28, 2026
 
 ### What You'll Notice

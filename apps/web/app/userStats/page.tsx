@@ -7,6 +7,7 @@ import { useGlobalStats } from "@/hooks/use-global-stats";
 import { type ActionTotals } from "@/types/stats";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
+import { UserDistributionChart } from "@/components/stats/user-distribution-chart";
 
 export default function UserStatsPage() {
   const params = useSearchParams();
@@ -74,12 +75,14 @@ export default function UserStatsPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <UserDistributionChart totalsByAction={data.totalsByAction} />
             {entries.map(([actionKey, totals]) => (
               <StatsCard
                 key={actionKey}
                 actionName={actionKey}
                 actionImageUrl={totals.imageUrl}
                 performedCount={totals.totalHasPerformed}
+                receivedCount={totals.totalHasReceived}
                 userCount={totals.totalUsers}
                 totalUniqueUsers={data.totalUniqueUsers}
                 totalActionsPerformed={data.totalActionsPerformed}

@@ -8,16 +8,18 @@ import logger from "../../logger.js";
 type ActionAggregate = {
   actionType: string;
   totalHasPerformed: unknown;
+  totalHasReceived: unknown;
   totalUsers: unknown;
 };
 
 async function getActionAggregates(
   whereClauses: unknown[] = [],
-): Promise<Record<string, { totalHasPerformed: number; totalUsers: number }>> {
+): Promise<Record<string, { totalHasPerformed: number; totalHasReceived: number; totalUsers: number }>> {
   let query: any = drizzleDb
     .select({
       actionType: actionData.actionType,
       totalHasPerformed: sql`SUM(${actionData.hasPerformed})`,
+      totalHasReceived: sql`SUM(${actionData.hasReceived})`,
       totalUsers: sql`COUNT(DISTINCT CASE WHEN ${actionData.hasPerformed} > 0 THEN ${actionData.userId} END)`,
     })
     .from(actionData);
@@ -28,10 +30,11 @@ async function getActionAggregates(
 
   const rows: ActionAggregate[] = await query.groupBy(actionData.actionType);
   return rows.reduce<
-    Record<string, { totalHasPerformed: number; totalUsers: number }>
+    Record<string, { totalHasPerformed: number; totalHasReceived: number; totalUsers: number }>
   >((acc, row) => {
     acc[row.actionType] = {
       totalHasPerformed: Number(row.totalHasPerformed ?? 0),
+      totalHasReceived: Number(row.totalHasReceived ?? 0),
       totalUsers: Number(row.totalUsers ?? 0),
     };
     return acc;
@@ -100,6 +103,7 @@ export default async function statsHandler(
         string,
         {
           totalHasPerformed: number;
+          totalHasReceived: number;
           totalUsers: number;
           imageUrl?: string;
           images?: string[];
@@ -141,10 +145,12 @@ export default async function statsHandler(
       actionKinds.forEach((k) => {
         const aggregate = aggregatesByAction[k] ?? {
           totalHasPerformed: 0,
+          totalHasReceived: 0,
           totalUsers: 0,
         };
         totalsByAction[k] = {
           totalHasPerformed: aggregate.totalHasPerformed,
+          totalHasReceived: aggregate.totalHasReceived,
           totalUsers: aggregate.totalUsers,
           imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
           ...(imagesByAction[k] ? { images: imagesByAction[k] } : {}),
@@ -254,6 +260,7 @@ export default async function statsHandler(
       string,
       {
         totalHasPerformed: number;
+        totalHasReceived: number;
         totalUsers: number;
         imageUrl?: string;
         images?: string[];
@@ -263,10 +270,12 @@ export default async function statsHandler(
     actionKinds.forEach((k) => {
       const aggregate = aggregatesByAction[k] ?? {
         totalHasPerformed: 0,
+        totalHasReceived: 0,
         totalUsers: 0,
       };
       totalsByAction[k] = {
         totalHasPerformed: aggregate.totalHasPerformed,
+        totalHasReceived: aggregate.totalHasReceived,
         totalUsers: aggregate.totalUsers,
         imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
       };

@@ -9,6 +9,7 @@ import { useBotGuilds } from "@/hooks/use-bot-guilds";
 import StatsCard from "@/components/stats/stats-card";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import Leaderboard from "@/components/leaderboard";
+import { DistributionChart } from "@/components/stats/distribution-chart";
 
 export default function GuildStatsPage({
   params,
@@ -84,6 +85,7 @@ export default function GuildStatsPage({
               />
             </div>
 
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {entries.map(([actionKey, totals]) => (
                 <StatsCard
@@ -108,13 +110,20 @@ export default function GuildStatsPage({
           ) : null}
         </div>
 
-        {/* Right: leaderboard (desktop) */}
-        <Leaderboard
-          locationId={guildId}
-          actionType={hoveredAction}
-          className="col-span-4 xl:col-span-1"
-          context="guild"
-        />
+        <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+          <DistributionChart
+            totalsByAction={data.totalsByAction}
+            title="Guild Action Distribution"
+            description="Distribution of actions in this server"
+            metricLabel="Guild Actions"
+          />
+          <Leaderboard
+            locationId={guildId}
+            actionType={hoveredAction}
+            context="guild"
+            className="w-full"
+          />
+        </div>
       </div>
     </main>
   );
