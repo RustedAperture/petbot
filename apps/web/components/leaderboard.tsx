@@ -96,7 +96,7 @@ export default function Leaderboard({
               const label =
                 entry.displayName ?? `User #${entry.anonymousLabel}`;
               const isOutsideTopN = entry.isCurrentUser && entry.rank !== i + 1;
-              const maxActions = data.entries[0]?.totalActions ?? 1;
+              const maxActions = Math.max(data.entries[0]?.totalActions || 1, 1);
               const relativePercent = (entry.totalActions / maxActions) * 100;
 
               return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -36,7 +36,10 @@ export function UserDistributionChart({
   totalsByAction,
 }: UserDistributionChartProps) {
   const chartData = Object.entries(totalsByAction)
-    .filter(([, totals]) => totals.totalHasPerformed > 0)
+    .filter(
+      ([, totals]) =>
+        totals.totalHasPerformed > 0 || (totals.totalHasReceived ?? 0) > 0,
+    )
     .map(([actionKey, totals]) => ({
       action: actionKey.charAt(0).toUpperCase() + actionKey.slice(1),
       performed: totals.totalHasPerformed,

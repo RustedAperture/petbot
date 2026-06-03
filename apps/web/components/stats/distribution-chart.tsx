@@ -97,9 +97,16 @@ export function DistributionChart({
                           <span className="text-muted-foreground capitalize">
                             {label}
                           </span>
-                          <span className="font-mono font-medium text-foreground tabular-nums">
-                            {d.count.toLocaleString()}
-                          </span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-mono font-medium text-foreground tabular-nums">
+                              {d.count.toLocaleString()}
+                            </span>
+                            {metricLabel && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {metricLabel.toLowerCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
