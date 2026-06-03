@@ -40,6 +40,7 @@ export function DistributionChart({
   totalsByAction,
   title = "Action Distribution",
   description = "A breakdown of active interactions",
+  metricLabel,
 }: DistributionChartProps) {
   const chartData = React.useMemo(() => {
     return Object.entries(totalsByAction)
