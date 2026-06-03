@@ -13,6 +13,10 @@
 - **API Updates:** The `/api/stats` backend route now properly aggregates and returns both `totalHasPerformed` and `totalHasReceived` from the database.
 - Chart components have been refactored to consume the new dual-aggregation data format.
 
+### Fixes
+
+- Fixed the GitHub link button on the homepage being invisible in light mode by improving its contrast and adding a subtle border.
+
 ## v8.7.0 - May 28, 2026
 
 ### What You'll Notice
