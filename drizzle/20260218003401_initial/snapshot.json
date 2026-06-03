@@ -241,36 +241,28 @@
       "table": "actionData"
     },
     {
-      "columns": [
-        "name"
-      ],
+      "columns": ["name"],
       "nameExplicit": true,
       "name": "SequelizeMeta_pk",
       "table": "SequelizeMeta",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": true,
       "name": "actionData_pk",
       "table": "actionData",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": true,
       "name": "botData_pk",
       "table": "botData",
       "entityType": "pks"
     },
     {
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "nameExplicit": true,
       "name": "userSessions_pk",
       "table": "userSessions",

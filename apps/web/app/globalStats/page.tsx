@@ -6,6 +6,7 @@ import StatsCard from "@/components/stats/stats-card";
 import { ActionTotals } from "@/types/stats";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import Leaderboard from "@/components/leaderboard";
+import { DistributionChart } from "@/components/stats/distribution-chart";
 
 export default function GlobalStatsPage() {
   const { data, isLoading, error, refresh } = useGlobalStats();
@@ -44,6 +45,7 @@ export default function GlobalStatsPage() {
                   value={data.totalLocations}
                 />
               </div>
+
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {entries.map(([actionKey, totals]) => (
                   <StatsCard
@@ -62,12 +64,19 @@ export default function GlobalStatsPage() {
             </div>
           </div>
 
-          {/* Right: leaderboard (desktop) */}
-          <Leaderboard
-            locationId={null}
-            actionType={hoveredAction}
-            className="col-span-4 xl:col-span-1"
-          />
+          <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+            <DistributionChart
+              totalsByAction={data.totalsByAction}
+              title="Global Action Distribution"
+              description="All actions performed globally across Discord"
+              metricLabel="Total Actions"
+            />
+            <Leaderboard
+              locationId={null}
+              actionType={hoveredAction}
+              className="w-full"
+            />
+          </div>
         </div>
       )}
 

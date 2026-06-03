@@ -23,7 +23,7 @@ interface LeaderboardProps {
   context?: "guild";
 }
 
-const MAX_LIMIT = 15;
+const MAX_LIMIT = 10;
 
 function responsiveClass(index: number): string {
   if (index < 10) return "";
@@ -66,7 +66,7 @@ export default function Leaderboard({
   return (
     <Card
       className={cn(
-        "self-start pb-0 bg-linear-to-b from-primary/10 to-25% dark:from-primary/15",
+        "self-start pb-0 bg-linear-to-b from-primary/5 to-25% dark:from-primary/10",
         className,
       )}
     >
@@ -96,18 +96,28 @@ export default function Leaderboard({
               const label =
                 entry.displayName ?? `User #${entry.anonymousLabel}`;
               const isOutsideTopN = entry.isCurrentUser && entry.rank !== i + 1;
+              const maxActions = Math.max(data.entries[0]?.totalActions || 1, 1);
+              const relativePercent = (entry.totalActions / maxActions) * 100;
 
               return (
                 <React.Fragment key={`${entry.anonymousLabel}-${i}`}>
                   {isOutsideTopN && <Separator className="my-1" />}
                 <div
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                    "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors overflow-hidden",
                     responsiveClass(i),
                     entry.isCurrentUser && "bg-amber-500/10",
                   )}
                 >
-                  <span className="w-5 text-center">
+                  <div
+                    className={cn(
+                      "absolute inset-y-0 left-0 bg-primary/10 dark:bg-primary/20 transition-all duration-500 pointer-events-none",
+                      entry.isCurrentUser && "bg-amber-500/15 dark:bg-amber-500/25",
+                    )}
+                    style={{ width: `${relativePercent}%` }}
+                  />
+
+                  <span className="relative z-10 w-5 text-center">
                     {entry.rank <= 3 ? (
                       rankEmojis[entry.rank - 1]
                     ) : (
@@ -119,7 +129,7 @@ export default function Leaderboard({
 
                   <span
                     className={cn(
-                      "flex-1 truncate",
+                      "relative z-10 flex-1 truncate",
                       entry.isCurrentUser && "font-medium text-amber-500",
                     )}
                   >
@@ -127,7 +137,7 @@ export default function Leaderboard({
                     {entry.isCurrentUser ? " (you)" : ""}
                   </span>
 
-                  <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                  <span className="relative z-10 font-mono text-xs text-muted-foreground tabular-nums">
                     {entry.totalActions.toLocaleString()}
                   </span>
                 </div>

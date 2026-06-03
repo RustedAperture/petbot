@@ -19,6 +19,7 @@ interface StatsCardProps {
   actionName: string;
   actionImageUrl: string;
   performedCount: number;
+  receivedCount?: number;
   userCount: number;
   totalUniqueUsers: number;
   totalActionsPerformed: number;
@@ -33,6 +34,7 @@ export default function StatsCard({
   actionName,
   actionImageUrl,
   performedCount,
+  receivedCount,
   userCount,
   totalUniqueUsers,
   totalActionsPerformed,
@@ -153,6 +155,19 @@ export default function StatsCard({
                 />
               </div>
             </div>
+            {receivedCount !== undefined && (
+              <div className="flex gap-1 flex-wrap">
+                <p className="shrink">
+                  <b>Received:</b>
+                </p>
+                <div className="flex justify-between grow">
+                  <NativeCounterUp
+                    value={receivedCount}
+                    className="font-normal"
+                  />
+                </div>
+              </div>
+            )}
             {!hideUserCount && (
               <div className="flex gap-1 flex-wrap">
                 <p className="shrink">

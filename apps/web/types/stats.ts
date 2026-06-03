@@ -1,5 +1,6 @@
 export type ActionTotals = {
   totalHasPerformed: number;
+  totalHasReceived?: number;
   totalUsers: number;
   imageUrl: string;
   images?: string[];
