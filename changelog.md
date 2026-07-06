@@ -1,3 +1,10 @@
+## v8.8.1 - Jul 06, 2026
+
+### Fixes
+
+- Fixed the "Set everywhere" option not working when editing images from the website.
+- Fixed guild default images not applying to existing users after an admin updated them via `/server-set` or the website; changes now take effect immediately instead of requiring each user to run `/reset`.
+
 ## v8.8.0 - Jun 02, 2026
 
 ### What You'll Notice
