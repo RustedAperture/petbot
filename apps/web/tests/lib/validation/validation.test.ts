@@ -85,6 +85,29 @@ describe("setImagesBody", () => {
     expect(result.everywhere).toBe(true);
   });
 
+  it("parses a valid setImages body with everywhere=true and guildId explicitly null", () => {
+    // The web dialog sends guildId: null (not omitted) when "Set everywhere" is checked.
+    const result = setImagesBody.parse({
+      guildId: null,
+      actionType: "pet",
+      images: [""],
+      everywhere: true,
+    });
+    expect(result.everywhere).toBe(true);
+    expect(result.guildId).toBeNull();
+  });
+
+  it("rejects when everywhere=false and guildId is explicitly null", () => {
+    expect(() =>
+      setImagesBody.parse({
+        guildId: null,
+        actionType: "pet",
+        images: [],
+        everywhere: false,
+      }),
+    ).toThrow();
+  });
+
   it("rejects when everywhere=false and no guildId", () => {
     expect(() =>
       setImagesBody.parse({

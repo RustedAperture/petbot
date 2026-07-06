@@ -24,7 +24,7 @@ describe("resetAction (drizzle path)", () => {
     vi.clearAllMocks();
   });
 
-  it("resets slot 1 to guild base image for a single record (drizzle)", async () => {
+  it("resets slot 1 by clearing it so the live guild default applies (drizzle)", async () => {
     // Arrange: make select/from/where/limit return guildSettings for botData and a single action record for actionData
     const botRow = {
       defaultImages: { pet: "guild-base.png" },
@@ -70,7 +70,7 @@ describe("resetAction (drizzle path)", () => {
 
     expect(updateSetSpy).toHaveBeenCalled();
     const firstCallArg = (updateSetSpy.mock.calls[0] as any)[0];
-    expect(firstCallArg.images).toEqual(["guild-base.png", "old2"]);
+    expect(firstCallArg.images).toEqual(["old2"]);
   });
 
   it("resets slot everywhere for all records (drizzle)", async () => {
@@ -121,7 +121,7 @@ describe("resetAction (drizzle path)", () => {
     expect(updateSetSpy).toHaveBeenCalledTimes(2);
     const call0 = (updateSetSpy.mock.calls[0] as any)[0];
     const call1 = (updateSetSpy.mock.calls[1] as any)[0];
-    expect(call0.images).toEqual(["guild-base.png", "b"]);
-    expect(call1.images).toEqual(["guild-base.png", "y"]);
+    expect(call0.images).toEqual(["b"]);
+    expect(call1.images).toEqual(["y"]);
   });
 });

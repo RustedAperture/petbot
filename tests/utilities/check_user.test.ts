@@ -19,27 +19,18 @@ vi.mock("@logger", () => ({
 }));
 import { checkUser } from "../../src/utilities/check_user.js";
 import { drizzleDb } from "../../src/db/connector.js";
-import { ACTIONS } from "../../src/types/constants.js";
 
 describe("checkUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("creates a new record with default image when none exist and no guild settings", async () => {
+  it("creates a new record with no baked-in image so the live guild default applies", async () => {
     // no existing records, no guild settings
     (drizzleDb as any).select
       .mockImplementationOnce(() => ({
         from: (_: any) => ({
           where: (_: any) => ({ then: (r: any) => r([{ m: null }]) }),
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        from: (_: any) => ({
-          where: (_: any) => ({
-            then: (r: any) => r([]),
-            limit: () => Promise.resolve([]),
-          }),
         }),
       }))
       .mockImplementationOnce(() => ({
@@ -65,43 +56,8 @@ describe("checkUser", () => {
       userId: user.id,
       locationId: "g1",
       actionType: "pet",
-      images: expect.any(Array),
+      images: [],
     });
-    expect(inserted.images[0]).toBe(ACTIONS.pet.defaultImage);
-  });
-
-  it("uses guild default image when guild settings exist", async () => {
-    // no existing records, guild settings exist
-    (drizzleDb as any).select
-      .mockImplementationOnce(() => ({
-        from: (_: any) => ({
-          where: (_: any) => ({ then: (r: any) => r([{ m: null }]) }),
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        from: (_: any) => ({
-          where: (_: any) => ({
-            then: (r: any) => r([]),
-            limit: () => Promise.resolve([]),
-          }),
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        from: (_: any) => ({
-          where: (_: any) => ({
-            then: (r: any) => r([{ default_images: { pet: "guild-img" } }]),
-            limit: () =>
-              Promise.resolve([{ default_images: { pet: "guild-img" } }]),
-          }),
-        }),
-      }));
-
-    const user = { id: "u2", displayName: "User2" } as any;
-
-    await checkUser("pet" as any, user, "g2");
-
-    // assert an insert happened
-    expect((drizzleDb as any).insert).toHaveBeenCalled();
   });
 
   it("copies images from the record with highest performed if present", async () => {
@@ -117,14 +73,6 @@ describe("checkUser", () => {
           where: (_: any) => ({
             then: (r: any) => r([{ images: ["x"] }]),
             limit: () => Promise.resolve([{ images: ["x"] }]),
-          }),
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        from: (_: any) => ({
-          where: (_: any) => ({
-            then: (r: any) => r([]),
-            limit: () => Promise.resolve([]),
           }),
         }),
       }));

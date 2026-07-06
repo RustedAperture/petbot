@@ -27,7 +27,7 @@ describe("resetAction", () => {
     vi.clearAllMocks();
   });
 
-  it("resets slot 1 to guild base image for a single record", async () => {
+  it("resets slot 1 by clearing it so the live guild default applies", async () => {
     const botRow = {
       defaultImages: { pet: "guild-base.png" },
       log_channel: "lc",
@@ -71,7 +71,7 @@ describe("resetAction", () => {
 
     expect(updateSetSpy).toHaveBeenCalled();
     const firstCallArg = (updateSetSpy.mock.calls[0] as any)[0];
-    expect(firstCallArg.images).toEqual(["guild-base.png", "old2"]);
+    expect(firstCallArg.images).toEqual(["old2"]);
   });
 
   it("resets slot everywhere when everywhere is true", async () => {
@@ -122,8 +122,8 @@ describe("resetAction", () => {
     expect(updateSetSpy).toHaveBeenCalledTimes(2);
     const call0 = (updateSetSpy.mock.calls[0] as any)[0];
     const call1 = (updateSetSpy.mock.calls[1] as any)[0];
-    expect(call0.images).toEqual(["guild-base.png", "b"]);
-    expect(call1.images).toEqual(["guild-base.png", "y"]);
+    expect(call0.images).toEqual(["b"]);
+    expect(call1.images).toEqual(["y"]);
   });
 
   it("logs error and returns when no per-location record exists", async () => {
