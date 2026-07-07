@@ -213,3 +213,4 @@
 
 - Zimbi (Default Images)
 - Ace (Bug Report)
+- kitsii (Bug Report)
