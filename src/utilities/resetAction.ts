@@ -65,7 +65,6 @@ export const resetAction = async (
       `Reset ${target.displayName} image ${slot} to the base image in ${interaction.guild.name}`,
     );
   } else {
-    img = slot === 1 ? config.defaultImage : null;
     logger.debug(
       `reset ${interaction.user.displayName} image ${slot} to the base image in ${guild}`,
     );
@@ -96,11 +95,10 @@ export const resetAction = async (
 
       for (const record of records) {
         const imagesArray: string[] = (record.images as string[]) ?? [];
-        if (slot > 1) {
-          imagesArray.splice(slot - 1, 1);
-        } else {
-          imagesArray[slot - 1] = img!;
-        }
+        // Clear the slot rather than baking in the current default so the
+        // live guild default (resolved by performAction) keeps applying
+        // even if it changes again later.
+        imagesArray.splice(slot - 1, 1);
         const cleanedImages = imagesArray.filter(
           (image: string) => image && image.trim() !== "",
         );
@@ -135,11 +133,10 @@ export const resetAction = async (
       }
 
       const imagesArray: string[] = (record.images as string[]) ?? [];
-      if (slot > 1) {
-        imagesArray.splice(slot - 1, 1);
-      } else {
-        imagesArray[slot - 1] = img!;
-      }
+      // Clear the slot rather than baking in the current default so the
+      // live guild default (resolved by performAction) keeps applying
+      // even if it changes again later.
+      imagesArray.splice(slot - 1, 1);
       const cleanedImages = imagesArray.filter(
         (image: string) => image && image.trim() !== "",
       );

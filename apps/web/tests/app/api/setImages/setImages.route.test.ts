@@ -256,6 +256,28 @@ describe("/api/setImages proxy – forwarding", () => {
     expect(sentBody.guildId).toBeUndefined();
   });
 
+  it("POST with everywhere=true and guildId explicitly null (as sent by the edit-images dialog) succeeds", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+
+    const body = JSON.stringify({
+      guildId: null,
+      actionType: "hug",
+      images: ["https://example.com/hug.png"],
+      everywhere: true,
+    });
+
+    const res = await POST(makeRequest({ cookie, body }) as any);
+
+    expect(res.status).toBe(200);
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.everywhere).toBe(true);
+  });
+
   it("POST attaches x-internal-api-key header when INTERNAL_API_SECRET is set", async () => {
     const origSecret = process.env.INTERNAL_API_SECRET;
     process.env.INTERNAL_API_SECRET = "super-secret";

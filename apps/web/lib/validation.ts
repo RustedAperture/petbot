@@ -16,7 +16,7 @@ export const userLocationParams = z.object({
 
 export const setImagesBody = z
   .object({
-    guildId: discordIdSchema.optional(),
+    guildId: discordIdSchema.nullable().optional(),
     actionType: z.string().refine((v) => v in ACTIONS, "Invalid action type"),
     images: z
       .array(
