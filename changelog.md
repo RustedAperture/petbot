@@ -3,7 +3,7 @@
 ### Fixes
 
 - Fixed the "Set everywhere" option not working when editing images from the website.
-- Fixed guild default images not applying to existing users after an admin updated them via `/server-set` or the website; changes now take effect immediately instead of requiring each user to run `/reset`.
+- Fixed guild default images being permanently locked in the first time a user used a command, so admins updating the default via `/server-set` or the website never affected anyone who had already used the bot. New users now always get the current default automatically; if you already have an image set, run `/reset` once to pick it up too — after that, future default changes will keep applying automatically without needing `/reset` again.
 
 ## v8.8.0 - Jun 02, 2026
 
