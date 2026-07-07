@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   }
 
   let parsed: {
-    guildId?: string;
+    guildId?: string | null;
     actionType: string;
     images: string[];
     everywhere: boolean;
