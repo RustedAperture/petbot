@@ -38,7 +38,7 @@ jobs:
 
       - name: Extract metadata (tags)
         id: meta-bot
-        uses: docker/metadata-action@v6.0.0
+        uses: docker/metadata-action@v6.2.0
         with:
           images: ghcr.io/${{ github.repository }}-bot
           tags: |
@@ -108,7 +108,7 @@ jobs:
 
       - name: Extract metadata (tags)
         id: meta-web
-        uses: docker/metadata-action@v6.0.0
+        uses: docker/metadata-action@v6.2.0
         with:
           images: ghcr.io/${{ github.repository }}-web
           tags: |
