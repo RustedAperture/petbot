@@ -111,9 +111,8 @@ describe("/api/guildChannels proxy", () => {
   });
 
   it("GET by path strips details from 500 proxied responses in production", async () => {
-    const originalEnv = process.env.NODE_ENV;
     const originalSecret = process.env.INTERNAL_API_SECRET;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     process.env.INTERNAL_API_SECRET = "super-secret";
 
     try {
@@ -144,7 +143,7 @@ describe("/api/guildChannels proxy", () => {
       expect(await res.json()).toEqual({ error: "server_error" });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     } finally {
-      process.env.NODE_ENV = originalEnv;
+      vi.unstubAllEnvs();
       process.env.INTERNAL_API_SECRET = originalSecret;
     }
   });

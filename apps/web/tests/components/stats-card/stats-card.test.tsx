@@ -119,8 +119,12 @@ describe("StatsCard component carousel support", () => {
       nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     }
     // verify the mocked methods were invoked via the exported __api object
-    const carouselMock =
-      await import("@/components/ui/carousel");
+    const carouselMock = (await import("@/components/ui/carousel")) as typeof import("@/components/ui/carousel") & {
+      __api: {
+        scrollPrev: ReturnType<typeof vi.fn>;
+        scrollNext: ReturnType<typeof vi.fn>;
+      };
+    };
     expect(carouselMock.__api.scrollPrev).toHaveBeenCalled();
     expect(carouselMock.__api.scrollNext).toHaveBeenCalled();
     // each image should appear inside carousel items

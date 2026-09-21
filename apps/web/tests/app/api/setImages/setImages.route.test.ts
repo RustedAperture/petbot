@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { createSessionCookieValue } from "@/lib/internal-api";
 
 // Mock the package alias used by the route so tests running under Node

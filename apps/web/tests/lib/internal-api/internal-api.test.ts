@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   SESSION_COOKIE_NAME,
   createSessionCookieValue,
@@ -7,6 +7,10 @@ import {
   getInternalApiBase,
   parseSessionCookieValue,
 } from "@/lib/internal-api";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("SESSION_COOKIE_NAME", () => {
   it("is petbot_session", () => {
@@ -92,14 +96,14 @@ describe("internalApiHeadersOptional", () => {
 
   it("returns empty object when secret is not set", () => {
     delete process.env.INTERNAL_API_SECRET;
-    process.env.NODE_ENV = "test";
+    vi.stubEnv("NODE_ENV", "test");
     const headers = internalApiHeadersOptional();
     expect(headers).toEqual({});
   });
 
   it("throws in production when secret is not set", () => {
     delete process.env.INTERNAL_API_SECRET;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     expect(() => internalApiHeadersOptional()).toThrow(
       "INTERNAL_API_SECRET is not set",
@@ -131,7 +135,7 @@ describe("getInternalApiBase", () => {
     delete process.env.HTTP_TLS_CERT;
     delete process.env.HTTP_TLS_KEY;
     delete process.env.INTERNAL_API_USE_HTTPS;
-    process.env.NODE_ENV = "test";
+    vi.stubEnv("NODE_ENV", "test");
     expect(getInternalApiBase()).toBe("http://127.0.0.1:3001");
   });
 
@@ -142,7 +146,7 @@ describe("getInternalApiBase", () => {
     delete process.env.HTTP_TLS_CERT;
     delete process.env.HTTP_TLS_KEY;
     delete process.env.INTERNAL_API_USE_HTTPS;
-    process.env.NODE_ENV = "test";
+    vi.stubEnv("NODE_ENV", "test");
     expect(getInternalApiBase()).toBe("http://0.0.0.0:8080");
   });
 
@@ -150,7 +154,7 @@ describe("getInternalApiBase", () => {
     delete process.env.INTERNAL_API_URL;
     process.env.HTTP_HOST = "api.example.com";
     process.env.HTTP_PORT = "443";
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     expect(getInternalApiBase()).toBe("https://api.example.com:443");
   });
 
@@ -158,7 +162,7 @@ describe("getInternalApiBase", () => {
     delete process.env.INTERNAL_API_URL;
     process.env.HTTP_HOST = "localhost";
     process.env.HTTP_PORT = "3001";
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     expect(getInternalApiBase()).toBe("http://localhost:3001");
   });
 
@@ -167,7 +171,7 @@ describe("getInternalApiBase", () => {
     process.env.HTTP_HOST = "api.example.com";
     process.env.HTTP_PORT = "443";
     process.env.INTERNAL_API_USE_HTTPS = "true";
-    process.env.NODE_ENV = "test";
+    vi.stubEnv("NODE_ENV", "test");
     expect(getInternalApiBase()).toBe("https://api.example.com:443");
   });
 });
