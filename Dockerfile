@@ -74,8 +74,11 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/drizzle ./drizzle
 COPY entrypoint-bot.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
+RUN chmod +x /usr/local/bin/entrypoint.sh && \
+    addgroup --system app && \
+    adduser --system --ingroup app app && \
+    chmod 0755 /home/node && \
+    chown -R app:app /home/node/app
 USER app
 VOLUME ["/home/node/app/data"]
 EXPOSE 3001
@@ -96,7 +99,10 @@ COPY changelog.md ./changelog.md
 COPY privacy.md ./privacy.md
 COPY terms.md ./terms.md
 
-RUN addgroup --system app && adduser --system --ingroup app app && chown -R app:app /home/node/app
+RUN addgroup --system app && \
+    adduser --system --ingroup app app && \
+    chmod 0755 /home/node && \
+    chown -R app:app /home/node/app
 USER app
 EXPOSE 3000
 WORKDIR /home/node/app/apps/web
