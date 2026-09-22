@@ -65,7 +65,7 @@ jobs:
           docker run --rm --pull always \
             --platform linux/amd64 \
             --entrypoint sh \
-            "ghcr.io/${{ github.repository }}-bot:${{ steps.meta-bot.outputs.version }}" \
+            "${{ fromJSON(steps.meta-bot.outputs.json).tags[0] }}" \
             -c 'test -r /home/node/app/dist/src/index.js'
 
   build-web:
@@ -144,7 +144,7 @@ jobs:
           docker run --rm --pull always \
             --platform linux/amd64 \
             --entrypoint sh \
-            "ghcr.io/${{ github.repository }}-web:${{ steps.meta-web.outputs.version }}" \
+            "${{ fromJSON(steps.meta-web.outputs.json).tags[0] }}" \
             -c 'test -r /home/node/app/apps/web/package.json && test -r /home/node/app/apps/web/.next/BUILD_ID'
 
   create-release:
