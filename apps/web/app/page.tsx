@@ -1,97 +1,122 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { Separator } from "@/components/ui/separator";
+import { buttonVariants } from "@/components/ui/button";
 import { useSession } from "@/hooks/use-session";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { Coffee, GitFork, Palette } from "lucide-react";
+import {
+  ChartNoAxesCombined,
+  Coffee,
+  GitFork,
+  LogIn,
+  Palette,
+  UserRound,
+} from "lucide-react";
 
 export default function Home() {
-  const { session, loading } = useSession();
-
-  let message =
-    "PetBot is a fun Discord bot for interacting with other users. Use the sidebar to explore stats for the global bot, a specific guild, or your own personal stats!";
-  if (!session && !loading) {
-    message +=
-      " You will need to sign in with Discord to view guild or user stats.";
-  }
+  const { session } = useSession();
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center">
-      <main className="flex min-h-screen w-full flex-col items-center justify-between py-8 sm:py-32 px-4 sm:px-16">
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start text-left justify-center">
-          <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
-            Welcome to PetBot!
-          </h1>
-          <p className="max-w-xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            {message}
-          </p>
-          <Separator />
-          <h2 className="scroll-m-20 text-3xl font-semibold tracking-tight first:mt-0">
-            How to Support PetBot
-          </h2>
-          <p className="max-w-xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            If you enjoy using PetBot, you can support the project by donating
-            through Ko-fi. You can also commission a "your character here" (YCH)
-            for bot actions via Zimbi's Ko-fi, which helps fund development and
-            art assets.
-          </p>
-          <p className="max-w-xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Another great way to help is by submitting bugs, suggesting
-            improvements, or contributing code on GitHub.
-          </p>
-          <p className="max-w-xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            We keep a "special thanks" section at the bottom of the changelog
-            for bug reporters, feature suggesters, and tippers. Code
-            contributors are credited on each release for the work they've done.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button
-              size="lg"
-              className={"bg-[#50ACED] hover:scale-105 hover:bg-[#61bcfe]"}
-              render={
-                <Link
-                  href="https://ko-fi.com/walnutfox"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Coffee />
-                  Tip PetBot Development
-                </Link>
-              }
-            />
-            <Button
-              size="lg"
-              className={"bg-[#ffa500] hover:scale-105 hover:bg-[#ffb844]"}
-              render={
-                <Link
-                  href="https://ko-fi.com/zimbi"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Palette />
-                  Commission a YCH
-                </Link>
-              }
-            />
-            <Button
-              size="lg"
-              className={"bg-[#fff] text-black border border-input dark:border-transparent hover:scale-105 hover:bg-[#fff]"}
-              render={
-                <Link
-                  href="https://github.com/RustedAperture/petbot"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <GitFork />
-                  GitHub
-                </Link>
-              }
-            />
-          </div>
+    <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-12 sm:px-8 sm:pt-24">
+      <section aria-labelledby="welcome-title" className="max-w-3xl">
+        <h1
+          id="welcome-title"
+          className="text-4xl font-extrabold tracking-tight text-balance sm:text-5xl"
+        >
+          Welcome to PetBot!
+        </h1>
+        <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
+          Explore the actions people share with PetBot on Discord. See what is
+          happening across the bot, then sign in to explore your own stats and
+          servers.
+        </p>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link href="/globalStats" className={buttonVariants({ size: "lg" })}>
+            <ChartNoAxesCombined aria-hidden="true" />
+            View global stats
+          </Link>
+          {session ? (
+            <Link
+              href="/userStats"
+              className={buttonVariants({ size: "lg", variant: "secondary" })}
+            >
+              <UserRound aria-hidden="true" />
+              My stats
+            </Link>
+          ) : (
+            <Link
+              href="/api/auth/discord"
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "bg-[#5865F2] text-white hover:bg-[#4752C4]",
+              )}
+            >
+              <LogIn aria-hidden="true" />
+              Sign in with Discord
+            </Link>
+          )}
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section
+        aria-labelledby="support-title"
+        className="mt-16 max-w-3xl border-t pt-10"
+      >
+        <h2
+          id="support-title"
+          className="text-2xl font-semibold tracking-tight"
+        >
+          How to Support PetBot
+        </h2>
+        <p className="mt-4 leading-7 text-muted-foreground">
+          If you enjoy PetBot, you can support its development through Ko-fi or
+          commission a &quot;your character here&quot; (YCH) for bot actions via
+          Zimbi&apos;s Ko-fi. Bug reports, suggestions, and code contributions
+          on GitHub are welcome too.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Contributors and supporters are credited in the changelog.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link
+            href="https://ko-fi.com/walnutfox"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "bg-[#50ACED] text-black hover:bg-[#61bcfe]",
+            )}
+          >
+            <Coffee aria-hidden="true" />
+            Tip PetBot Development
+          </Link>
+          <Link
+            href="https://ko-fi.com/zimbi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "bg-[#ffa500] text-black hover:bg-[#ffb844]",
+            )}
+          >
+            <Palette aria-hidden="true" />
+            Commission a YCH
+          </Link>
+          <Link
+            href="https://github.com/RustedAperture/petbot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "bg-white text-black hover:bg-zinc-100",
+            )}
+          >
+            <GitFork aria-hidden="true" />
+            GitHub
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 }

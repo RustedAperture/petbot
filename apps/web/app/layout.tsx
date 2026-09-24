@@ -5,6 +5,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import pkg from "../../../package.json";
 import { AppHeader } from "@/components/app-header";
+import { StatsCardViewProvider } from "@/components/stats/stats-card-view";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -60,8 +61,10 @@ export default async function RootLayout({
             >
               <AppSidebar variant="floating" version={pkg.version} />
               <SidebarInset>
-                <AppHeader />
-                <div className="flex justify-center p-4 pt-0">{children}</div>
+                <StatsCardViewProvider>
+                  <AppHeader />
+                  <div className="flex justify-center p-4 pt-0">{children}</div>
+                </StatsCardViewProvider>
               </SidebarInset>
             </SidebarProvider>
           </TooltipProvider>

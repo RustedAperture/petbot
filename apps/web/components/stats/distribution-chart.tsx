@@ -55,6 +55,10 @@ export function DistributionChart({
   }, [totalsByAction]);
 
   const hasData = chartData.length > 0;
+  const totalCount = chartData.reduce(
+    (total, action) => total + action.count,
+    0,
+  );
 
   return (
     <Card className="w-full bg-linear-to-b from-primary/5 to-25% dark:from-primary/10 flex flex-col">
@@ -78,7 +82,9 @@ export function DistributionChart({
               <ChartTooltip
                 cursor={false}
                 content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
+                  if (!active || !payload?.length) {
+                    return null;
+                  }
                   const d = payload[0].payload as {
                     action: string;
                     count: number;
@@ -124,24 +130,49 @@ export function DistributionChart({
         )}
       </CardContent>
       {hasData && (
-        <CardFooter className="flex flex-wrap gap-x-4 gap-y-1.5 pt-4 pb-4 justify-center">
-          {chartData.map((d) => {
-            const config = chartConfig[d.action as keyof typeof chartConfig];
-            const label = config?.label ?? d.action;
-            const color = "color" in (config ?? {}) ? (config as { color: string }).color : d.fill;
-            return (
-              <div
-                key={d.action}
-                className="flex items-center gap-2 text-xs"
-              >
-                <div
-                  className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-muted-foreground">{label}</span>
-              </div>
-            );
-          })}
+        <CardFooter className="flex flex-col items-stretch gap-3 pt-4 pb-4">
+          <ul
+            aria-label="Action totals"
+            className="grid grid-cols-2 gap-x-4 gap-y-3"
+          >
+            {chartData.map((d) => {
+              const config = chartConfig[d.action as keyof typeof chartConfig];
+              const label = config?.label ?? d.action;
+              const color =
+                "color" in (config ?? {})
+                  ? (config as { color: string }).color
+                  : d.fill;
+              const share = (d.count / totalCount) * 100;
+              const shareLabel =
+                share < 0.1
+                  ? "<0.1%"
+                  : `${share.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+
+              return (
+                <li key={d.action} className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-1.5 text-xs">
+                    <span
+                      aria-hidden="true"
+                      className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="min-w-0 truncate text-muted-foreground">
+                      {label}
+                    </span>
+                    <span className="ml-auto shrink-0 tabular-nums text-muted-foreground">
+                      {shareLabel}
+                    </span>
+                  </div>
+                  <div className="pl-4 text-sm font-medium tabular-nums">
+                    {d.count.toLocaleString()}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-center text-[11px] leading-4 text-muted-foreground">
+            Counts are exact; ring lengths use a logarithmic scale.
+          </p>
         </CardFooter>
       )}
     </Card>

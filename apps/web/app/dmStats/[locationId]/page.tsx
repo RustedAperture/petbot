@@ -6,6 +6,7 @@ import { useSession } from "@/hooks/use-session";
 import { useGlobalStats } from "@/hooks/use-global-stats";
 import { type ActionTotals } from "@/types/stats";
 import StatsCard from "@/components/stats/stats-card";
+import StatsCardView from "@/components/stats/stats-card-view";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -251,21 +252,24 @@ export default function DmStatsLocationPage({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {entries.map(([actionKey, totals]) => (
-                <StatsCard
-                  key={actionKey}
-                  actionName={actionKey}
-                  actionImageUrl={totals.imageUrl}
-                  performedCount={totals.totalHasPerformed}
-                  userCount={totals.totalUsers}
-                  totalUniqueUsers={data.totalUniqueUsers}
-                  totalActionsPerformed={data.totalActionsPerformed}
-                  onMouseEnter={() => setHoveredAction(actionKey)}
-                  onMouseLeave={() => setHoveredAction(null)}
-                />
-              ))}
-            </div>
+            <StatsCardView>
+              {(compact) =>
+                entries.map(([actionKey, totals]) => (
+                  <StatsCard
+                    key={actionKey}
+                    actionName={actionKey}
+                    actionImageUrl={totals.imageUrl}
+                    performedCount={totals.totalHasPerformed}
+                    userCount={totals.totalUsers}
+                    totalUniqueUsers={data.totalUniqueUsers}
+                    totalActionsPerformed={data.totalActionsPerformed}
+                    onMouseEnter={() => setHoveredAction(actionKey)}
+                    onMouseLeave={() => setHoveredAction(null)}
+                    compact={compact}
+                  />
+                ))
+              }
+            </StatsCardView>
           </div>
 
           {error ? (

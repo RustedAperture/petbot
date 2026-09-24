@@ -2,6 +2,11 @@
 
 import * as React from "react";
 import { useLeaderboard } from "@/hooks/use-leaderboard";
+import { ACTIONS } from "@petbot/constants";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
@@ -18,6 +23,7 @@ import { cn } from "@/lib/utils";
 interface LeaderboardProps {
   locationId: string | null;
   actionType: string | null;
+  onActionTypeChange?: (action: string | null) => void;
   limit?: number;
   className?: string;
   context?: "guild";
@@ -26,15 +32,22 @@ interface LeaderboardProps {
 const MAX_LIMIT = 10;
 
 function responsiveClass(index: number): string {
-  if (index < 10) return "";
-  if (index < 15) return "hidden sm:flex";
-  if (index < 20) return "hidden md:flex";
+  if (index < 10) {
+    return "";
+  }
+  if (index < 15) {
+    return "hidden sm:flex";
+  }
+  if (index < 20) {
+    return "hidden md:flex";
+  }
   return "hidden lg:flex";
 }
 
 export default function Leaderboard({
   locationId,
   actionType,
+  onActionTypeChange,
   limit = MAX_LIMIT,
   className,
   context,
@@ -46,14 +59,15 @@ export default function Leaderboard({
     scope: context,
   });
 
-  const title = data?.actionType
-    ? `Leaderboard — ${data.actionType}`
-    : "Leaderboard";
+  const title =
+    actionType && !onActionTypeChange
+      ? `Leaderboard — ${actionType[0].toUpperCase()}${actionType.slice(1)}`
+      : "Leaderboard";
 
   const scope =
-    data?.actionType && locationId
+    actionType && locationId
       ? "Filtered by action"
-      : data?.actionType
+      : actionType
         ? "Filtered by action"
         : locationId
           ? "All actions"
@@ -70,9 +84,29 @@ export default function Leaderboard({
         className,
       )}
     >
-      <CardHeader className="pb-6 border-b">
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{scope}</CardDescription>
+      <CardHeader className="border-b">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>{title}</CardTitle>
+          {onActionTypeChange && (
+            <NativeSelect
+              aria-label="Leaderboard action"
+              size="sm"
+              className="w-28 shrink-0 [&_select]:rounded-lg [&_select]:text-xs"
+              value={actionType ?? ""}
+              onChange={(event) =>
+                onActionTypeChange(event.target.value || null)
+              }
+            >
+              <NativeSelectOption value="">All actions</NativeSelectOption>
+              {Object.keys(ACTIONS).map((action) => (
+                <NativeSelectOption key={action} value={action}>
+                  {action[0].toUpperCase() + action.slice(1)}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          )}
+        </div>
+        {!onActionTypeChange && <CardDescription>{scope}</CardDescription>}
       </CardHeader>
 
       <CardContent>
@@ -96,51 +130,55 @@ export default function Leaderboard({
               const label =
                 entry.displayName ?? `User #${entry.anonymousLabel}`;
               const isOutsideTopN = entry.isCurrentUser && entry.rank !== i + 1;
-              const maxActions = Math.max(data.entries[0]?.totalActions || 1, 1);
+              const maxActions = Math.max(
+                data.entries[0]?.totalActions || 1,
+                1,
+              );
               const relativePercent = (entry.totalActions / maxActions) * 100;
 
               return (
                 <React.Fragment key={`${entry.anonymousLabel}-${i}`}>
                   {isOutsideTopN && <Separator className="my-1" />}
-                <div
-                  className={cn(
-                    "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors overflow-hidden",
-                    responsiveClass(i),
-                    entry.isCurrentUser && "bg-amber-500/10",
-                  )}
-                >
                   <div
                     className={cn(
-                      "absolute inset-y-0 left-0 bg-primary/10 dark:bg-primary/20 transition-all duration-500 pointer-events-none",
-                      entry.isCurrentUser && "bg-amber-500/15 dark:bg-amber-500/25",
-                    )}
-                    style={{ width: `${relativePercent}%` }}
-                  />
-
-                  <span className="relative z-10 w-5 text-center">
-                    {entry.rank <= 3 ? (
-                      rankEmojis[entry.rank - 1]
-                    ) : (
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {entry.rank}
-                      </span>
-                    )}
-                  </span>
-
-                  <span
-                    className={cn(
-                      "relative z-10 flex-1 truncate",
-                      entry.isCurrentUser && "font-medium text-amber-500",
+                      "relative flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors overflow-hidden",
+                      responsiveClass(i),
+                      entry.isCurrentUser && "bg-amber-500/10",
                     )}
                   >
-                    {label}
-                    {entry.isCurrentUser ? " (you)" : ""}
-                  </span>
+                    <div
+                      className={cn(
+                        "absolute inset-y-0 left-0 bg-primary/10 dark:bg-primary/20 transition-all duration-500 pointer-events-none",
+                        entry.isCurrentUser &&
+                          "bg-amber-500/15 dark:bg-amber-500/25",
+                      )}
+                      style={{ width: `${relativePercent}%` }}
+                    />
 
-                  <span className="relative z-10 font-mono text-xs text-muted-foreground tabular-nums">
-                    {entry.totalActions.toLocaleString()}
-                  </span>
-                </div>
+                    <span className="relative z-10 w-5 text-center">
+                      {entry.rank <= 3 ? (
+                        rankEmojis[entry.rank - 1]
+                      ) : (
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {entry.rank}
+                        </span>
+                      )}
+                    </span>
+
+                    <span
+                      className={cn(
+                        "relative z-10 flex-1 truncate",
+                        entry.isCurrentUser && "font-medium text-amber-500",
+                      )}
+                    >
+                      {label}
+                      {entry.isCurrentUser ? " (you)" : ""}
+                    </span>
+
+                    <span className="relative z-10 font-mono text-xs text-muted-foreground tabular-nums">
+                      {entry.totalActions.toLocaleString()}
+                    </span>
+                  </div>
                 </React.Fragment>
               );
             })}
@@ -151,7 +189,11 @@ export default function Leaderboard({
       <CardFooter className="border-t bg-muted/50 pb-6">
         <p className="text-xs text-muted-foreground">
           Top {visibleCount}
-          {locationId ? " · hover an action card to filter" : " · global"}
+          {!locationId
+            ? " · global"
+            : !onActionTypeChange
+              ? " · hover an action card to filter"
+              : ""}
         </p>
       </CardFooter>
     </Card>

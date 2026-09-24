@@ -1,3 +1,23 @@
+## v8.9.0 - Sep 23, 2026
+
+### What You'll Notice
+
+- Global and personal stats pages now show clearer loading, empty, and error states, with a Retry button when a request fails.
+- Global and guild leaderboards have an action selector, so you can choose an action without hovering over a card.
+- The global leaderboard now loads when you are signed out.
+- Action cards can switch between compact cards without images and full cards with images. Compact is the default on phones; full is the default on larger screens. The icon toggle sits in the stats header and remembers your choice separately for phone and desktop layouts after a refresh.
+- The global and guild distribution rings now show exact counts and action shares in their legend, with a note explaining the logarithmic scale.
+- The personal interaction chart now shows exact performed and received counts, each action's share of those totals, and a note explaining its logarithmic bars.
+- On personal stats, the interaction chart sits to the right of the action cards on desktop and below them on narrower screens.
+- The home page has clearer links to global stats, Discord sign-in or personal stats, and ways to support PetBot.
+
+### Fixes
+
+- Added a Discord sign-in button and improved the GitHub button contrast on the home page.
+- Kept the action-card gradient and vertically aligned its title in compact view.
+- Fixed personal stats getting stuck on the loading state and a session-cache hydration error on reload.
+- The personal stats Go button now appears only when entering a location ID; selecting Global or a guild applies immediately.
+
 ## v8.8.1 - Jul 06, 2026
 
 ### Fixes

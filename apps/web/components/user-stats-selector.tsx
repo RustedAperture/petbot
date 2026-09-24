@@ -42,7 +42,7 @@ export default function UserStatsSelector() {
     queryUserScope ?? "",
   );
   const [userScopeValue, setUserScopeValue] = React.useState<string | null>(
-    queryUserScope || null,
+    queryUserScope,
   );
 
   // (effect relocated below after availableGuilds definition)
@@ -68,7 +68,7 @@ export default function UserStatsSelector() {
   // defined otherwise we'd reference it too early.
   React.useEffect(() => {
     const val = queryUserScope ?? "";
-    setUserScopeValue(val || null);
+    setUserScopeValue(val);
     setUserScopeInput(getScopeDisplay(val, availableGuilds));
   }, [queryUserScope, availableGuilds]); // availableGuilds is memoized above
 
@@ -155,6 +155,9 @@ export default function UserStatsSelector() {
   );
 
   // Render — single freeform Combobox (accepts typed location id OR select a guild/global)
+  const enteringLocationId =
+    userScopeValue === null && userScopeInput.trim().length > 0;
+
   return (
     <form className="flex items-center gap-4" onSubmit={submitUserScope}>
       <Combobox
@@ -185,9 +188,11 @@ export default function UserStatsSelector() {
         </ComboboxContent>
       </Combobox>
 
-      <Button size="sm" type="submit">
-        Go
-      </Button>
+      {enteringLocationId && (
+        <Button size="sm" type="submit">
+          Go
+        </Button>
+      )}
     </form>
   );
 }

@@ -1,6 +1,6 @@
 {
   "name": "petbot",
-  "version": "8.8.1",
+  "version": "8.9.0",
   "description": "",
   "type": "module",
   "packageManager": "npm@11.18.0",

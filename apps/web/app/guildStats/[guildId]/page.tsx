@@ -7,6 +7,7 @@ import { useGlobalStats } from "@/hooks/use-global-stats";
 import { type ActionTotals } from "@/types/stats";
 import { useBotGuilds } from "@/hooks/use-bot-guilds";
 import StatsCard from "@/components/stats/stats-card";
+import StatsCardView from "@/components/stats/stats-card-view";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import Leaderboard from "@/components/leaderboard";
 import { DistributionChart } from "@/components/stats/distribution-chart";
@@ -49,7 +50,9 @@ export default function GuildStatsPage({
     guildId,
   });
 
-  const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = React.useState<string | null>(
+    null,
+  );
 
   // Handle loading and no-data states via JSX ternary (not early return)
   // so users see "Loading..." instead of "No data" on initial load
@@ -85,22 +88,22 @@ export default function GuildStatsPage({
               />
             </div>
 
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {entries.map(([actionKey, totals]) => (
-                <StatsCard
-                  key={actionKey}
-                  actionName={actionKey}
-                  actionImageUrl={totals.imageUrl}
-                  performedCount={totals.totalHasPerformed}
-                  userCount={totals.totalUsers}
-                  totalUniqueUsers={data.totalUniqueUsers}
-                  totalActionsPerformed={data.totalActionsPerformed}
-                  onMouseEnter={() => setHoveredAction(actionKey)}
-                  onMouseLeave={() => setHoveredAction(null)}
-                />
-              ))}
-            </div>
+            <StatsCardView>
+              {(compact) =>
+                entries.map(([actionKey, totals]) => (
+                  <StatsCard
+                    key={actionKey}
+                    actionName={actionKey}
+                    actionImageUrl={totals.imageUrl}
+                    performedCount={totals.totalHasPerformed}
+                    userCount={totals.totalUsers}
+                    totalUniqueUsers={data.totalUniqueUsers}
+                    totalActionsPerformed={data.totalActionsPerformed}
+                    compact={compact}
+                  />
+                ))
+              }
+            </StatsCardView>
           </div>
 
           {error ? (
@@ -119,7 +122,8 @@ export default function GuildStatsPage({
           />
           <Leaderboard
             locationId={guildId}
-            actionType={hoveredAction}
+            actionType={selectedAction}
+            onActionTypeChange={setSelectedAction}
             context="guild"
             className="w-full"
           />

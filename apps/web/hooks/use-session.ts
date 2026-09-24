@@ -66,27 +66,19 @@ function writeLocalCache(s: Session | null) {
 }
 
 export function useSession() {
-  // If we don't yet have an in-memory cached session, try the short-lived
-  // localStorage cache so the UI can render immediately on reload.
-  const localCached =
-    typeof window !== "undefined" && _cachedSession === undefined
-      ? readLocalCache()
-      : undefined;
-
-  if (_cachedSession === undefined && localCached !== undefined) {
-    _cachedSession = localCached;
-  }
-
   const [session, setSession] = React.useState<Session | null>(
     _cachedSession ?? null,
   );
   const [loading, setLoading] = React.useState<boolean>(
-    _cachedSession === undefined && localCached === undefined,
+    _cachedSession === undefined,
   );
 
   // notify other hook instances when cache changes
   React.useEffect(() => {
-    const l = (s: Session | null) => setSession(s);
+    const l = (s: Session | null) => {
+      setSession(s);
+      setLoading(false);
+    };
     _listeners.add(l);
     return () => {
       _listeners.delete(l);
@@ -152,10 +144,8 @@ export function useSession() {
   }, []);
 
   React.useEffect(() => {
-    // Only fetch on first mount if we haven't cached the session.
-    if (_cachedSession === undefined) {
-      void refresh();
-    }
+    // Sync this instance even if another consumer filled the cache after render.
+    void refresh();
   }, [refresh]);
 
   return {

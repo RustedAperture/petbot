@@ -28,6 +28,7 @@ interface StatsCardProps {
   hideUserCount?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  compact?: boolean;
 }
 
 export default function StatsCard({
@@ -43,6 +44,7 @@ export default function StatsCard({
   hideUserCount,
   onMouseEnter,
   onMouseLeave,
+  compact = false,
 }: StatsCardProps) {
   const displayName = actionName
     ? actionName[0].toUpperCase() + actionName.slice(1)
@@ -66,11 +68,16 @@ export default function StatsCard({
   return (
     <>
       <Card
-        className="py-0 dark:bg-linear-to-t from-primary/20 to-15%"
+        size={compact ? "sm" : "default"}
+        className={
+          compact
+            ? "data-[size=sm]:gap-0 data-[size=sm]:py-0 dark:bg-linear-to-t from-primary/20 to-[80px]"
+            : "py-0 dark:bg-linear-to-t from-primary/20 to-15%"
+        }
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
-        {displayImages.length > 0 ? (
+        {compact ? null : displayImages.length > 0 ? (
           <Carousel
             setApi={setCarouselApi}
             opts={{
@@ -102,11 +109,19 @@ export default function StatsCard({
             className="block w-full aspect-square object-cover rounded-xl"
           />
         )}
-        <CardHeader className="flex items-center justify-between flex-grow">
-          <CardTitle>{displayName}</CardTitle>
+        <CardHeader
+          className={
+            compact
+              ? "flex flex-grow items-center justify-between py-4"
+              : "flex flex-grow items-center justify-between"
+          }
+        >
+          <CardTitle className={compact ? "text-sm" : undefined}>
+            {displayName}
+          </CardTitle>
 
           <ButtonGroup>
-            {displayImages.length > 1 && (
+            {!compact && displayImages.length > 1 && (
               <Button
                 type="button"
                 onClick={() => carouselApi?.scrollPrev()}
@@ -128,7 +143,7 @@ export default function StatsCard({
                 <PencilIcon />
               </Button>
             )}
-            {displayImages.length > 1 && (
+            {!compact && displayImages.length > 1 && (
               <Button
                 type="button"
                 onClick={() => carouselApi?.scrollNext()}
@@ -142,8 +157,20 @@ export default function StatsCard({
             )}
           </ButtonGroup>
         </CardHeader>
-        <CardFooter className="border-t bg-muted/50 pb-6">
-          <div className="flex flex-col gap-2 w-full">
+        <CardFooter
+          className={
+            compact
+              ? "border-t bg-muted/50 pt-3 pb-3"
+              : "border-t bg-muted/50 pb-6"
+          }
+        >
+          <div
+            className={
+              compact
+                ? "flex w-full flex-col gap-1"
+                : "flex flex-col gap-2 w-full"
+            }
+          >
             <div className="flex gap-1 flex-wrap">
               <p className="shrink">
                 <b>Performed:</b>

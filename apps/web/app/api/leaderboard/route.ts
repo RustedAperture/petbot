@@ -1,11 +1,12 @@
-import { requireSession, resolveGuilds } from "../../../lib/auth";
-import { getInternalApiBase, internalApiHeadersOptional } from "../../../lib/internal-api";
+import { requireSession, resolveGuilds, type Session } from "../../../lib/auth";
+import {
+  getInternalApiBase,
+  internalApiHeadersOptional,
+} from "../../../lib/internal-api";
 import { apiError } from "../../../lib/errors";
 
 export async function GET(req: Request) {
   try {
-    const session = requireSession(req);
-    const currentUserId = session.user!.id!;
     const url = new URL(req.url);
     const locationId = url.searchParams.get("locationId");
     const actionType = url.searchParams.get("actionType");
@@ -13,7 +14,23 @@ export async function GET(req: Request) {
 
     const scope = url.searchParams.get("scope");
 
-    if (scope === "guild" && locationId) {
+    let session: Session | null = null;
+    try {
+      session = requireSession(req);
+    } catch (error) {
+      // Only global results are public. Invalid sessions behave like guests.
+      if (
+        locationId ||
+        scope === "guild" ||
+        !(error instanceof Response) ||
+        error.status !== 401
+      ) {
+        throw error;
+      }
+    }
+    const currentUserId = session?.user?.id;
+
+    if (scope === "guild" && locationId && session) {
       const guilds = await resolveGuilds(session);
       if (!guilds.some((g) => g.id === locationId)) {
         throw apiError(403, "forbidden");
@@ -21,9 +38,15 @@ export async function GET(req: Request) {
     }
 
     const params = new URLSearchParams({ limit });
-    if (locationId) params.set("locationId", locationId);
-    if (actionType) params.set("actionType", actionType);
-    params.set("currentUserId", currentUserId);
+    if (locationId) {
+      params.set("locationId", locationId);
+    }
+    if (actionType) {
+      params.set("actionType", actionType);
+    }
+    if (currentUserId) {
+      params.set("currentUserId", currentUserId);
+    }
 
     const base = getInternalApiBase();
     const res = await fetch(`${base}/api/leaderboard?${params.toString()}`, {
@@ -37,7 +60,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       locationId: string | null;
       actionType: string | null;
       entries: Array<{
@@ -51,12 +74,14 @@ export async function GET(req: Request) {
 
     const entries = data.entries.map(({ userId, ...entry }) => ({
       ...entry,
-      isCurrentUser: userId === currentUserId,
+      isCurrentUser: Boolean(currentUserId && userId === currentUserId),
     }));
 
     return Response.json({ ...data, entries });
   } catch (res) {
-    if (res instanceof Response) return res;
+    if (res instanceof Response) {
+      return res;
+    }
     throw res;
   }
 }

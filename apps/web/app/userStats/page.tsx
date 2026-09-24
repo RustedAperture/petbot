@@ -3,9 +3,15 @@
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
+import {
+  StatsLoading,
+  StatsError,
+  StatsEmpty,
+} from "@/components/stats/stats-request-state";
 import { useGlobalStats } from "@/hooks/use-global-stats";
 import { type ActionTotals } from "@/types/stats";
 import StatsCard from "@/components/stats/stats-card";
+import StatsCardView from "@/components/stats/stats-card-view";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { UserDistributionChart } from "@/components/stats/user-distribution-chart";
 
@@ -14,7 +20,7 @@ export default function UserStatsPage() {
   const queryUserId = params.get("userId");
   const queryLocationId =
     params.get("guildId") ?? params.get("locationId") ?? null;
-  const { session } = useSession();
+  const { session, loading: sessionLoading } = useSession();
   const resolvedUserId = queryUserId ?? session?.user.id ?? null;
 
   const rawUserScopedParam = params.get("userScoped");
@@ -28,11 +34,13 @@ export default function UserStatsPage() {
     resolvedUserId === session?.user.id;
   const queryUserScoped = explicitUserScoped || defaultUserScoped;
 
-  const { data, isLoading, error } = useGlobalStats({
-    userId: resolvedUserId,
-    guildId: queryLocationId,
-    userScoped: queryUserScoped,
-  });
+  if (sessionLoading && !session) {
+    return (
+      <main className="w-full">
+        <StatsLoading label="Loading user stats…" />
+      </main>
+    );
+  }
 
   if (!resolvedUserId) {
     return (
@@ -45,8 +53,43 @@ export default function UserStatsPage() {
     );
   }
 
+  return (
+    <UserStatsContent
+      key={JSON.stringify([resolvedUserId, queryLocationId, queryUserScoped])}
+      userId={resolvedUserId}
+      queryLocationId={queryLocationId}
+      userScoped={queryUserScoped}
+    />
+  );
+}
+
+function UserStatsContent({
+  userId,
+  queryLocationId,
+  userScoped,
+}: {
+  userId: string;
+  queryLocationId: string | null;
+  userScoped: boolean;
+}) {
+  const { data, isLoading, error, refresh } = useGlobalStats({
+    userId,
+    guildId: queryLocationId,
+    userScoped,
+  });
+
   if (!data) {
-    return <p className="mt-4 text-sm text-muted-foreground">No data</p>;
+    return (
+      <main className="w-full">
+        {isLoading ? (
+          <StatsLoading label="Loading user stats…" />
+        ) : error ? (
+          <StatsError onRetry={refresh} />
+        ) : (
+          <StatsEmpty />
+        )}
+      </main>
+    );
   }
 
   const entries = Object.entries(data.totalsByAction) as Array<
@@ -54,14 +97,24 @@ export default function UserStatsPage() {
   >;
 
   return (
-    <main>
-      {isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Loading user stats…
+    <main className="w-full space-y-4">
+      {error && <StatsError onRetry={refresh} hasData />}
+      {isLoading && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Updating stats…
         </p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2">
+      )}
+      {!isLoading &&
+        !error &&
+        data.totalActionsPerformed === 0 &&
+        entries.every(
+          ([, totals]) =>
+            totals.totalHasPerformed === 0 &&
+            (totals.totalHasReceived ?? 0) === 0,
+        ) && <StatsEmpty />}
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(320px,1fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <StatsCardSimple
               statString="Total Actions Performed"
               value={data.totalActionsPerformed}
@@ -74,32 +127,35 @@ export default function UserStatsPage() {
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <UserDistributionChart totalsByAction={data.totalsByAction} />
-            {entries.map(([actionKey, totals]) => (
-              <StatsCard
-                key={actionKey}
-                actionName={actionKey}
-                actionImageUrl={totals.imageUrl}
-                performedCount={totals.totalHasPerformed}
-                receivedCount={totals.totalHasReceived}
-                userCount={totals.totalUsers}
-                totalUniqueUsers={data.totalUniqueUsers}
-                totalActionsPerformed={data.totalActionsPerformed}
-                userImages={totals.images}
-                guildId={queryLocationId}
-                hideUserCount={true}
-              />
-            ))}
-          </div>
+          <StatsCardView className="xl:grid-cols-3 2xl:grid-cols-4">
+            {(compact) =>
+              entries.map(([actionKey, totals]) => (
+                <StatsCard
+                  key={actionKey}
+                  actionName={actionKey}
+                  actionImageUrl={totals.imageUrl}
+                  performedCount={totals.totalHasPerformed}
+                  receivedCount={totals.totalHasReceived}
+                  userCount={totals.totalUsers}
+                  totalUniqueUsers={data.totalUniqueUsers}
+                  totalActionsPerformed={data.totalActionsPerformed}
+                  userImages={totals.images}
+                  guildId={queryLocationId}
+                  hideUserCount={true}
+                  compact={compact}
+                />
+              ))
+            }
+          </StatsCardView>
         </div>
-      )}
 
-      {error ? (
-        <div className="mt-4 text-sm text-destructive">
-          Failed to load stats: {error.message}
-        </div>
-      ) : null}
+        <aside
+          aria-label="Interaction distribution"
+          className="mx-auto w-full min-w-0 max-w-xl xl:mx-0 xl:max-w-none"
+        >
+          <UserDistributionChart totalsByAction={data.totalsByAction} />
+        </aside>
+      </div>
     </main>
   );
 }

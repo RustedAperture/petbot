@@ -88,6 +88,17 @@ describe("StatsCard component carousel support", () => {
     unmount();
   });
 
+  it("omits the image in compact view while keeping the stats", () => {
+    const { container, unmount } = render(
+      <StatsCardAny {...baseProps} compact />,
+    );
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain("Pet");
+    expect(container.textContent).toContain("Performed:");
+    expect(container.textContent).toContain("Users:");
+    unmount();
+  });
+
   it("renders carousel when userImages provided", async () => {
     const imgs = [
       "https://example.com/a.png",
@@ -119,12 +130,13 @@ describe("StatsCard component carousel support", () => {
       nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     }
     // verify the mocked methods were invoked via the exported __api object
-    const carouselMock = (await import("@/components/ui/carousel")) as typeof import("@/components/ui/carousel") & {
-      __api: {
-        scrollPrev: ReturnType<typeof vi.fn>;
-        scrollNext: ReturnType<typeof vi.fn>;
+    const carouselMock =
+      (await import("@/components/ui/carousel")) as typeof import("@/components/ui/carousel") & {
+        __api: {
+          scrollPrev: ReturnType<typeof vi.fn>;
+          scrollNext: ReturnType<typeof vi.fn>;
+        };
       };
-    };
     expect(carouselMock.__api.scrollPrev).toHaveBeenCalled();
     expect(carouselMock.__api.scrollNext).toHaveBeenCalled();
     // each image should appear inside carousel items

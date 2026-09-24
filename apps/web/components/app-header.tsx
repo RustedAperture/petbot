@@ -9,6 +9,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { STATS_MENU } from "@/types/menu-config";
 import GuildSelect from "@/components/guild-select";
 import UserStatsSelector from "@/components/user-stats-selector";
+import { StatsCardViewToggle } from "@/components/stats/stats-card-view";
 import { useSession } from "@/hooks/use-session";
 import { GitFork } from "lucide-react";
 import Link from "next/link";
@@ -38,6 +39,11 @@ export function AppHeader() {
     (m) => m.href === pathname || pathname.startsWith(m.href + "/"),
   );
   const title = computeTitle(pathname, active?.title);
+  const showCardView =
+    pathname === "/globalStats" ||
+    pathname.startsWith("/guildStats/") ||
+    pathname.startsWith("/dmStats/") ||
+    pathname === "/userStats";
 
   // Read guildId from path: /guildStats/:guildId
   const guildIdFromPath = React.useMemo(() => {
@@ -85,8 +91,8 @@ export function AppHeader() {
   }, [router]);
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-4 px-4">
-      <div className="flex items-center gap-4 w-full">
+    <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-4 px-4 py-2">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-4">
         <SidebarTrigger />
         <Separator orientation="vertical" />
         <h1 className="text-base font-medium">{title}</h1>
@@ -118,11 +124,12 @@ export function AppHeader() {
       </div>
 
       {/* right group */}
-      <div className="hidden ml-auto md:flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {showCardView && <StatsCardViewToggle />}
         <Button
           variant="outline"
           size="sm"
-          className="hidden sm:flex"
+          className="hidden md:flex"
           nativeButton={false}
           render={
             <Link
