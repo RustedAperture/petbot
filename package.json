@@ -42,7 +42,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@libsql/client": "^0.17.4",
+    "@libsql/client": "^0.18.0",
     "discord.js": "^14.26.4",
     "dotenv": "^17.4.2",
     "drizzle-orm": "1.0.0-rc.4",
