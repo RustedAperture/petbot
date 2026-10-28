@@ -80,12 +80,18 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function ImagePreview({ url, alt }: { url: string; alt: string }) {
-  // Track the URL that failed so a new URL gets a fresh load attempt.
-  const [failedUrl, setFailedUrl] = React.useState<string | null>(null);
+export function ImagePreview({ url, alt }: { url: string; alt: string }) {
+  const [hasError, setHasError] = React.useState(false);
+
+  // Any URL change clears the error so the new value gets a load attempt.
+  const [prevUrl, setPrevUrl] = React.useState(url);
+  if (url !== prevUrl) {
+    setPrevUrl(url);
+    setHasError(false);
+  }
 
   const trimmed = url.trim();
-  if (!trimmed || failedUrl === url) {
+  if (!trimmed || hasError) {
     return null;
   }
 
@@ -96,7 +102,7 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
         alt={alt}
         className="h-full w-full object-contain"
         loading="lazy"
-        onError={() => setFailedUrl(url)}
+        onError={() => setHasError(true)}
       />
     </div>
   );
