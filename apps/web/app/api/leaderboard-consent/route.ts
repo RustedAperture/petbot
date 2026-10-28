@@ -17,7 +17,9 @@ export async function GET(req: Request) {
     const json = (await res.json()) as { enabled: boolean; displayName: string | null };
     return Response.json({ ...json, hashLabel: `User #${hashed.slice(0, 6)}` });
   } catch (res) {
-    if (res instanceof Response) return res;
+    if (res instanceof Response) {
+      return res;
+    }
     throw res;
   }
 }
@@ -33,7 +35,9 @@ export async function POST(req: Request) {
       { method: "POST", body },
     );
   } catch (res) {
-    if (res instanceof Response) return res;
+    if (res instanceof Response) {
+      return res;
+    }
     throw res;
   }
 }
@@ -48,7 +52,9 @@ export async function DELETE(req: Request) {
       { method: "DELETE" },
     );
   } catch (res) {
-    if (res instanceof Response) return res;
+    if (res instanceof Response) {
+      return res;
+    }
     throw res;
   }
 }

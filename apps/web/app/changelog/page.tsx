@@ -30,7 +30,9 @@ export default function ChangelogPage() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (changelog !== null || fetchError !== null) return;
+    if (changelog !== null || fetchError !== null) {
+      return;
+    }
     fetch("/api/changelog")
       .then((r) => {
         if (!r.ok) {
@@ -53,7 +55,9 @@ export default function ChangelogPage() {
   );
 
   const filteredTimelineItems: TimelineItem[] = useMemo(() => {
-    if (selectedVersion === null) return timelineItems;
+    if (selectedVersion === null) {
+      return timelineItems;
+    }
 
     const idx = sections.findIndex((s) => s.version === selectedVersion);
     if (idx !== -1) {

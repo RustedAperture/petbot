@@ -15,8 +15,8 @@ vi.mock("next/navigation", () => ({
 // next/link also needs a simple stub to avoid DOM shipping warnings and
 // navigation behavior in happy-dom. return an object with a default export
 // that renders an actual <a> so we can query href attributes in tests.
-vi.mock("next/link", () => {
-  const React = require("react");
+vi.mock("next/link", async () => {
+  const React = await import("react");
   return {
     default: ({ href, children, ...props }: any) =>
       React.createElement("a", { href, ...props }, children),
@@ -37,8 +37,8 @@ let sidebarState: SidebarState;
 // Mock @base-ui-backed UI components that crash due to the dual-React-instance
 // problem: apps/web/node_modules/@base-ui uses its own React copy while
 // react-dom uses the root copy.
-vi.mock("@/components/ui/tooltip", () => {
-  const React = require("react");
+vi.mock("@/components/ui/tooltip", async () => {
+  const React = await import("react");
   return {
     Tooltip: ({ children }: any) =>
       React.createElement(React.Fragment, null, children),
@@ -49,8 +49,8 @@ vi.mock("@/components/ui/tooltip", () => {
       React.createElement(React.Fragment, null, children),
   };
 });
-vi.mock("@/components/ui/sheet", () => {
-  const React = require("react");
+vi.mock("@/components/ui/sheet", async () => {
+  const React = await import("react");
   return {
     Sheet: ({ children }: any) =>
       React.createElement("div", { "data-slot": "sheet" }, children),
@@ -68,8 +68,8 @@ vi.mock("@/components/ui/sheet", () => {
       React.createElement("div", null, children),
   };
 });
-vi.mock("@/components/ui/sidebar", () => {
-  const React = require("react");
+vi.mock("@/components/ui/sidebar", async () => {
+  const React = await import("react");
   return {
     SidebarProvider: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),
@@ -104,8 +104,8 @@ vi.mock("@/components/app-user", () => ({
 }));
 
 // DropdownMenu (ThemeToggle) and next-themes also use @base-ui/react/menu fastComponent
-vi.mock("@/components/ui/dropdown-menu", () => {
-  const React = require("react");
+vi.mock("@/components/ui/dropdown-menu", async () => {
+  const React = await import("react");
   return {
     DropdownMenu: ({ children }: any) =>
       React.createElement(React.Fragment, null, children),

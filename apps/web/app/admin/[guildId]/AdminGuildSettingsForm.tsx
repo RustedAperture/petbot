@@ -80,15 +80,20 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function ImagePreview({ url, alt }: { url: string; alt: string }) {
+export function ImagePreview({ url, alt }: { url: string; alt: string }) {
   const [hasError, setHasError] = React.useState(false);
 
-  React.useEffect(() => {
+  // Any URL change clears the error so the new value gets a load attempt.
+  const [prevUrl, setPrevUrl] = React.useState(url);
+  if (url !== prevUrl) {
+    setPrevUrl(url);
     setHasError(false);
-  }, [url]);
+  }
 
   const trimmed = url.trim();
-  if (!trimmed || hasError) return null;
+  if (!trimmed || hasError) {
+    return null;
+  }
 
   return (
     <div className="mx-auto w-24 shrink-0 aspect-square overflow-hidden rounded-md border bg-muted/20">
@@ -106,7 +111,6 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 export default function AdminGuildSettingsForm({
   guildId,
   settings,
-  isSettingsLoading,
   isSettingsError,
   channelItems,
   channelsError,
@@ -130,7 +134,9 @@ export default function AdminGuildSettingsForm({
   });
 
   React.useEffect(() => {
-    if (!settings) return;
+    if (!settings) {
+      return;
+    }
 
     form.reset({
       nickname: settings.nickname ?? "",
@@ -386,13 +392,13 @@ export default function AdminGuildSettingsForm({
                         />
                         {form.formState.errors.defaultImages?.[action]
                           ?.message ? (
-                          <FieldError>
-                            {
-                              form.formState.errors.defaultImages[action]
-                                ?.message
-                            }
-                          </FieldError>
-                        ) : null}
+                            <FieldError>
+                              {
+                                form.formState.errors.defaultImages[action]
+                                  ?.message
+                              }
+                            </FieldError>
+                          ) : null}
                       </div>
                       <ImagePreview
                         url={String(

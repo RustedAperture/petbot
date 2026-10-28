@@ -91,17 +91,19 @@ vi.mock("@/app/admin/[guildId]/AdminGuildSettingsForm", () => ({
         : channelsError
           ? createElement("div", null, "Bot not in server")
           : createElement(
-              "form",
-              {
-                onSubmit: (e: any) => {
-                  e?.preventDefault?.();
-                  if (update) update({ nickname: "PetBot" });
-                },
+            "form",
+            {
+              onSubmit: (e: any) => {
+                e?.preventDefault?.();
+                if (update) {
+                  update({ nickname: "PetBot" });
+                }
               },
-              createElement("h1", null, guild?.name || ""),
-              `Guild ID: ${guildId}`,
-              createElement("button", { type: "submit" }, "Save"),
-            ),
+            },
+            createElement("h1", null, guild?.name || ""),
+            `Guild ID: ${guildId}`,
+            createElement("button", { type: "submit" }, "Save"),
+          ),
     ),
 }));
 

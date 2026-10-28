@@ -24,20 +24,16 @@ function TimelineItemComponent({
   index: number;
 }) {
   const itemRef = useRef(null);
-  // always trigger animation on mount; we keep the ref in case it is used
-  // for positioning or later enhancements, but we no longer rely on
-  // intersection observer.
-  const [visible, setVisible] = React.useState(false);
-  React.useEffect(() => {
-    setVisible(true);
-  }, []);
+  // always trigger animation on mount (initial -> animate); we keep the ref in
+  // case it is used for positioning or later enhancements, but we no longer
+  // rely on intersection observer.
 
   return (
     <div ref={itemRef} className="relative flex gap-6">
       {/* Timeline dot */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
-        animate={visible ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: index * 0.2, duration: 0.3 }}
         className="absolute left-4 top-2 h-4 w-4 rounded-full border-2 border-primary bg-primary"
       />
@@ -45,7 +41,7 @@ function TimelineItemComponent({
       {/* Content */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
-        animate={visible ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{
           delay: index * 0.2 + 0.3,
           type: "spring",

@@ -1,5 +1,4 @@
 import { Card, CardContent } from "../ui/card";
-import { formatNumber } from "@/lib/format";
 import { NativeCounterUp } from "../uitripled/native-counter-up-carbon";
 
 interface StatsCardProps {

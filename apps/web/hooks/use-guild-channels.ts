@@ -25,6 +25,8 @@ export function useGuildChannels(
 
   React.useEffect(() => {
     if (!guildId || !userId) {
+      // Clear stale results when the inputs go away.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChannels([]);
       setIsLoading(false);
       setError(null);

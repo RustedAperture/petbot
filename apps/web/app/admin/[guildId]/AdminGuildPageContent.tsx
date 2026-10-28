@@ -36,13 +36,13 @@ export default function AdminGuildPageContent({
     channels.length > 0
       ? channels.map((channel) => ({ label: channel.name, value: channel.id }))
       : [
-          {
-            label: channelsLoading
-              ? "Loading channels…"
-              : "No channels available",
-            value: "",
-          },
-        ];
+        {
+          label: channelsLoading
+            ? "Loading channels…"
+            : "No channels available",
+          value: "",
+        },
+      ];
 
   const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
   const guildIconUrl = guild

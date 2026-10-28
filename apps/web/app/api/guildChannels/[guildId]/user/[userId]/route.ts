@@ -2,7 +2,10 @@ import { requireSession } from "../../../../../../lib/auth";
 import { proxyRequest } from "../../../../../../lib/proxy";
 import { apiError } from "../../../../../../lib/errors";
 
-export async function GET(req: Request, context: any) {
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ guildId?: string; userId?: string }> },
+) {
   try {
     const session = requireSession(req);
     const params = (await context?.params) || {};

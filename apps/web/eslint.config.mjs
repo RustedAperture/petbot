@@ -13,6 +13,11 @@ const eslintConfig = defineConfig([
   { rules: baseRules },
   // TypeScript rules — plugin is already registered by eslint-config-next/typescript.
   { files: ["**/*.{ts,tsx}"], rules: tsRules },
+  // Test mocks are partial stubs; allow `any` there.
+  {
+    files: ["tests/**/*.{ts,tsx}"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

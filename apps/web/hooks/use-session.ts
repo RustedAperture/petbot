@@ -145,6 +145,7 @@ export function useSession() {
 
   React.useEffect(() => {
     // Sync this instance even if another consumer filled the cache after render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

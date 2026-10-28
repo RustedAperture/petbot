@@ -58,17 +58,16 @@ export function UserSettingsDialog({
 
   const saveLeaderboardName = async (name: string) => {
     const trimmed = name.trim();
-    if (trimmed.length === 0) return;
+    if (trimmed.length === 0) {
+      return;
+    }
     await updateConsent(trimmed);
   };
 
-  useEffect(() => {
-    if (!leaderboardNameTouched) {
-      setLeaderboardName(
-        consentDisplayName ?? session?.user.username ?? ""
-      );
-    }
-  }, [consentDisplayName, session?.user.username, leaderboardNameTouched]);
+  // Follow the saved name until the user edits the field.
+  const leaderboardNameValue = leaderboardNameTouched
+    ? leaderboardName
+    : (consentDisplayName ?? session?.user.username ?? "");
 
   useEffect(() => {
     if (open) {
@@ -159,7 +158,8 @@ export function UserSettingsDialog({
                   checked={consentEnabled === true}
                   onCheckedChange={async (checked) => {
                     if (checked) {
-                      const name = leaderboardName || session?.user.username || "";
+                      const name =
+                        leaderboardNameValue || session?.user.username || "";
                       setLeaderboardName(name);
                       await updateConsent(name);
                     } else {
@@ -175,7 +175,7 @@ export function UserSettingsDialog({
                   placeholder="Display name"
                   value={
                     consentEnabled
-                      ? leaderboardName
+                      ? leaderboardNameValue
                       : (hashLabel ?? "")
                   }
                   disabled={!consentEnabled || consentLoading}

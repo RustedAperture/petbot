@@ -92,7 +92,7 @@ export function useGuildSettings(options: {
         throw new Error("Missing guildId or userId");
       }
 
-      let payload = stripEmptyFields(values);
+      const payload = stripEmptyFields(values);
 
       if (Object.keys(payload).length === 0) {
         return undefined;
