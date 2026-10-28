@@ -60,8 +60,14 @@ export function AppHeader() {
     return "";
   }, [pathname]);
 
-  const [dmInput, setDmInput] = React.useState<string>(queryLocationId ?? "");
-  React.useEffect(() => setDmInput(queryLocationId ?? ""), [queryLocationId]);
+  const [dmInput, setDmInput] = React.useState<string>(queryLocationId);
+  // Reset the input when the route's location changes.
+  const [prevQueryLocationId, setPrevQueryLocationId] =
+    React.useState(queryLocationId);
+  if (queryLocationId !== prevQueryLocationId) {
+    setPrevQueryLocationId(queryLocationId);
+    setDmInput(queryLocationId);
+  }
 
   const submitDm = React.useCallback(
     (e?: React.FormEvent) => {

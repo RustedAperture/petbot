@@ -27,8 +27,8 @@ vi.mock("@/components/dialogs/edit-images-dialog", () => ({
 
 // Embla carousel does not work in happy-dom; mock the carousel components to
 // render their children and provide a fake API for navigation.
-vi.mock("@/components/ui/carousel", () => {
-  const React = require("react");
+vi.mock("@/components/ui/carousel", async () => {
+  const React = await import("react");
   const api: any = { scrollPrev: vi.fn(), scrollNext: vi.fn() };
 
   return {
@@ -41,7 +41,7 @@ vi.mock("@/components/ui/carousel", () => {
         if (setApi) {
           setApi(api);
         }
-      }, []);
+      }, [setApi]);
       return createElement("div", { "data-testid": "carousel" }, children);
     },
     CarouselContent: ({ children }: any) =>

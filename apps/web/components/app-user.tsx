@@ -19,7 +19,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { EllipsisVertical, LogOut, Settings } from "lucide-react";
-import { Separator } from "./ui/separator";
 import { UserSettingsDialog } from "./dialogs/user-settings-dialog";
 
 export function AppUser({
@@ -95,7 +94,9 @@ export function AppUser({
         onOpenChange={setDialogOpen}
         onDelete={async () => {
           const id = session?.user.id;
-          if (!id) return;
+          if (!id) {
+            return;
+          }
           const dataOk = await deleteUserData(id);
           const sessionsOk = await deleteUserSessions(id);
           if (!dataOk || !sessionsOk) {

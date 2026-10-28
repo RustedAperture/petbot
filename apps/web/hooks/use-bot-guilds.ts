@@ -38,6 +38,8 @@ export function useBotGuilds(userId?: string | null) {
   }, [userId]);
 
   React.useEffect(() => {
+    // Fetch on mount; refresh() flags loading before awaiting.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [refresh]);
 

@@ -51,15 +51,25 @@ export function EditImagesDialog({
   );
 
   const validateUrl = (url: string): string | null => {
-    if (!url) return null;
-    if (!/^https?:\/\//i.test(url))
+    if (!url) {
+      return null;
+    }
+    if (!/^https?:\/\//i.test(url)) {
       return "URL must start with http:// or https://";
-    if (url.length > 2048) return "URL is too long";
+    }
+    if (url.length > 2048) {
+      return "URL is too long";
+    }
     return null;
   };
 
   // Reset state when dialog opens with fresh data
-  React.useEffect(() => {
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  const [prevInitialImages, setPrevInitialImages] =
+    React.useState(initialImages);
+  if (open !== prevOpen || initialImages !== prevInitialImages) {
+    setPrevOpen(open);
+    setPrevInitialImages(initialImages);
     if (open) {
       setImages(
         Array.from({ length: SLOT_COUNT }, (_, i) => initialImages[i] ?? ""),
@@ -68,7 +78,7 @@ export function EditImagesDialog({
       setError(null);
       setUrlErrors(Array(SLOT_COUNT).fill(null));
     }
-  }, [open, initialImages]);
+  }
 
   const handleUrlChange = (index: number, value: string) => {
     setImages((prev) => {
@@ -86,7 +96,9 @@ export function EditImagesDialog({
   const handleSave = async () => {
     const validated = images.map((url) => validateUrl(url.trim()));
     setUrlErrors(validated);
-    if (validated.some(Boolean)) return;
+    if (validated.some(Boolean)) {
+      return;
+    }
 
     setIsSaving(true);
     setError(null);

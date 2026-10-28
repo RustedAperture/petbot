@@ -23,28 +23,8 @@ export default function DmStatsLocationPage({
 
   const [locationInput, setLocationInput] = React.useState(locationId);
 
-  // transient UI state: show a short message when a user-initiated update fails with 404
-  const [loadErrorMessage, setLoadErrorMessage] = React.useState<string | null>(
-    null,
-  );
-  const [failedLocationId, setFailedLocationId] = React.useState<string | null>(
-    null,
-  );
   const userInitiatedRef = React.useRef(false);
   const attemptedLocationRef = React.useRef<string | null>(null);
-
-  // restore any transient failed-location id that was persisted across a replace()
-  React.useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem("dmStatsFailedLocation");
-      if (stored) {
-        setFailedLocationId(stored);
-        sessionStorage.removeItem("dmStatsFailedLocation");
-      }
-    } catch {
-      /* noop */
-    }
-  }, []);
 
   const { data, isLoading, error } = useGlobalStats({
     locationId,
@@ -63,7 +43,6 @@ export default function DmStatsLocationPage({
       // mark that this navigation was initiated by the user so we can special-case 404
       userInitiatedRef.current = true;
       attemptedLocationRef.current = trimmed;
-      setLoadErrorMessage(null);
       try {
         sessionStorage.removeItem("dmStatsFailedLocation");
       } catch {
@@ -76,8 +55,6 @@ export default function DmStatsLocationPage({
 
   const clearLocation = React.useCallback(() => {
     // reset transient UI state and clear the input, then navigate back
-    setLoadErrorMessage(null);
-    setFailedLocationId(null);
     try {
       sessionStorage.removeItem("dmStatsFailedLocation");
     } catch {
@@ -105,19 +82,14 @@ export default function DmStatsLocationPage({
       attemptedLocationRef.current ?? locationInput ?? locationId ?? null;
     attemptedLocationRef.current = null;
     userInitiatedRef.current = false;
-    setLocationInput("");
 
     if (failed) {
-      setFailedLocationId(failed);
       try {
         sessionStorage.setItem("dmStatsFailedLocation", failed);
       } catch {
         /* noop */
       }
     } else {
-      const msg =
-        "No DM stats found for that location or you do not have access.";
-      setLoadErrorMessage(msg);
       try {
         sessionStorage.setItem("dmStatsFailedLocation", "");
       } catch {
@@ -132,8 +104,6 @@ export default function DmStatsLocationPage({
   // Clear transient load message when location-scoped data successfully loads.
   React.useEffect(() => {
     if (data && locationId) {
-      setLoadErrorMessage(null);
-      setFailedLocationId(null);
       try {
         sessionStorage.removeItem("dmStatsFailedLocation");
       } catch {
@@ -205,8 +175,6 @@ export default function DmStatsLocationPage({
               value={locationInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setLocationInput(e.target.value);
-                setLoadErrorMessage(null);
-                setFailedLocationId(null);
                 try {
                   sessionStorage.removeItem("dmStatsFailedLocation");
                 } catch {

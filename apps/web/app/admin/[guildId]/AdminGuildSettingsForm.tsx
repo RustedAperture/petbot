@@ -81,14 +81,13 @@ function titleCase(value: string) {
 }
 
 function ImagePreview({ url, alt }: { url: string; alt: string }) {
-  const [hasError, setHasError] = React.useState(false);
-
-  React.useEffect(() => {
-    setHasError(false);
-  }, [url]);
+  // Track the URL that failed so a new URL gets a fresh load attempt.
+  const [failedUrl, setFailedUrl] = React.useState<string | null>(null);
 
   const trimmed = url.trim();
-  if (!trimmed || hasError) return null;
+  if (!trimmed || failedUrl === url) {
+    return null;
+  }
 
   return (
     <div className="mx-auto w-24 shrink-0 aspect-square overflow-hidden rounded-md border bg-muted/20">
@@ -97,7 +96,7 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
         alt={alt}
         className="h-full w-full object-contain"
         loading="lazy"
-        onError={() => setHasError(true)}
+        onError={() => setFailedUrl(url)}
       />
     </div>
   );
@@ -106,7 +105,6 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 export default function AdminGuildSettingsForm({
   guildId,
   settings,
-  isSettingsLoading,
   isSettingsError,
   channelItems,
   channelsError,
@@ -130,7 +128,9 @@ export default function AdminGuildSettingsForm({
   });
 
   React.useEffect(() => {
-    if (!settings) return;
+    if (!settings) {
+      return;
+    }
 
     form.reset({
       nickname: settings.nickname ?? "",
@@ -386,13 +386,13 @@ export default function AdminGuildSettingsForm({
                         />
                         {form.formState.errors.defaultImages?.[action]
                           ?.message ? (
-                          <FieldError>
-                            {
-                              form.formState.errors.defaultImages[action]
-                                ?.message
-                            }
-                          </FieldError>
-                        ) : null}
+                            <FieldError>
+                              {
+                                form.formState.errors.defaultImages[action]
+                                  ?.message
+                              }
+                            </FieldError>
+                          ) : null}
                       </div>
                       <ImagePreview
                         url={String(

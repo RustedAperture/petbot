@@ -30,7 +30,9 @@ export function useOptOut() {
     let current = optedOut;
     if (current === null) {
       current = await fetchStatus();
-      if (current === null) return null; // fetchStatus failed
+      if (current === null) {
+        return null;
+      } // fetchStatus failed
     }
     const method = current ? "DELETE" : "POST";
     setIsLoading(true);

@@ -100,6 +100,8 @@ export function useGlobalStats({
   }, [fetchStats]);
 
   React.useEffect(() => {
+    // Fetch on mount; refresh() flags loading before awaiting.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     return () => abortRef.current?.abort();
   }, [refresh]);

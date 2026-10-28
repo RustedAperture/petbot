@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Badge } from "../ui/badge";
 import { Card, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { formatPercentage } from "@/lib/format";
 import { NativeCounterUp } from "../uitripled/native-counter-up-carbon";
@@ -58,9 +57,12 @@ export default function StatsCard({
     userImages ?? [],
   );
 
-  React.useEffect(() => {
+  // Re-sync when the parent passes new images.
+  const [prevUserImages, setPrevUserImages] = React.useState(userImages);
+  if (userImages !== prevUserImages) {
+    setPrevUserImages(userImages);
     setLiveImages(userImages ?? []);
-  }, [userImages]);
+  }
 
   const VALID_URL = /^https?:\/\//i;
   const displayImages = liveImages.filter((url) => VALID_URL.test(url));

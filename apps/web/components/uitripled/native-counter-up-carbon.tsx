@@ -52,12 +52,11 @@ export function NativeCounterUp({
   const shouldReduceMotion = useReducedMotion();
   const [displayValue, setDisplayValue] = useState(0);
 
-  useEffect(() => {
-    if (!autoStart) return;
+  // If reduced motion, just show the value immediately
+  const showImmediately = autoStart && !!shouldReduceMotion;
 
-    // If reduced motion, just set the value immediately
-    if (shouldReduceMotion) {
-      setDisplayValue(value);
+  useEffect(() => {
+    if (!autoStart || shouldReduceMotion) {
       return;
     }
 
@@ -67,7 +66,7 @@ export function NativeCounterUp({
       ease: [0.16, 1, 0.3, 1], // Smooth expo-out easing
       onUpdate: (latest) => {
         setDisplayValue(
-          decimals > 0 ? Number(latest.toFixed(decimals)) : Math.round(latest)
+          decimals > 0 ? Number(latest.toFixed(decimals)) : Math.round(latest),
         );
       },
     });
@@ -75,7 +74,9 @@ export function NativeCounterUp({
     return () => controls.stop();
   }, [value, duration, autoStart, shouldReduceMotion, decimals]);
 
-  const formattedValue = displayValue.toLocaleString(undefined, {
+  const formattedValue = (
+    showImmediately ? value : displayValue
+  ).toLocaleString(undefined, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

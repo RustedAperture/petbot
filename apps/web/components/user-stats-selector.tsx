@@ -66,11 +66,19 @@ export default function UserStatsSelector() {
   // sync state with query params & available guilds; convert id->name for the
   // display when appropriate.  This has to live after availableGuilds is
   // defined otherwise we'd reference it too early.
-  React.useEffect(() => {
-    const val = queryUserScope ?? "";
-    setUserScopeValue(val);
-    setUserScopeInput(getScopeDisplay(val, availableGuilds));
-  }, [queryUserScope, availableGuilds]); // availableGuilds is memoized above
+  // availableGuilds is memoized above. prev starts null so the first render syncs.
+  const [prevScopeSync, setPrevScopeSync] = React.useState<{
+    scope: string;
+    guilds: GuildItem[];
+  } | null>(null);
+  if (
+    prevScopeSync?.scope !== queryUserScope ||
+    prevScopeSync?.guilds !== availableGuilds
+  ) {
+    setPrevScopeSync({ scope: queryUserScope, guilds: availableGuilds });
+    setUserScopeValue(queryUserScope);
+    setUserScopeInput(getScopeDisplay(queryUserScope, availableGuilds));
+  }
 
   // If session reports no guilds but the bot has guild data, try a forced
   // session refresh once so localStorage gets renewed.

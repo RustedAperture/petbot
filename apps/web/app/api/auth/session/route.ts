@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
     // Augment session with server‑persisted guilds (if any)
     try {
-      const userId = (session as any)?.user?.id;
+      const userId = (session.user as { id?: string } | undefined)?.id;
       if (userId) {
         const res = await fetch(
           `${getInternalApiBase()}/api/userSessions/${encodeURIComponent(userId)}`,
