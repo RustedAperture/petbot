@@ -7,3 +7,14 @@ process.env.INTERNAL_API_SECRET = "test-internal-api-secret";
 
 // Add useful DOM matchers from testing-library.
 import "@testing-library/jest-dom";
+
+// happy-dom 21 implements the Web Animations API, whose cancelled animations
+// reject `finished`. framer-motion leaves those rejections unhandled, so hide
+// `animate` and let motion use its JS animation fallback in tests.
+if (typeof Element !== "undefined") {
+  for (const proto of [Element.prototype, HTMLElement.prototype]) {
+    if (Object.prototype.hasOwnProperty.call(proto, "animate")) {
+      delete (proto as Partial<Element>).animate;
+    }
+  }
+}
