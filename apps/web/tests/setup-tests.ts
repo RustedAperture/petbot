@@ -6,7 +6,7 @@ process.env.INTERNAL_API_SECRET = "test-internal-api-secret";
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Add useful DOM matchers from testing-library.
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // happy-dom 21 implements the Web Animations API, whose cancelled animations
 // reject `finished`. framer-motion leaves those rejections unhandled, so hide
