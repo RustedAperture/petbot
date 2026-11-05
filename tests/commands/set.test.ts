@@ -71,19 +71,15 @@ describe("/set command", () => {
         where: (_: any) => {
           if (table === botData) {
             return {
-              then: (r: any) => r({ default_images: { pet: "guild-default" } }),
+              then: (r: any) => r({ defaultImages: { pet: "guild-default" } }),
               limit: () =>
-                Promise.resolve([{ default_images: { pet: "guild-default" } }]),
+                Promise.resolve([{ defaultImages: { pet: "guild-default" } }]),
             };
           }
           if (table === actionData) {
             return {
-              then: (r: any) =>
-                r([{ images: JSON.stringify(["guild-default"]) }]),
-              limit: () =>
-                Promise.resolve([
-                  { images: JSON.stringify(["guild-default"]) },
-                ]),
+              then: (r: any) => r([{ images: ["guild-default"] }]),
+              limit: () => Promise.resolve([{ images: ["guild-default"] }]),
             };
           }
           return { then: (r: any) => r([]), limit: () => Promise.resolve([]) };
