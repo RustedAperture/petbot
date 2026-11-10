@@ -1,5 +1,5 @@
 {
-  description = "Dev shell for petbot (Node + pnpm)";
+  description = "Dev shell for petbot (Node + npm)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -21,7 +21,6 @@
           # Tools needed to develop and build node modules (e.g., sqlite3)
           packages = with pkgs; [
             nodejs_24 # Node.js 24 (LTS)
-            pnpm # Package manager (uses existing pnpm-lock.yaml)
             sqlite # libsqlite3 and headers for native builds
             pkg-config # Helps node-gyp find libraries
             python3 # node-gyp requirement
@@ -36,8 +35,7 @@
           shellHook = ''
             export npm_config_update_notifier=false
             export PUPPETEER_SKIP_DOWNLOAD=true
-            echo "petbot dev shell ready: node $(node -v), pnpm $(pnpm -v)"
-            zsh
+            echo "petbot dev shell ready: node $(node -v), npm $(npm -v)"
           '';
         };
       }
