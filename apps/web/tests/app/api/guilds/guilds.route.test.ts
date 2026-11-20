@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { GET as guildsGet } from "@/app/api/guilds/route";
 import { GET as guildsUserGet } from "@/app/api/guilds/user/[userId]/route";
+import { GET as guildsMemberGet } from "@/app/api/guilds/member/[userId]/route";
 import { createSessionCookieValue } from "@/lib/internal-api";
 
 // Helper to build a fake session cookie value
@@ -153,5 +154,42 @@ describe("/app/api/guilds/user/:userId proxy", () => {
     expect(res.status).toBe(404);
     const json = await res.json();
     expect(json).toEqual({ error: "not_found" });
+  });
+});
+
+describe("/app/api/guilds/member/:userId proxy", () => {
+  it("returns 403 when userId does not match session", async () => {
+    const session = { user: { id: "123" } };
+    const req = new Request("http://localhost/api/guilds/member/999", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildsMemberGet(req as any, {
+      params: Promise.resolve({ userId: "999" }),
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("forwards to the internal member guilds endpoint", async () => {
+    const session = { user: { id: "123" } };
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ guildIds: ["456"] }), { status: 200 }),
+      );
+    (global as any).fetch = mockFetch;
+    const req = new Request("http://localhost/api/guilds/member/123", {
+      headers: { cookie: sessionCookie(session) },
+    });
+
+    const res: any = await guildsMemberGet(req as any, {
+      params: Promise.resolve({ userId: "123" }),
+    });
+
+    expect(await res.json()).toEqual({ guildIds: ["456"] });
+    expect(String(mockFetch.mock.calls[0][0])).toContain(
+      "/api/guilds/member/123",
+    );
   });
 });
