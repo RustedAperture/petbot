@@ -28,7 +28,10 @@ vi.mock("../../src/logger.js", () => ({
 
 // --- Mock migrated Express route handlers ---
 vi.mock("../../src/http/routes/stats.js", () => ({ default: statsMock }));
-vi.mock("../../src/http/routes/guilds.js", () => ({ default: guildsMock }));
+vi.mock("../../src/http/routes/guilds.js", () => ({
+  default: guildsMock,
+  memberGuildsHandler: guildsMock,
+}));
 vi.mock("../../src/http/routes/userSessions.js", () => {
   const { Router } = require("express");
   const router = Router();

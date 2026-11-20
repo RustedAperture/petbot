@@ -24,6 +24,7 @@ export default function GuildStatsPage({
   // fetch bot-known guild ids and compute intersection with user's session guilds
   const { data: botGuildIds, isLoading: botGuildsLoading } = useBotGuilds(
     session?.user.id ?? null,
+    "member",
   );
 
   const availableGuilds = (session?.guilds ?? []).filter((g) =>

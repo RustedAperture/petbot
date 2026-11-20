@@ -32,6 +32,7 @@ function GuildSelect({
   const { session, refresh } = useSession();
   const { data: botGuildIds, isLoading: botGuildsLoading } = useBotGuilds(
     session?.user.id ?? null,
+    "member",
   );
 
   const availableGuilds = (session?.guilds ?? []).filter((g) =>

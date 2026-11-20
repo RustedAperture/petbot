@@ -2,7 +2,15 @@
 
 import * as React from "react";
 
-export function useBotGuilds(userId?: string | null) {
+/**
+ * Guild IDs that have PetBot stats for the given user.
+ * - `"user"`: guilds where this user has performed actions.
+ * - `"member"`: guilds this user belongs to where anyone has performed actions.
+ */
+export function useBotGuilds(
+  userId?: string | null,
+  scope: "user" | "member" = "user",
+) {
   const [data, setData] = React.useState<string[] | null>(null);
   // don't show a loading state if there's no userId — avoid an unnecessary API call
   const [isLoading, setIsLoading] = React.useState<boolean>(Boolean(userId));
@@ -20,9 +28,7 @@ export function useBotGuilds(userId?: string | null) {
     setIsLoading(true);
     setError(null);
     try {
-      const url = userId
-        ? `/api/guilds/user/${encodeURIComponent(userId)}`
-        : "/api/guilds";
+      const url = `/api/guilds/${scope}/${encodeURIComponent(userId)}`;
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) {
         throw new Error(`Failed to fetch bot guilds (${res.status})`);
@@ -35,7 +41,7 @@ export function useBotGuilds(userId?: string | null) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, scope]);
 
   React.useEffect(() => {
     // Fetch on mount; refresh() flags loading before awaiting.
