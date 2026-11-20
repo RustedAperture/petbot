@@ -3,6 +3,15 @@ import supertest from "supertest";
 import { client, drizzleDb } from "../../../src/db/connector.js";
 import { actionData, userSessions } from "../../../src/db/schema.js";
 
+// A private in-memory database, so a LIBSQL_URL in the environment can never
+// point the cleanup below at real data.
+vi.mock("../../../src/db/connector.js", async () => {
+  const { createClient } = await import("@libsql/client");
+  const { drizzle } = await import("drizzle-orm/libsql");
+  const client = createClient({ url: ":memory:" });
+  const drizzleDb = drizzle({ client });
+  return { client, drizzleDb, default: drizzleDb };
+});
 vi.mock("../../../src/logger.js", () => ({
   default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
@@ -37,7 +46,7 @@ describe("GET /api/guilds/member/:userId", () => {
 
   beforeAll(async () => {
     // Only the columns the handler reads plus NOT NULLs; libsql's migrate()
-    // batch fails on the shared in-memory test database.
+    // batch fails on an in-memory database.
     await client.executeMultiple(`
       CREATE TABLE IF NOT EXISTS userSessions (
         user_id TEXT PRIMARY KEY,
