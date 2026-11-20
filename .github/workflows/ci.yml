@@ -9,9 +9,15 @@ on:
   pull_request: {}
 
 jobs:
-  test:
+  changes:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      server: ${{ steps.paths.outputs.server }}
+      web: ${{ steps.paths.outputs.web }}
+      docker: ${{ steps.paths.outputs.docker }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
@@ -21,18 +27,49 @@ jobs:
         uses: dorny/paths-filter@v4.0.3
         with:
           filters: |
-            web:
-              - 'apps/web/**'
-              - 'apps/web/package.json'
-              - 'apps/web/package-lock.json'
-            server:
-              - 'src/**'
+            workflow: &workflow
+              - '.github/workflows/ci.yml'
+            deps: &deps
               - 'package.json'
               - 'package-lock.json'
-            docker:
-              - 'Dockerfile'
+            server:
+              - *workflow
+              - *deps
               - 'src/**'
-              - 'apps/**'
+              - 'tests/**'
+              - 'drizzle/**'
+              - 'tsconfig*.json'
+              - 'vite.config.ts'
+              - 'eslint.config*.js'
+            web:
+              - *workflow
+              - *deps
+              - 'apps/web/**'
+              # apps/web imports src/types/constants.ts via @petbot/constants
+              - 'src/types/**'
+              - 'eslint.config.base.js'
+            docker:
+              - *workflow
+              - *deps
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'entrypoint-bot.sh'
+              - 'src/**'
+              - 'apps/web/**'
+              - 'drizzle/**'
+              - 'tsconfig*.json'
+              - 'changelog.md'
+              - 'privacy.md'
+              - 'terms.md'
+
+  test:
+    needs: changes
+    if: ${{ needs.changes.outputs.server == 'true' || needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
 
       - name: Run Bearer security scan
         uses: bearer/bearer-action@v2
@@ -53,7 +90,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Restore Next.js build cache
-        if: steps.paths.outputs.web == 'true'
+        if: needs.changes.outputs.web == 'true'
         uses: actions/cache@v6.1.0
         with:
           path: apps/web/.next
@@ -62,23 +99,27 @@ jobs:
             ${{ runner.os }}-nextjs-
 
       - name: Prebuild frontend (apps/web)
-        if: steps.paths.outputs.web == 'true'
+        if: needs.changes.outputs.web == 'true'
         run: npm --prefix apps/web run build
 
       - name: Build (server-only)
+        if: needs.changes.outputs.server == 'true'
         run: npm run build:server
 
       - name: Run tests:server
+        if: needs.changes.outputs.server == 'true'
         run: npm run test:ci
 
       - name: Run tests:web
+        if: needs.changes.outputs.web == 'true'
         run: npm run test:web:ci
 
   docker-build:
     name: Validate Docker build (bot + web)
-    if: ${{ github.event_name == 'pull_request' }}
+    needs: [changes, test]
+    # !failure() lets this run when test is skipped, e.g. a Dockerfile-only change.
+    if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.docker == 'true' }}
     runs-on: ubuntu-latest
-    needs: test
     strategy:
       matrix:
         target: [bot, web]
