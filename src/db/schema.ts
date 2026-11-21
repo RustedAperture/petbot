@@ -29,22 +29,33 @@ export const actionData = sqliteTable(
       table.locationId,
       table.actionType,
     ),
+    index("action_data_location_action_idx").on(
+      table.locationId,
+      table.actionType,
+    ),
+    index("action_data_action_type_idx").on(table.actionType),
   ],
 );
 
-export const botData = sqliteTable("botData", {
-  id: integer().primaryKey(),
-  guildId: text("guild_id"),
-  logChannel: text("log_channel"),
-  nickname: text(),
-  createdAt: text().notNull(),
-  updatedAt: text().notNull(),
-  sleepImage: text("sleep_image"),
-  defaultImages: text("default_images", { mode: "json" })
-    .default("[]")
-    .$type<Record<string, string>>(),
-  restricted: integer("restricted", { mode: "boolean" }).default(false),
-});
+export const botData = sqliteTable(
+  "botData",
+  {
+    id: integer().primaryKey(),
+    guildId: text("guild_id"),
+    logChannel: text("log_channel"),
+    nickname: text(),
+    createdAt: text().notNull(),
+    updatedAt: text().notNull(),
+    sleepImage: text("sleep_image"),
+    defaultImages: text("default_images", { mode: "json" })
+      .default("[]")
+      .$type<Record<string, string>>(),
+    restricted: integer("restricted", { mode: "boolean" }).default(false),
+  },
+  // Not unique: existing databases may already hold duplicate guild rows, and a
+  // unique index would fail the migration at startup.
+  (table) => [index("bot_data_guild_id_idx").on(table.guildId)],
+);
 
 export const userSessions = sqliteTable("userSessions", {
   userId: text("user_id").primaryKey(),

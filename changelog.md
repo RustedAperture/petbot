@@ -18,6 +18,7 @@
 ### Under the Hood
 
 - New `action_events` table, plus bot API routes for recent events and a Server-Sent Events stream, with matching relay routes on the website that apply the same sign-in and server checks as the stats pages.
+- Added database indexes for guild stats, leaderboards, and server-settings lookups, so they no longer scan every row.
 
 ## v8.9.0 - Sep 23, 2026
 
