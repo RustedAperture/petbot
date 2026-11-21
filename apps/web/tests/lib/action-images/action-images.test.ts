@@ -22,9 +22,9 @@ describe("ownImages", () => {
     ["only the default fallback", [DEFAULT], []],
     ["no images", undefined, []],
     [
-      "the default mixed with own images",
+      "a saved array that includes the default",
       [DEFAULT, "https://a/1.png"],
-      ["https://a/1.png"],
+      [DEFAULT, "https://a/1.png"],
     ],
     [
       "blank and non-http slots",

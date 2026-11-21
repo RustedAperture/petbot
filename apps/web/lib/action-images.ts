@@ -17,16 +17,17 @@ export function placeOptions(
 }
 
 /**
- * The images to show as the user's own. The stats API fills unset actions with
- * the default image, so it's dropped, except on an action the user created,
- * where its image counts as their first.
+ * The images to show as the user's own. The stats API fills an unset action
+ * with just its default image, which counts as unset, except on an action the
+ * user created, where its image counts as their first. Saved arrays are kept whole.
  */
 export function ownImages(totals: ActionTotals, isCreator = false): string[] {
   const valid = (totals.images ?? []).filter((url) => VALID_URL.test(url));
   if (isCreator) {
     return valid.length === 0 && totals.imageUrl ? [totals.imageUrl] : valid;
   }
-  return valid.filter((url) => url !== totals.imageUrl);
+  const isUnsetFill = valid.length === 1 && valid[0] === totals.imageUrl;
+  return isUnsetFill ? [] : valid;
 }
 
 /** Splits stats entries into built-ins plus the user's own custom actions, and everyone else's. */
