@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import supertest from "supertest";
 import type { AddressInfo } from "node:net";
+import http from "node:http";
 import type { Server } from "node:http";
 
 const { listRecent } = vi.hoisted(() => ({ listRecent: vi.fn() }));
@@ -122,6 +123,49 @@ describe("/api/events", () => {
     } finally {
       clearTimeout(timeout);
       controller.abort();
+    }
+
+    await vi.waitFor(() => expect(actionEventListenerCount()).toBe(0));
+  });
+
+  it("stream stays open and delivers events when the GET carries a JSON body", async () => {
+    server = createApp().listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+
+    // fetch refuses a GET body, so use node:http
+    const req = http.request({
+      port,
+      host: "127.0.0.1",
+      method: "GET",
+      path: "/api/events/stream",
+      headers: { "Content-Type": "application/json", "Content-Length": 2 },
+    });
+    const timeout = setTimeout(() => req.destroy(), 5000);
+
+    try {
+      const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
+        req.once("response", resolve);
+        req.once("error", reject);
+        req.end("{}");
+      });
+      expect(res.statusCode).toBe(200);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(actionEventListenerCount()).toBe(1);
+
+      publishActionEvent(rowAt(21, "1"));
+
+      let received = "";
+      for await (const chunk of res) {
+        received += chunk.toString();
+        if (received.includes("event: action")) {
+          break;
+        }
+      }
+      expect(received).toContain("id: 21\n");
+    } finally {
+      clearTimeout(timeout);
+      req.destroy();
     }
 
     await vi.waitFor(() => expect(actionEventListenerCount()).toBe(0));
