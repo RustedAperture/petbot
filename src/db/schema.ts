@@ -1,6 +1,7 @@
 import {
   sqliteTable,
   uniqueIndex,
+  index,
   text,
   integer,
 } from "drizzle-orm/sqlite-core";
@@ -64,3 +65,24 @@ export const leaderboardConsent = sqliteTable("leaderboardConsent", {
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });
+
+export const actionEvents = sqliteTable(
+  "action_events",
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    actionType: text("action_type").notNull(),
+    performerHash: text("performer_hash").notNull(),
+    targetHash: text("target_hash").notNull(),
+    locationId: text("location_id"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("action_events_created_at_idx").on(table.createdAt),
+    index("action_events_location_created_idx").on(
+      table.locationId,
+      table.createdAt,
+    ),
+    index("action_events_performer_idx").on(table.performerHash),
+    index("action_events_target_idx").on(table.targetHash),
+  ],
+);
