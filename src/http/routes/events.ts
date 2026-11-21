@@ -138,15 +138,15 @@ router.get("/stream", (req: Request, res: Response) => {
     if (row.phraseSource !== "guild") {
       return;
     }
+    // Each waiting event holds a closure until the refresh settles, so past the
+    // cap new custom events are dropped before touching the lookup at all.
+    if (pendingCustomEvents >= MAX_PENDING_CUSTOM_EVENTS) {
+      return;
+    }
     const isCurrent = nameCache.hasName(row.actionType);
     if (isCurrent === true) {
       send();
     } else if (isCurrent !== false) {
-      // Each waiting event holds a closure until the refresh settles, so past
-      // the cap new custom events are dropped.
-      if (pendingCustomEvents >= MAX_PENDING_CUSTOM_EVENTS) {
-        return;
-      }
       pendingCustomEvents += 1;
       void isCurrent.then(
         (isNow) => {

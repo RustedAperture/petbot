@@ -5,10 +5,30 @@ import type { AddressInfo } from "node:net";
 import http from "node:http";
 import type { Server } from "node:http";
 
-const { listRecent, listGuildActions } = vi.hoisted(() => ({
+const { listRecent, listGuildActions, hasNameSpy } = vi.hoisted(() => ({
   listRecent: vi.fn(),
   listGuildActions: vi.fn(),
+  hasNameSpy: vi.fn(),
 }));
+
+vi.mock("../../../src/utilities/customActions/guildNameCache.js", async (importOriginal) => {
+  const original = await importOriginal<
+    typeof import("../../../src/utilities/customActions/guildNameCache.js")
+  >();
+  return {
+    ...original,
+    createGuildNameCache: (guildId: string) => {
+      const cache = original.createGuildNameCache(guildId);
+      return {
+        ...cache,
+        hasName: (name: string) => {
+          hasNameSpy(name);
+          return cache.hasName(name);
+        },
+      };
+    },
+  };
+});
 
 vi.mock("../../../src/db/connector.js", () => ({ drizzleDb: {} }));
 vi.mock("../../../src/logger.js", () => ({
@@ -230,6 +250,7 @@ describe("/api/events", () => {
         .filter((id) => id < 900);
       expect(customIds).toHaveLength(100);
       expect(customIds[0]).toBe(500);
+      expect(hasNameSpy.mock.calls.length).toBeLessThanOrEqual(100);
     } finally {
       clearTimeout(timeout);
       controller.abort();
