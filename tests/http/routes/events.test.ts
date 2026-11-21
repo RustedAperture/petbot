@@ -173,7 +173,8 @@ describe("/api/events", () => {
       expect(guild).not.toContain("id: 40\n");
       expect(guild).not.toContain("id: 41\n");
       expect(guild).toContain("id: 100\n");
-      expect(listGuildActions).toHaveBeenCalledTimes(1);
+      // The prefetch plus one forced refresh for the unknown "zap".
+      expect(listGuildActions).toHaveBeenCalledTimes(2);
     } finally {
       clearTimeout(timeout);
       controller.abort();
@@ -255,6 +256,82 @@ describe("/api/events", () => {
       clearTimeout(timeout);
       controller.abort();
     }
+  });
+
+  describe("forced name refresh for unknown custom events", () => {
+    async function connectWarm() {
+      server = createApp().listen(0);
+      await new Promise((resolve) => server!.once("listening", resolve));
+      const { port } = server.address() as AddressInfo;
+      const controller = new AbortController();
+      const res = await fetch(`http://127.0.0.1:${port}/api/events/stream?locationId=1`, {
+        signal: controller.signal,
+      });
+      const reader = res.body!.getReader();
+      await reader.read();
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return { reader, controller };
+    }
+
+    async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, marker: string) {
+      const decoder = new TextDecoder();
+      let received = "";
+      while (!received.includes(marker)) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        received += decoder.decode(value);
+      }
+      return received;
+    }
+
+    const guildEvent = (id: number, actionType: string) => ({
+      ...rowAt(id, "1"),
+      actionType,
+      phraseSource: "guild" as const,
+    });
+
+    it("delivers a name created after the cache warmed, after one refresh", async () => {
+      listGuildActions.mockResolvedValueOnce([]).mockResolvedValue([{ name: "boop" }]);
+      const { reader, controller } = await connectWarm();
+      try {
+        publishActionEvent(guildEvent(700, "boop"));
+        const received = await readUntil(reader, "id: 700\n");
+        expect(received).toContain("id: 700\n");
+        expect(listGuildActions).toHaveBeenCalledTimes(2);
+      } finally {
+        controller.abort();
+      }
+    });
+
+    it("still drops a genuinely unknown name", async () => {
+      const { reader, controller } = await connectWarm();
+      try {
+        publishActionEvent(guildEvent(710, "zap"));
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        publishActionEvent(rowAt(711, "1"));
+        const received = await readUntil(reader, "id: 711\n");
+        expect(received).not.toContain("id: 710\n");
+      } finally {
+        controller.abort();
+      }
+    });
+
+    it("refreshes at most once a second for a burst of unknown names", async () => {
+      const { reader, controller } = await connectWarm();
+      try {
+        for (let n = 0; n < 20; n++) {
+          publishActionEvent(guildEvent(720 + n, `zap${n}`));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        publishActionEvent(rowAt(799, "1"));
+        await readUntil(reader, "id: 799\n");
+        expect(listGuildActions).toHaveBeenCalledTimes(2);
+      } finally {
+        controller.abort();
+      }
+    });
   });
 
   it("a burst of built-in events triggers no name lookups after connecting", async () => {

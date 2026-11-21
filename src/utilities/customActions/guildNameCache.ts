@@ -38,6 +38,10 @@ export function createGuildNameCache(guildId: string) {
     prefetch(): void {
       void load();
     },
+    /** Forces a load even when fresh, sharing any load already in flight. */
+    refresh(): Promise<void> {
+      return load();
+    },
     /** Whether the guild currently defines `name`; waits for a fresh load when expired. */
     hasName(name: string): boolean | Promise<boolean> {
       if (Date.now() < expiresAt) {
