@@ -115,14 +115,18 @@ export async function resolveAction(
   return defs.length > 0 ? mergeDefinitions(name, defs, ctx) : null;
 }
 
-/** Distinct custom action names a user has recorded rows for, sorted. */
-export async function listCustomNamesWithRows(userId: string): Promise<string[]> {
+/** Distinct custom action names a user has recorded rows for, sorted; optionally only at one location. */
+export async function listCustomNamesWithRows(
+  userId: string,
+  locationId?: string,
+): Promise<string[]> {
   const rows = await drizzleDb
     .selectDistinct({ actionType: actionData.actionType })
     .from(actionData)
     .where(
       and(
         eq(actionData.userId, userId),
+        ...(locationId ? [eq(actionData.locationId, locationId)] : []),
         not(inArray(actionData.actionType, BUILT_IN_NAMES)),
       ),
     );

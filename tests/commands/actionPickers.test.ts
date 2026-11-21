@@ -148,7 +148,31 @@ describe("/server-set", () => {
       .from(customActions)
       .where(eq(customActions.name, "boop"));
     expect(row.image).toBe("https://example.com/boop.png");
-    expect(interaction.__calls.replies[0].embeds).toBeDefined();
+    expect(interaction.__calls.editedReplies[0].embeds).toBeDefined();
+  });
+
+  it("defers ephemerally before checking the image and reports through editReply", async () => {
+    await seed("guild", "guild-1", "boop");
+    const order: string[] = [];
+    (checkImage as any).mockImplementation(async () => {
+      order.push("checkImage");
+      return true;
+    });
+    const interaction = mockInteraction({
+      options: { action: "boop", url: "https://example.com/boop.png" },
+    });
+    interaction.deferReply = vi.fn(async () => {
+      order.push("defer");
+    });
+
+    await serverSetCommand.execute(interaction as any);
+
+    expect(order).toEqual(["defer", "checkImage"]);
+    expect(interaction.deferReply).toHaveBeenCalledWith({
+      flags: MessageFlags.Ephemeral,
+    });
+    expect(interaction.__calls.replies).toEqual([]);
+    expect(interaction.__calls.editedReplies[0].embeds).toBeDefined();
   });
 
   it("keeps the stored image when the url fails validation", async () => {
@@ -165,9 +189,8 @@ describe("/server-set", () => {
 
     const [row] = await testDb.current.db.select().from(customActions);
     expect(row.image).toBe("https://example.com/old.png");
-    expect(interaction.__calls.replies[0]).toEqual({
+    expect(interaction.__calls.editedReplies[0]).toEqual({
       content: "Your URL is invalid, please try again",
-      flags: MessageFlags.Ephemeral,
     });
   });
 
@@ -180,11 +203,8 @@ describe("/server-set", () => {
     });
     await serverSetCommand.execute(interaction as any);
 
-    expect(interaction.__calls.replies).toEqual([
-      {
-        content: "That action isn't available here.",
-        flags: MessageFlags.Ephemeral,
-      },
+    expect(interaction.__calls.editedReplies).toEqual([
+      { content: "That action isn't available here." },
     ]);
   });
 
@@ -311,6 +331,21 @@ describe("stats context menu", () => {
 
   it("gives no card to a guild definition the target never used", async () => {
     await seed("guild", "guild-1", "boop");
+
+    expect(await run()).toEqual(Object.keys(ACTIONS));
+  });
+
+  it("gives no card to a custom name with rows only in another location", async () => {
+    await testDb.current.db.insert(actionData).values({
+      userId: "t1",
+      locationId: "guild-2",
+      hasPerformed: 1,
+      hasReceived: 0,
+      actionType: "elsewhere",
+      images: [],
+      createdAt: NOW,
+      updatedAt: NOW,
+    });
 
     expect(await run()).toEqual(Object.keys(ACTIONS));
   });

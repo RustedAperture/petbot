@@ -56,4 +56,24 @@ describe("stats context menu", () => {
       Object.keys(ACTIONS).length + 2,
     );
   });
+
+  it("notes how many actions were shown when more than 36 remain", async () => {
+    (getActionStatsContainer as any).mockResolvedValue({ container: "c" });
+    const { listCustomNamesWithRows } = await import("../../src/utilities/customActions/resolver.js");
+    (listCustomNamesWithRows as any).mockResolvedValueOnce(
+      Array.from({ length: 31 }, (_, i) => `custom${i}`),
+    );
+    const target = { id: "t1", fetch: vi.fn().mockResolvedValue(true) };
+    const interaction = mockInteraction({ targetMember: target, targetUser: target });
+
+    await command.execute(interaction as any);
+
+    const sent = [
+      ...interaction.__calls.editedReplies,
+      ...interaction.__calls.followUps,
+    ];
+    expect(interaction.__calls.followUps.length).toBeLessThanOrEqual(5);
+    const last = sent.at(-1).components.at(-1);
+    expect(last.data.content).toBe("Showing 36 of 37 actions.");
+  });
 });

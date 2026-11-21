@@ -67,19 +67,17 @@ export const command = {
     }
 
     const isBuiltIn = Object.hasOwn(ACTIONS, action);
+    // checkImage can outlast Discord's 3s acknowledgement window, so acknowledge first.
+    const respond = (payload: any) =>
+      isBuiltIn ? interaction.reply(payload) : interaction.editReply(payload);
     if (!isBuiltIn) {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       url = normalizeUrl(url);
       if (!(await checkImage(url))) {
-        return interaction.reply({
-          content: "Your URL is invalid, please try again",
-          flags: MessageFlags.Ephemeral,
-        });
+        return respond({ content: "Your URL is invalid, please try again" });
       }
       if (!(await setCustomActionImage("guild", guildId, action, url))) {
-        return interaction.reply({
-          content: UNAVAILABLE_MESSAGE,
-          flags: MessageFlags.Ephemeral,
-        });
+        return respond({ content: UNAVAILABLE_MESSAGE });
       }
     }
     const actionConfig = isBuiltIn
@@ -157,12 +155,12 @@ export const command = {
         logger.warn({ error }, "Failed to send to log channel.");
       }
 
-      await interaction.reply({
+      await respond({
         content: "Updated Configs. This has been logged.",
         flags: MessageFlags.Ephemeral,
       });
     } else {
-      await interaction.reply({
+      await respond({
         embeds: [setupEmbed],
         flags: MessageFlags.Ephemeral,
       });
