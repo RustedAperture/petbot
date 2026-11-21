@@ -23,6 +23,7 @@ import leaderboardConsentRouter from "./routes/leaderboardConsent.js";
 import setImagesHandler from "./routes/setImages.js";
 import serverSettingsRouter from "./routes/serverSettings.js";
 import guildChannelsHandler from "./routes/guildChannels.js";
+import eventsRouter from "./routes/events.js";
 
 /**
  * Resolve TLS key/cert from env vars.
@@ -92,6 +93,7 @@ export function createApp(client?: Client<boolean>): express.Express {
 
   // --- Phase 2b: write/update endpoints ---
   app.use("/api/optOut", optOutRouter);
+  app.use("/api/events", eventsRouter);
   app.use("/api/leaderboardConsent", leaderboardConsentRouter);
   app.post("/api/setImages", setImagesHandler);
 
