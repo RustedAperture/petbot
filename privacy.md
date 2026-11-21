@@ -24,6 +24,11 @@ logged:
   type, time, location, and hashed user IDs) to power the live activity
   feed. These entries are removed when you delete your data via the web
   interface.
+- **Custom Actions:** Each custom action stores its name, phrase, image
+  URL, and the Discord ID of the person who created it. These are kept
+  until the action is deleted. Deleting your data via the web interface
+  removes your personal actions and clears your ID from server actions
+  you created. Moderation bans are kept.
 
 No personally identifiable information (such as usernames, email
 addresses, or real names) is collected or stored by PetBot.
