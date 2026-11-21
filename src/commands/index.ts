@@ -10,6 +10,7 @@
 import action from "./slash/action.js";
 import bite from "./slash/bite.js";
 import bonk from "./slash/bonk.js";
+import customAction from "./slash/customAction.js";
 import botStats from "./slash/botStats.js";
 import explode from "./slash/explode.js";
 import hug from "./slash/hug.js";
@@ -34,6 +35,7 @@ export const slashCommands = [
   action,
   bite,
   bonk,
+  customAction,
   botStats,
   explode,
   hug,
