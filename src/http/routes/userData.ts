@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
 import { actionData, optOut } from "../../db/schema.js";
 import { drizzleDb } from "../../db/connector.js";
+import { deleteActionEventsForUser } from "../../utilities/actionEvents.js";
 import { eq } from "drizzle-orm";
 
 /**
  * DELETE /api/userData/:userId — purge all data for a user.
- * Deletes action data and opt-out records.
+ * Deletes action data, opt-out records and action events.
  */
 export default async function userDataHandler(
   req: Request,
@@ -20,6 +21,7 @@ export default async function userDataHandler(
 
   await drizzleDb.delete(actionData).where(eq(actionData.userId, userId));
   await drizzleDb.delete(optOut).where(eq(optOut.userId, userId));
+  await deleteActionEventsForUser(userId);
 
   res.json({ ok: true });
 }

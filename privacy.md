@@ -19,6 +19,11 @@ logged:
 - **Image URLs:** When a user supplies or generates an image via the bot,
   the URL(s) of the chosen image(s) are stored so the bot can recreate
   or display them later.
+- **Activity Log:** Every action performed through the bot, including by
+  users who have opted out, is logged anonymously for 30 days (action
+  type, time, location, and hashed user IDs) to power the live activity
+  feed. These entries are removed when you delete your data via the web
+  interface.
 
 No personally identifiable information (such as usernames, email
 addresses, or real names) is collected or stored by PetBot.

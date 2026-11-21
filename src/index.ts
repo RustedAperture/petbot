@@ -9,6 +9,7 @@ import { startHttpServer } from "./http/expressServer.js";
 import { readiness } from "./http/readiness.js";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { drizzleDb } from "./db/connector.js";
+import { startActionEventPruning } from "./utilities/actionEvents.js";
 import { bootstrapDb } from "./db/bootstrap.js";
 // Static commands manifest (prevents runtime file-path imports flagged by scanners)
 import { slashCommands, contextCommands } from "./commands/index.js";
@@ -27,6 +28,7 @@ declare module "discord.js" {
 // Run database migrations on every launch
 await bootstrapDb(); // stamps legacy DBs so migrate() doesn't re-run existing DDL
 await migrate(drizzleDb, { migrationsFolder: "./drizzle" });
+startActionEventPruning();
 logger.info("Database migrations applied");
 readiness.dbReady = true;
 

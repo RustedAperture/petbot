@@ -8,6 +8,8 @@ import { ActionUser } from "../types/user.js";
 import { buildActionReply } from "../components/buildActionReply.js";
 import { buildStatsReply } from "../components/buildStatsReply.js";
 import { randomImage } from "./helper.js";
+import logger from "../logger.js";
+import { recordActionEvent } from "./actionEvents.js";
 import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
 
 export async function performAction(
@@ -115,13 +117,30 @@ export async function performAction(
   await Promise.all([
     drizzleDb
       .update(actionData)
-      .set({ hasReceived: sql`${actionData.hasReceived} + 1` })
+      .set({
+        hasReceived: sql`${actionData.hasReceived} + 1`,
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(actionData.id, targetRow!.id)),
     drizzleDb
       .update(actionData)
-      .set({ hasPerformed: sql`${actionData.hasPerformed} + 1` })
+      .set({
+        hasPerformed: sql`${actionData.hasPerformed} + 1`,
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(actionData.id, authorRow!.id)),
   ]);
+
+  try {
+    await recordActionEvent({
+      actionType: actionKind,
+      performerId: author.id,
+      targetId: target.id,
+      locationId: guild,
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Failed to record action event");
+  }
 
   const refreshed: any[] = await drizzleDb
     .select()

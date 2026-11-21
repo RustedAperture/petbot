@@ -11,10 +11,18 @@ vi.mock("../../src/db/connector.js", () => ({
         }),
       }),
     })),
-    update: vi.fn(() => ({ set: vi.fn() })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+    })),
   },
 }));
 vi.mock("../../src/db/schema.js", () => ({ actionData: {}, botData: {} }));
+vi.mock("../../src/utilities/actionEvents.js", () => ({
+  recordActionEvent: vi.fn().mockResolvedValue({}),
+}));
+vi.mock("../../src/logger.js", () => ({
+  default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}));
 vi.mock("@utils/helper.js", () => ({ randomImage: vi.fn() }));
 vi.mock("../../src/components/buildActionReply.js", () => ({
   buildActionReply: vi.fn(),
@@ -28,6 +36,7 @@ import {
   getActionStatsContainer,
 } from "../../src/utilities/actionHelpers.js";
 import { drizzleDb } from "../../src/db/connector.js";
+import { recordActionEvent } from "../../src/utilities/actionEvents.js";
 import { randomImage } from "../../src/utilities/helper.js";
 import { buildActionReply } from "../../src/components/buildActionReply.js";
 import { buildStatsReply } from "../../src/components/buildStatsReply.js";
@@ -35,6 +44,63 @@ import { buildStatsReply } from "../../src/components/buildStatsReply.js";
 describe("actionHelpers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  function arrangePerform() {
+    const targetRow = { id: 11, images: ["img"], hasReceived: 1 };
+    const authorRow = { id: 22, images: ["img"], hasPerformed: 2 };
+    const rows = [
+      [targetRow],
+      [authorRow],
+      [],
+      [{ ...targetRow, hasReceived: 2 }],
+    ];
+    for (const r of rows) {
+      (drizzleDb as any).select.mockImplementationOnce(() => ({
+        from: () => ({
+          where: () => ({
+            then: (cb: any) => cb(r),
+            limit: () => Promise.resolve(r),
+          }),
+        }),
+      }));
+    }
+    (drizzleDb as any).update.mockImplementation(() => ({
+      set: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
+    }));
+    (randomImage as any).mockReturnValue("img");
+    (buildActionReply as any).mockReturnValue("container");
+  }
+
+  it("performAction sets updatedAt on both counters and records one event", async () => {
+    arrangePerform();
+    await performAction(
+      "pet" as any,
+      { id: "t" } as any,
+      { id: "a" } as any,
+      "g1",
+    );
+    const sets = (drizzleDb.update as any).mock.results.map(
+      (r: any) => r.value.set.mock.calls[0][0],
+    );
+    expect(sets).toHaveLength(2);
+    for (const s of sets) {
+      expect(typeof s.updatedAt).toBe("string");
+    }
+    expect(recordActionEvent).toHaveBeenCalledWith({
+      actionType: "pet",
+      performerId: "a",
+      targetId: "t",
+      locationId: "g1",
+    });
+  });
+
+  it("performAction still returns the reply when recording the event fails", async () => {
+    arrangePerform();
+    (recordActionEvent as any).mockRejectedValueOnce(new Error("db down"));
+    await expect(
+      performAction("pet" as any, { id: "t" } as any, { id: "a" } as any, "g1"),
+    ).resolves.toBeDefined();
   });
 
   it("performAction increments counters and returns built reply", async () => {
