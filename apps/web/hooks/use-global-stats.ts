@@ -3,6 +3,8 @@ import type { GlobalStats } from "@/types/stats";
 import type { LiveActionEvent, LiveCountMode } from "@/types/live";
 import { applyLiveEvent as applyLiveEventToStats } from "@/lib/live-events";
 
+const UNKNOWN_ACTION_REFRESH_DEBOUNCE_MS = 500;
+
 type UseGlobalStatsOptions = {
   /** poll interval in ms; omit or 0 to disable */
   refreshIntervalMs?: number;
@@ -117,9 +119,41 @@ export function useGlobalStats({
     return () => clearInterval(id);
   }, [refreshIntervalMs, refresh]);
 
+  const dataRef = React.useRef(data);
+  const refreshRef = React.useRef(refresh);
+  const refreshTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  React.useEffect(() => {
+    dataRef.current = data;
+    refreshRef.current = refresh;
+  });
+  React.useEffect(
+    () => () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    },
+    [],
+  );
+
   const applyLiveEvent = React.useCallback(
-    (event: LiveActionEvent, mode: LiveCountMode) =>
-      setData((prev) => (prev ? applyLiveEventToStats(prev, event, mode) : prev)),
+    (event: LiveActionEvent, mode: LiveCountMode) => {
+      setData((prev) => (prev ? applyLiveEventToStats(prev, event, mode) : prev));
+      // A brand-new action has no card to bump, so refetch to create it. The
+      // debounce turns a burst of such events into a single refresh.
+      const current = dataRef.current;
+      if (
+        current &&
+        !Object.hasOwn(current.totalsByAction, event.actionType) &&
+        refreshTimerRef.current === null
+      ) {
+        refreshTimerRef.current = setTimeout(() => {
+          refreshTimerRef.current = null;
+          refreshRef.current();
+        }, UNKNOWN_ACTION_REFRESH_DEBOUNCE_MS);
+      }
+    },
     [],
   );
 
