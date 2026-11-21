@@ -119,30 +119,31 @@ jobs:
     needs: [changes, test]
     # !failure() lets this run when test is skipped, e.g. a Dockerfile-only change.
     if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.docker == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         target: [bot, web]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4.4.0
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.4.1
 
-      - name: Validate build — ${{ matrix.target }}
-        uses: docker/build-push-action@v7
+      - name: Validate build — ${{ matrix.target }} (${{ matrix.arch }})
+        uses: docker/build-push-action@v7.4.0
         with:
           context: .
           file: ./Dockerfile
           target: ${{ matrix.target }}
-          # Validate both amd64 and arm64 like the publish workflow to catch
-          # platform-specific build issues early in CI.
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/${{ matrix.arch }}
           push: false
-          cache-from: type=gha
-          # Export build cache to GitHub Actions so downstream publish can reuse it
-          cache-to: type=gha,mode=max
+          # Same scopes as publish-ghcr.yml so PRs start from main's cache.
+          cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}-${{ matrix.arch }}
