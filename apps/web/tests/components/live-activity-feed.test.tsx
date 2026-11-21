@@ -5,9 +5,15 @@
 
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as framerMotion from "framer-motion";
 import LiveActivityFeed from "@/components/live-activity-feed";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import type { LiveActionEvent } from "@/types/live";
+
+vi.mock("framer-motion", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("framer-motion")>();
+  return { ...actual, useReducedMotion: vi.fn(() => false) };
+});
 
 const NOW = new Date("2026-11-21T12:00:00Z").getTime();
 
@@ -22,6 +28,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.mocked(framerMotion.useReducedMotion).mockReturnValue(false);
   vi.useRealTimers();
 });
 
@@ -44,9 +51,10 @@ describe("LiveActivityFeed", () => {
   it("shows the empty state copy", () => {
     render(<LiveActivityFeed events={[]} status="live" isLoading={false} />);
     expect(screen.getByText("It's quiet in here")).toBeTruthy();
+    expect(screen.getByText("/pet").tagName).toBe("CODE");
     expect(
-      screen.getByText("Run `/pet` on someone in Discord and it shows up here straight away."),
-    ).toBeTruthy();
+      screen.getByText(/on someone in Discord and it shows up here straight away\./).textContent,
+    ).toBe("Run /pet on someone in Discord and it shows up here straight away.");
   });
 
   it.each([
@@ -56,6 +64,31 @@ describe("LiveActivityFeed", () => {
   ] as const)("shows the %s status as %s", (status, label) => {
     render(<LiveActivityFeed events={[]} status={status} isLoading={false} />);
     expect(screen.getByText(label)).toBeTruthy();
+  });
+
+  it.each([
+    ["live", "Live"],
+    ["reconnecting", "Reconnecting"],
+  ] as const)("announces %s through a status role", (status, label) => {
+    render(<LiveActivityFeed events={[]} status={status} isLoading={false} />);
+    expect(screen.getByRole("status").textContent).toBe(label);
+  });
+
+  it("pings the live dot only when motion is allowed", () => {
+    const { container, rerender } = render(
+      <LiveActivityFeed events={[]} status="live" isLoading={false} />,
+    );
+    expect(container.querySelector(".animate-ping")).not.toBeNull();
+    vi.mocked(framerMotion.useReducedMotion).mockReturnValue(true);
+    rerender(<LiveActivityFeed events={[]} status="live" isLoading={false} />);
+    expect(container.querySelector(".animate-ping")).toBeNull();
+  });
+
+  it("does not ping the reconnecting dot", () => {
+    const { container } = render(
+      <LiveActivityFeed events={[]} status="reconnecting" isLoading={false} />,
+    );
+    expect(container.querySelector(".animate-ping")).toBeNull();
   });
 
   it("shows skeletons while loading", () => {
@@ -84,6 +117,33 @@ describe("StatsCardSimple flash", () => {
     expect(screen.getByText("+1")).toBeTruthy();
     act(() => {
       vi.advanceTimersByTime(1600);
+    });
+    expect(screen.queryByText("+1")).toBeNull();
+  });
+
+  it("hides the +1 when flashKey becomes undefined mid-flash", () => {
+    const { rerender } = render(<StatsCardSimple statString="Pets" value={3} flashKey={5} />);
+    rerender(<StatsCardSimple statString="Pets" value={4} flashKey={6} />);
+    expect(screen.getByText("+1")).toBeTruthy();
+    rerender(<StatsCardSimple statString="Pets" value={4} />);
+    expect(screen.queryByText("+1")).toBeNull();
+  });
+
+  it("restarts the flash when a second key arrives mid-flash", () => {
+    const { rerender } = render(<StatsCardSimple statString="Pets" value={3} flashKey={5} />);
+    rerender(<StatsCardSimple statString="Pets" value={4} flashKey={6} />);
+    const first = screen.getByText("+1");
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    rerender(<StatsCardSimple statString="Pets" value={5} flashKey={7} />);
+    expect(screen.getByText("+1")).not.toBe(first);
+    act(() => {
+      vi.advanceTimersByTime(1400);
+    });
+    expect(screen.getByText("+1")).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(200);
     });
     expect(screen.queryByText("+1")).toBeNull();
   });

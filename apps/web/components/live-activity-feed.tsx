@@ -70,19 +70,22 @@ export default function LiveActivityFeed({
         <CardTitle>Live activity</CardTitle>
         {isReconnecting ? (
           <Badge
+            role="status"
             variant="secondary"
             className="bg-amber-500/15 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
           >
+            <span className="size-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
             Reconnecting
           </Badge>
         ) : (
           <Badge
+            role="status"
             variant="secondary"
             className="bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
           >
             <span className="relative flex size-1.5">
-              {status === "live" && (
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-75" />
+              {status === "live" && !isReducedMotion && (
+                <span className="absolute inline-flex size-full animate-ping motion-reduce:animate-none rounded-full bg-current opacity-75" />
               )}
               <span className="relative inline-flex size-1.5 rounded-full bg-current" />
             </span>
@@ -90,11 +93,11 @@ export default function LiveActivityFeed({
           </Badge>
         )}
       </CardHeader>
-      <ScrollArea className="h-72">
+      <ScrollArea className="max-h-72 **:data-[slot=scroll-area-viewport]:max-h-72">
         {isLoading ? (
           <div className="flex flex-col gap-2 px-4">
             {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-              <Skeleton key={index} className="h-14 w-full rounded-2xl" />
+              <Skeleton key={index} className="h-14 w-full rounded-2xl motion-reduce:animate-none" />
             ))}
           </div>
         ) : events.length === 0 ? (
@@ -102,7 +105,7 @@ export default function LiveActivityFeed({
             <EmptyHeader>
               <EmptyTitle>It&apos;s quiet in here</EmptyTitle>
               <EmptyDescription>
-                Run `/pet` on someone in Discord and it shows up here straight away.
+                Run <code className="rounded bg-secondary px-1.5 py-px font-mono text-xs">/pet</code> on someone in Discord and it shows up here straight away.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -127,12 +130,17 @@ export default function LiveActivityFeed({
                     >
                       <ItemMedia
                         variant="icon"
-                        className="bg-[color-mix(in_oklab,var(--act)_18%,transparent)] text-[var(--act)]"
+                        className="size-8 items-center justify-center rounded-md bg-[color-mix(in_oklab,var(--act)_18%,transparent)] text-[var(--act)] [&_svg]:size-4"
                       >
                         <Icon />
                       </ItemMedia>
                       <ItemTitle>{actionPhrase(event.actionType)}</ItemTitle>
-                      <ItemActions className="ml-auto text-xs text-muted-foreground">
+                      <ItemActions
+                        className={cn(
+                          "ml-auto text-xs",
+                          index === 0 ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
                         <time dateTime={event.createdAt}>
                           {formatRelativeTime(event.createdAt, now)}
                         </time>
