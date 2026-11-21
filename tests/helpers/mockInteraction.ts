@@ -3,6 +3,7 @@ export function mockInteraction(overrides: any = {}) {
     editedReplies: [],
     replies: [],
     followUps: [],
+    deletedReplies: 0,
     showModals: [],
   };
 
@@ -60,6 +61,9 @@ export function mockInteraction(overrides: any = {}) {
     deferReply: async () => {},
     showModal: async (modal: any) => calls.showModals.push(modal),
     editReply: async (payload: any) => calls.editedReplies.push(payload),
+    deleteReply: async () => {
+      calls.deletedReplies += 1;
+    },
     followUp: async (payload: any) => calls.followUps.push(payload),
     reply: async (payload: any) => calls.replies.push(payload),
     options,

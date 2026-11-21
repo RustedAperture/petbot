@@ -14,7 +14,7 @@ import { listSettableActionNames } from "../../utilities/customActions/resolver.
 import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
 import { ACTIONS } from "../../types/constants.js";
 import { buildActionContext, respondWithActions } from "../actionAutocomplete.js";
-import { UNAVAILABLE_MESSAGE } from "./action.js";
+import { replyUnavailable } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -48,22 +48,18 @@ export const command = {
     await respondWithActions(interaction, await listSettableActionNames(ctx));
   },
   async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
+    });
     const ctx = await buildActionContext(interaction);
     const requested = interaction.options.getString("action");
     if (
       requested !== null &&
       !(await listSettableActionNames(ctx)).includes(requested)
     ) {
-      await interaction.reply({
-        content: UNAVAILABLE_MESSAGE,
-        flags: MessageFlags.Ephemeral,
-      });
+      await replyUnavailable(interaction);
       return;
     }
-
-    await interaction.deferReply({
-      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-    });
 
     const inServer = interaction.guild;
     const target = inServer

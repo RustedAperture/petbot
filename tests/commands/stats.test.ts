@@ -1,5 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
+import { MessageFlags } from "discord.js";
 
 vi.mock("../../src/db/functions.js", () => ({
   getBotData: vi.fn().mockResolvedValue(null),
@@ -59,5 +60,36 @@ describe("/stats command", () => {
     expect(getActionStatsContainer as any).toHaveBeenCalledTimes(1);
     expect(interaction.__calls.editedReplies.length).toBe(1);
     expect(interaction.__calls.followUps.length).toBe(0);
+  });
+});
+
+describe("/stats acknowledgement", () => {
+  it("defers before resolving and answers an unavailable action privately", async () => {
+    const order: string[] = [];
+    const { listSettableActionNames } = await import(
+      "../../src/utilities/customActions/resolver.js"
+    );
+    (listSettableActionNames as any).mockImplementationOnce(async () => {
+      order.push("lookup");
+      return [];
+    });
+    const interaction = mockInteraction({
+      options: { getString: () => "gone" },
+    });
+    interaction.deferReply = vi.fn(async () => {
+      order.push("defer");
+    });
+
+    await command.execute(interaction as any);
+
+    expect(order).toEqual(["defer", "lookup"]);
+    expect(interaction.__calls.deletedReplies).toBe(1);
+    expect(interaction.__calls.followUps).toEqual([
+      {
+        content: "That action isn't available here.",
+        flags: MessageFlags.Ephemeral,
+      },
+    ]);
+    expect(getActionStatsContainer as any).not.toHaveBeenCalled();
   });
 });
