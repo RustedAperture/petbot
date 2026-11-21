@@ -13,6 +13,7 @@ import { ChevronLeftIcon, ChevronRightIcon, PencilIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
 import { EditImagesDialog } from "../dialogs/edit-images-dialog";
+import { ActionIcon } from "../action-icon";
 
 interface StatsCardProps {
   actionName: string;
@@ -118,7 +119,10 @@ export default function StatsCard({
               : "flex flex-grow items-center justify-between"
           }
         >
-          <CardTitle className={compact ? "text-sm" : undefined}>
+          <CardTitle
+            className={compact ? "flex items-center gap-2 text-sm" : undefined}
+          >
+            {compact && <ActionIcon actionType={actionName} />}
             {displayName}
           </CardTitle>
 

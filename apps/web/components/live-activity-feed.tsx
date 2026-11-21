@@ -2,19 +2,15 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  ArrowDownToLine,
-  Cookie,
-  Flame,
-  Hammer,
-  Hand,
-  Heart,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { ActionIcon, actionStyle } from "@/components/action-icon";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Item, ItemActions, ItemMedia, ItemTitle } from "@/components/ui/item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,20 +20,6 @@ import type { LiveActionEvent } from "@/types/live";
 
 const TICK_INTERVAL_MS = 10_000;
 const SKELETON_ROW_COUNT = 6;
-
-const ACTION_STYLES: Record<string, { icon: LucideIcon; color: string }> = {
-  pet: { icon: Hand, color: "var(--chart-2)" },
-  hug: { icon: Heart, color: "var(--chart-1)" },
-  bonk: { icon: Hammer, color: "var(--chart-3)" },
-  bite: { icon: Cookie, color: "var(--chart-4)" },
-  squish: { icon: ArrowDownToLine, color: "var(--chart-5)" },
-  explode: { icon: Flame, color: "var(--destructive)" },
-};
-const OTHER_STYLE = { icon: Sparkles, color: "var(--muted-foreground)" };
-
-function actionStyle(actionType: string) {
-  return Object.hasOwn(ACTION_STYLES, actionType) ? ACTION_STYLES[actionType] : OTHER_STYLE;
-}
 
 interface LiveActivityFeedProps {
   /** Events ordered newest first. */
@@ -97,7 +79,10 @@ export default function LiveActivityFeed({
         {isLoading ? (
           <div className="flex flex-col gap-2 px-4">
             {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-              <Skeleton key={index} className="h-14 w-full rounded-2xl motion-reduce:animate-none" />
+              <Skeleton
+                key={index}
+                className="h-14 w-full rounded-2xl motion-reduce:animate-none"
+              />
             ))}
           </div>
         ) : events.length === 0 ? (
@@ -105,7 +90,11 @@ export default function LiveActivityFeed({
             <EmptyHeader>
               <EmptyTitle>It&apos;s quiet in here</EmptyTitle>
               <EmptyDescription>
-                Run <code className="rounded bg-secondary px-1.5 py-px font-mono text-xs">/pet</code> on someone in Discord and it shows up here straight away.
+                Run{" "}
+                <code className="rounded bg-secondary px-1.5 py-px font-mono text-xs">
+                  /pet
+                </code>{" "}
+                on someone in Discord and it shows up here straight away.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -113,7 +102,7 @@ export default function LiveActivityFeed({
           <ul className="flex flex-col gap-1 px-2">
             <AnimatePresence initial={false}>
               {events.map((event, index) => {
-                const { icon: Icon, color } = actionStyle(event.actionType);
+                const { color } = actionStyle(event.actionType);
                 return (
                   <motion.li
                     key={event.id}
@@ -125,20 +114,20 @@ export default function LiveActivityFeed({
                     <Item
                       size="sm"
                       className={cn(
-                        index === 0 && "bg-[color-mix(in_oklab,var(--act)_10%,transparent)]",
+                        index === 0 &&
+                          "bg-[color-mix(in_oklab,var(--act)_10%,transparent)]",
                       )}
                     >
-                      <ItemMedia
-                        variant="icon"
-                        className="size-8 items-center justify-center rounded-md bg-[color-mix(in_oklab,var(--act)_18%,transparent)] text-[var(--act)] [&_svg]:size-4"
-                      >
-                        <Icon />
+                      <ItemMedia>
+                        <ActionIcon actionType={event.actionType} />
                       </ItemMedia>
                       <ItemTitle>{actionPhrase(event.actionType)}</ItemTitle>
                       <ItemActions
                         className={cn(
                           "ml-auto text-xs",
-                          index === 0 ? "text-foreground" : "text-muted-foreground",
+                          index === 0
+                            ? "text-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         <time dateTime={event.createdAt}>
