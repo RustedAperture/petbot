@@ -247,6 +247,7 @@ describe("helper util", () => {
 });
 
 describe("canManageServerActions", () => {
+  const fetchMember = vi.fn();
   function clientWith(ownerId: string, perms: string[] | null) {
     const member = perms
       ? { permissions: { has: (p: any) => [p].flat().some((x) => perms.includes(String(x))) } }
@@ -255,7 +256,12 @@ describe("canManageServerActions", () => {
       guilds: {
         fetch: async () => ({
           ownerId,
-          members: { fetch: async () => member ?? Promise.reject(new Error("x")) },
+          members: {
+            fetch: async (arg: unknown) => {
+              fetchMember(arg);
+              return member ?? Promise.reject(new Error("x"));
+            },
+          },
         }),
       },
     } as unknown as Client;
@@ -271,5 +277,10 @@ describe("canManageServerActions", () => {
     ["a non-member", "owner", null, false],
   ])("%s", async (_label, ownerId, perms, expected) => {
     expect(await canManageServerActions(clientWith(ownerId, perms), "g", "u1")).toBe(expected);
+  });
+
+  it("bypasses the member cache", async () => {
+    await canManageServerActions(clientWith("owner", [MANAGE_GUILD]), "g", "u1");
+    expect(fetchMember).toHaveBeenCalledWith({ user: "u1", force: true });
   });
 });

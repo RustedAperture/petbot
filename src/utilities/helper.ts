@@ -193,7 +193,10 @@ export async function canManageServerActions(
   if (guild.ownerId === userId) {
     return true;
   }
-  const member = await guild.members.fetch(userId).catch(() => null);
+  // Bypass the member cache so a revoked permission is not honoured.
+  const member = await guild.members
+    .fetch({ user: userId, force: true })
+    .catch(() => null);
   return Boolean(
     member?.permissions.has([PermissionsBitField.Flags.ManageGuild], true) ||
       member?.permissions.has(PermissionsBitField.Flags.Administrator),
