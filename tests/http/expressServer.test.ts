@@ -31,6 +31,7 @@ vi.mock("../../src/http/routes/stats.js", () => ({ default: statsMock }));
 vi.mock("../../src/http/routes/guilds.js", () => ({
   default: guildsMock,
   memberGuildsHandler: guildsMock,
+  botGuildHandler: () => guildsMock,
 }));
 vi.mock("../../src/http/routes/userSessions.js", () => {
   const { Router } = require("express");

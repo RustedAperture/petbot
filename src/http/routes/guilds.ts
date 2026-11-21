@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { Client } from "discord.js";
 import { actionData, botData, userSessions } from "../../db/schema.js";
 import { drizzleDb } from "../../db/connector.js";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -70,4 +71,13 @@ export async function memberGuildsHandler(
     .where(inArray(actionData.locationId, memberGuildIds));
 
   res.json({ guildIds: rows.map((r) => r.locationId) });
+}
+
+/** GET /api/guilds/bot/:guildId — whether the bot is currently in the guild. */
+export function botGuildHandler(client: Client) {
+  return function (req: Request, res: Response): void {
+    res.json({
+      isBotGuild: client.guilds.cache.has(req.params.guildId as string),
+    });
+  };
 }

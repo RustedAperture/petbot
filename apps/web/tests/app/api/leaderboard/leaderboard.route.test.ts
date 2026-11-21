@@ -80,8 +80,8 @@ it("preserves personalization for authenticated global results", async () => {
 
 it("still rejects guild results for non-members", async () => {
   upstream.mockImplementation(async (url: string) =>
-    String(url).includes("/api/guilds")
-      ? Response.json({ guildIds: ["456"] })
+    String(url).includes("/api/guilds/bot/")
+      ? Response.json({ isBotGuild: true })
       : Response.json({ totalsByAction: {} }),
   );
   const response = await GET(signedRequest("?locationId=456&scope=guild"));
@@ -101,8 +101,9 @@ function routeUpstream(stats: unknown, botGuildIds: string[] = []) {
     if (path.includes("/api/stats/user/")) {
       return Response.json(stats);
     }
-    if (path.includes("/api/guilds")) {
-      return Response.json({ guildIds: botGuildIds });
+    const botMatch = /\/api\/guilds\/bot\/([^/?]+)/.exec(path);
+    if (botMatch) {
+      return Response.json({ isBotGuild: botGuildIds.includes(botMatch[1]) });
     }
     return Response.json({ locationId: "456", actionType: null, entries: [] });
   });
@@ -125,6 +126,15 @@ it.each(["", "&scope=guild"])(
     expect(readsLeaderboard()).toBe(false);
   },
 );
+
+it("rejects a former member with history at a bot guild that has no botData row", async () => {
+  routeUpstream(someActivity, ["456"]);
+  const response = await GET(memberRequest("?locationId=456", []));
+  expect(response.status).toBe(403);
+  expect(
+    upstream.mock.calls.some(([u]) => String(u).includes("/api/guilds/bot/456")),
+  ).toBe(true);
+});
 
 it("rejects a non-member of a bot guild without activity", async () => {
   routeUpstream(noActivity, ["456"]);
@@ -164,7 +174,7 @@ it.each(["", "&scope=guild"])(
 
 it("fails closed when the bot guild list is unavailable", async () => {
   upstream.mockImplementation(async (url: string) =>
-    String(url).includes("/api/guilds")
+    String(url).includes("/api/guilds/bot/")
       ? new Response("{}", { status: 500 })
       : Response.json(someActivity),
   );

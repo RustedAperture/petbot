@@ -15,7 +15,7 @@ import readyHandler from "./routes/ready.js";
 // Migrated Express route handlers
 import statsHandler from "./routes/stats.js";
 import leaderboardHandler from "./routes/leaderboard.js";
-import guildsHandler, { memberGuildsHandler } from "./routes/guilds.js";
+import guildsHandler, { botGuildHandler, memberGuildsHandler } from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
 import optOutRouter from "./routes/optOut.js";
@@ -109,6 +109,7 @@ export function createApp(client?: Client<boolean>): express.Express {
       guildChannelsHandler(client),
     );
     app.get("/api/leaderboard", leaderboardHandler(client));
+    app.get("/api/guilds/bot/:guildId", botGuildHandler(client));
   }
 
   // --- 404 fallback for unmatched /api/* ---
