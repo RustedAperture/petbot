@@ -16,7 +16,7 @@ vi.mock("../../src/utilities/check_image.js", () => ({
 }));
 vi.mock("../../src/utilities/helper.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../src/utilities/helper.js")>()),
-  canManageServerActions: vi.fn().mockResolvedValue(true),
+  canManageServer: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../../src/utilities/check_user.js", () => ({
   checkUser: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock("../../src/db/connector.js", async () => {
 
 import { MessageFlags } from "discord.js";
 import { checkImage } from "../../src/utilities/check_image.js";
-import { canManageServerActions } from "../../src/utilities/helper.js";
+import { canManageServer } from "../../src/utilities/helper.js";
 import {
   getActionStatsContainer,
   performAction,
@@ -95,7 +95,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   store.isImageUpdateLost = false;
   (checkImage as any).mockResolvedValue(true);
-  (canManageServerActions as any).mockResolvedValue(true);
+  (canManageServer as any).mockResolvedValue(true);
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(customActionBans);
   await testDb.current.db.delete(actionData);
@@ -220,7 +220,7 @@ describe("/server-set", () => {
 
   it("refuses a user without Manage Server and keeps the stored image", async () => {
     await seed("guild", "guild-1", "boop");
-    (canManageServerActions as any).mockResolvedValue(false);
+    (canManageServer as any).mockResolvedValue(false);
 
     const interaction = mockInteraction({
       options: { action: "boop", url: "https://example.com/boop.png" },
@@ -236,13 +236,13 @@ describe("/server-set", () => {
   });
 
   it("does not check Manage Server for built-in actions", async () => {
-    (canManageServerActions as any).mockResolvedValue(false);
+    (canManageServer as any).mockResolvedValue(false);
     const interaction = mockInteraction({
       options: { action: "pet", url: "https://example.com/pet.png" },
     });
     await serverSetCommand.execute(interaction as any);
 
-    expect(canManageServerActions).not.toHaveBeenCalled();
+    expect(canManageServer).not.toHaveBeenCalled();
   });
 
   it("refuses a banned creator before writing the custom action image", async () => {

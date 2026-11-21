@@ -10,7 +10,7 @@ vi.mock("../../src/utilities/check_image.js", () => ({
   checkImage: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../../src/utilities/helper.js", () => ({
-  canManageServerActions: vi.fn().mockResolvedValue(true),
+  canManageServer: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../../src/utilities/customActions/guildCommandSync.js", () => ({
   syncGuildCommands: vi.fn().mockResolvedValue(true),
@@ -27,7 +27,7 @@ vi.mock("../../src/db/connector.js", async () => {
 });
 
 import { checkImage } from "../../src/utilities/check_image.js";
-import { canManageServerActions } from "../../src/utilities/helper.js";
+import { canManageServer } from "../../src/utilities/helper.js";
 import { syncGuildCommands } from "../../src/utilities/customActions/guildCommandSync.js";
 import { command } from "../../src/commands/slash/customAction.js";
 import { listCustomActions } from "../../src/utilities/customActions/store.js";
@@ -37,7 +37,7 @@ afterAll(() => testDb.current.cleanup());
 beforeEach(async () => {
   vi.clearAllMocks();
   vi.mocked(checkImage).mockResolvedValue(true);
-  vi.mocked(canManageServerActions).mockResolvedValue(true);
+  vi.mocked(canManageServer).mockResolvedValue(true);
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(customActionBans);
 });
@@ -114,7 +114,7 @@ describe("/custom-action add", () => {
   });
 
   it("rejects a server action from a non-admin", async () => {
-    vi.mocked(canManageServerActions).mockResolvedValue(false);
+    vi.mocked(canManageServer).mockResolvedValue(false);
     const interaction = run("add", { ...addOpts, for: "server" });
     await command.execute(interaction);
 
@@ -134,7 +134,7 @@ describe("/custom-action add", () => {
     expect(interaction.__calls.editedReplies[0].content).toBe(
       "Add PetBot to this server to create server actions.",
     );
-    expect(canManageServerActions).not.toHaveBeenCalled();
+    expect(canManageServer).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid image", async () => {
@@ -221,7 +221,7 @@ describe("/custom-action remove", () => {
   });
 
   it("rejects a non-admin removing a server action", async () => {
-    vi.mocked(canManageServerActions).mockResolvedValue(false);
+    vi.mocked(canManageServer).mockResolvedValue(false);
     await seed("guild", "guild-1", "boop");
     const interaction = run("remove", { name: "boop", for: "server" });
     await command.execute(interaction);
@@ -252,7 +252,7 @@ describe("/custom-action list", () => {
   });
 
   it("lets non-admins list server actions", async () => {
-    vi.mocked(canManageServerActions).mockResolvedValue(false);
+    vi.mocked(canManageServer).mockResolvedValue(false);
     await seed("guild", "guild-1", "boop");
     const interaction = run("list", { for: "server" });
     await command.execute(interaction);

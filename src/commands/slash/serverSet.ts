@@ -10,7 +10,7 @@ import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
 import { getBotData, upsertBotData } from "../../db/functions.js";
-import { canManageServerActions } from "../../utilities/helper.js";
+import { canManageServer } from "../../utilities/helper.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import {
@@ -37,7 +37,7 @@ export const command = {
         .setDescription("The url of the image that you would like to use")
         .setRequired(true),
     )
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+    .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
   async autocomplete(interaction: AutocompleteInteraction) {
     await respondWithActions(
       interaction,
@@ -82,7 +82,7 @@ export const command = {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       // Discord's command permission can be re-granted to any role, so check Manage Server here.
       if (
-        !(await canManageServerActions(
+        !(await canManageServer(
           interaction.client,
           guildId,
           interaction.user.id,

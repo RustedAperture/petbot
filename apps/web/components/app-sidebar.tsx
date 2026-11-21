@@ -31,7 +31,7 @@ import { AppUser } from "@/components/app-user";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
-import { canManageServerActionsGuild, getDiscordGuildIconUrl } from "@/lib/utils";
+import { canManageServerGuild, getDiscordGuildIconUrl } from "@/lib/utils";
 
 export function AppSidebar({
   version,
@@ -42,7 +42,7 @@ export function AppSidebar({
   const { session } = useSession();
   const { isOwner } = useIsOwner();
   const adminGuilds = useMemo(
-    () => (session?.guilds ?? []).filter(canManageServerActionsGuild),
+    () => (session?.guilds ?? []).filter(canManageServerGuild),
     [session?.guilds],
   );
 

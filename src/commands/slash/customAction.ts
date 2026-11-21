@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import { canManageServerActions } from "../../utilities/helper.js";
+import { canManageServer } from "../../utilities/helper.js";
 import { validateCustomActionInput } from "../../utilities/customActions/validation.js";
 import {
   listCustomActions,
@@ -52,7 +52,7 @@ async function resolveScope(
   }
   if (
     isAdminRequired &&
-    !(await canManageServerActions(interaction.client, guildId, interaction.user.id))
+    !(await canManageServer(interaction.client, guildId, interaction.user.id))
   ) {
     return { error: NOT_ADMIN_MESSAGE };
   }

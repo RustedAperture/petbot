@@ -4,8 +4,7 @@ import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { useGuildSettings } from "@/hooks/use-guild-settings";
 import { useBotMembership } from "@/hooks/use-bot-membership";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getDiscordGuildIconUrl, isAdminOrOwnerGuild } from "@/lib/utils";
+import { getDiscordGuildIconUrl } from "@/lib/utils";
 import CustomActionsManager from "@/components/custom-actions-manager";
 import {
   Card,
@@ -26,22 +25,19 @@ export default function AdminGuildPageContent({
     guildId || null,
   );
   const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
-  // Manage Server users reach the page for custom actions only; the settings
-  // endpoints stay restricted to owners and Administrators.
-  const isActionsOnly = guild !== null && !isAdminOrOwnerGuild(guild);
-  const settingsUserId = isActionsOnly ? null : (session?.user?.id ?? null);
+  const userId = session?.user?.id ?? null;
   const {
     settings,
     isLoading: isSettingsLoading,
     error: isSettingsError,
     update,
-  } = useGuildSettings({ guildId, userId: settingsUserId });
+  } = useGuildSettings({ guildId, userId });
 
   const {
     channels,
     isLoading: channelsLoading,
     error: channelsError,
-  } = useGuildChannels(guildId || null, settingsUserId);
+  } = useGuildChannels(guildId || null, userId);
 
   const pageLoading =
     sessionLoading ||
@@ -67,42 +63,29 @@ export default function AdminGuildPageContent({
     : null;
   return (
     <div className="flex w-full flex-col gap-6">
-      {!isActionsOnly && (
-        <AdminGuildSettingsForm
-          guildId={guildId}
-          settings={settings}
-          isSettingsLoading={isSettingsLoading}
-          isSettingsError={isSettingsError}
-          update={update}
-          channelItems={channelItems}
-          channelsError={channelsError}
-          pageLoading={pageLoading}
-          guild={guild}
-          guildIconUrl={guildIconUrl}
-        />
-      )}
-      {/* Admins already see the settings form's "Bot not in server" alert, so the
-          card is only kept without the bot for actions-only users, who have no form. */}
-      {!pageLoading &&
-        !isMembershipLoading &&
-        (isBotMember || isActionsOnly) && (
+      <AdminGuildSettingsForm
+        guildId={guildId}
+        settings={settings}
+        isSettingsLoading={isSettingsLoading}
+        isSettingsError={isSettingsError}
+        update={update}
+        channelItems={channelItems}
+        channelsError={channelsError}
+        pageLoading={pageLoading}
+        guild={guild}
+        guildIconUrl={guildIconUrl}
+      />
+      {/* Without the bot, the settings form's "Bot not in server" alert is the only notice. */}
+      {!pageLoading && !isMembershipLoading && isBotMember && (
         <Card>
           <CardHeader>
             <CardTitle>Server actions</CardTitle>
             <CardDescription>
-                Custom actions everyone in this server can use with /action.
+              Custom actions everyone in this server can use with /action.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isBotMember ? (
-              <CustomActionsManager scope={{ kind: "guild", guildId }} />
-            ) : (
-              <Alert>
-                <AlertDescription>
-                    Add PetBot to this server to create server actions.
-                </AlertDescription>
-              </Alert>
-            )}
+            <CustomActionsManager scope={{ kind: "guild", guildId }} />
           </CardContent>
         </Card>
       )}

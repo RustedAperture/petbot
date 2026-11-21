@@ -287,7 +287,7 @@ describe("Admin guild page", () => {
     unmount();
   });
 
-  it("shows only Server actions to a Manage Server user", () => {
+  it("shows the settings form and Server actions to a Manage Server user", () => {
     sessionState.session.guilds = [
       { id: "guild1", name: "Test Guild", icon: "abc", permissions: "32" },
     ];
@@ -296,21 +296,21 @@ describe("Admin guild page", () => {
       <AdminGuildPageContent guildId="guild1" />,
     );
 
+    expect(container.querySelector("form")).toBeTruthy();
+    expect(container.textContent).toContain("Guild ID: guild1");
     expect(container.textContent).toContain("Server actions");
     expect(
       container.querySelector("[data-testid=custom-actions]"),
     ).toBeTruthy();
-    expect(container.querySelector("form")).toBeNull();
-    expect(container.textContent).not.toContain("Guild ID");
     unmount();
   });
 
   it.each([
-    ["an admin", "8", false],
-    ["a Manage Server user", "32", true],
+    ["an admin", "8"],
+    ["a Manage Server user", "32"],
   ])(
-    "with the bot absent, %s sees the add-PetBot note: %s",
-    (_who, permissions, isNoteShown) => {
+    "with the bot absent, %s gets no Server actions card and no extra notice",
+    (_who, permissions) => {
       botMembershipState = { isBotMember: false, isLoading: false };
       sessionState.session.guilds = [
         { id: "guild1", name: "Test Guild", icon: "abc", permissions },
@@ -320,14 +320,8 @@ describe("Admin guild page", () => {
         <AdminGuildPageContent guildId="guild1" />,
       );
 
-      expect(
-        container.textContent?.includes(
-          "Add PetBot to this server to create server actions.",
-        ),
-      ).toBe(isNoteShown);
-      expect(container.textContent?.includes("Server actions")).toBe(
-        isNoteShown,
-      );
+      expect(container.textContent).not.toContain("Server actions");
+      expect(container.textContent).not.toContain("Add PetBot");
       expect(
         container.querySelector("[data-testid=custom-actions]"),
       ).toBeNull();

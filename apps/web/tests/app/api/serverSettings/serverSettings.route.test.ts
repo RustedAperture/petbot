@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createSessionCookieValue } from "@/lib/internal-api";
 
 function sessionCookie(session: any) {
@@ -67,6 +67,25 @@ describe("/api/serverSettings/:guildId/userId/:userId – auth and membership gu
     );
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({ error: "forbidden" });
+  });
+
+  it("GET relays for a Manage Server only member", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ settings: {} })),
+    );
+    const cookie = sessionCookie({
+      user: { id: "111" },
+      guilds: [{ id: "G1", owner: false, permissions: "32" }],
+    });
+
+    const res = await GET(
+      makeGetRequest("G1", "111", cookie) as any,
+      { params: { guildId: "G1", userId: "111" } } as any,
+    );
+
+    expect(res.status).toBe(200);
+    vi.unstubAllGlobals();
   });
 
   it("GET returns 403 when user is a member but not admin/owner", async () => {

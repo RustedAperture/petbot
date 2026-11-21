@@ -26,7 +26,7 @@ vi.mock("../../../src/utilities/customActions/guildCommandSync.js", () => ({
 }));
 vi.mock("../../../src/utilities/helper.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../src/utilities/helper.js")>()),
-  canManageServerActions: canManageMock,
+  canManageServer: canManageMock,
 }));
 
 import { createApp } from "../../../src/http/expressServer.js";

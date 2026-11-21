@@ -134,7 +134,6 @@ vi.mock("next-themes", () => ({
 }));
 
 const { AppSidebar } = await import("@/components/app-sidebar");
-const { isAdminOrOwnerGuild } = await import("@/lib/utils");
 
 vi.mock("@/hooks/use-session", () => ({
   useSession: () => ({
@@ -247,13 +246,5 @@ describe("AppSidebar mobile behaviour", () => {
     expect(!!container.querySelector("a[href='/owner']")).toBe(isShown);
     unmount();
     isOwner = false;
-  });
-
-  it("isAdminOrOwnerGuild helper returns expected values", () => {
-    expect(isAdminOrOwnerGuild({ owner: true })).toBe(true);
-    expect(isAdminOrOwnerGuild({ permissions: "8" })).toBe(true);
-    expect(isAdminOrOwnerGuild({ permissions: "0" })).toBe(false);
-    expect(isAdminOrOwnerGuild({ permissions: "2" })).toBe(false);
-    expect(isAdminOrOwnerGuild({})).toBe(false);
   });
 });

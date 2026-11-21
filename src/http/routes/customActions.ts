@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import type { Client } from "discord.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import { canManageServerActions } from "../../utilities/helper.js";
+import { canManageServer } from "../../utilities/helper.js";
 import { validateCustomActionInput } from "../../utilities/customActions/validation.js";
 import {
   listCustomActions,
@@ -101,7 +101,7 @@ export default function customActionsRouter(client?: Client<boolean>): Router {
       res.status(400).json({ error: NO_GUILD_ERROR });
       return false;
     }
-    if (!(await canManageServerActions(client!, guildId, req.params.userId as string))) {
+    if (!(await canManageServer(client!, guildId, req.params.userId as string))) {
       res.status(403).json({ error: "forbidden" });
       return false;
     }

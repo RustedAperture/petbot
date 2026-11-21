@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Client } from "discord.js";
-import { isGuildAdmin } from "../../utilities/helper.js";
+import { canManageServer } from "../../utilities/helper.js";
 import { drizzleDb } from "../../db/connector.js";
 import { botData } from "../../db/schema.js";
 import { eq } from "drizzle-orm";
@@ -30,15 +30,14 @@ export default function serverSettingsRouter(client: Client<boolean>) {
   const router = Router();
 
   /**
-   * Shared guard: verify guild admin access.
+   * Shared guard: verify the user can manage the server.
    * Returns true if authorized, false if rejected (response already sent).
    */
   async function requireAdmin(req: Request, res: Response): Promise<boolean> {
     const guildId = req.params.guildId as string;
     const userId = req.params.userId as string;
 
-    const isAdmin = await isGuildAdmin(client, guildId, userId);
-    if (!isAdmin) {
+    if (!(await canManageServer(client, guildId, userId))) {
       res.status(403).json({ error: "forbidden" });
       return false;
     }

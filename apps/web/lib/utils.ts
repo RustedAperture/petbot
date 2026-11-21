@@ -24,13 +24,13 @@ function hasPermissionFlag(guild: GuildPermissions, flag: bigint): boolean {
   }
 }
 
-export function isAdminOrOwnerGuild(guild: GuildPermissions) {
-  return Boolean(guild.owner) || hasPermissionFlag(guild, ADMINISTRATOR_FLAG);
-}
-
-/** Owner, Administrator or Manage Server: may manage the server's custom actions. */
-export function canManageServerActionsGuild(guild: GuildPermissions) {
-  return isAdminOrOwnerGuild(guild) || hasPermissionFlag(guild, MANAGE_GUILD_FLAG);
+/** Owner, Administrator or Manage Server: may manage the server's settings and custom actions. */
+export function canManageServerGuild(guild: GuildPermissions) {
+  return (
+    Boolean(guild.owner) ||
+    hasPermissionFlag(guild, ADMINISTRATOR_FLAG) ||
+    hasPermissionFlag(guild, MANAGE_GUILD_FLAG)
+  );
 }
 
 export function getDiscordGuildIconUrl(

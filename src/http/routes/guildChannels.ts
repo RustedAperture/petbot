@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { Client } from "discord.js";
 import { ChannelType, TextChannel } from "discord.js";
-import { isGuildAdmin } from "../../utilities/helper.js";
+import { canManageServer } from "../../utilities/helper.js";
 import logger from "../../logger.js";
 
 /**
@@ -14,8 +14,7 @@ export default function guildChannelsHandler(client: Client<boolean>) {
     const userId = req.params.userId as string;
 
     try {
-      const isAdmin = await isGuildAdmin(client, guildId, userId);
-      if (!isAdmin) {
+      if (!(await canManageServer(client, guildId, userId))) {
         res.status(403).json({ error: "forbidden" });
         return;
       }
