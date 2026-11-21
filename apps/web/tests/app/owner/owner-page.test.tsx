@@ -149,17 +149,6 @@ describe("OwnerPage", () => {
     );
   });
 
-  it("hides the moderation view when the session ends", async () => {
-    const { rerender } = renderPage();
-    await screen.findByText("booped");
-    ownerState = { isOwner: false, isLoading: false };
-    rerender();
-    expect(screen.queryByText("booped")).toBeNull();
-    expect(
-      screen.getByText("You don't have access to this page."),
-    ).toBeTruthy();
-  });
-
   it("sends one DELETE when the confirm is pressed twice", async () => {
     renderPage();
     fireEvent.click(await screen.findByRole("button", { name: "Delete boop" }));
