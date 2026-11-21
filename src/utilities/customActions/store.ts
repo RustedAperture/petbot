@@ -75,13 +75,13 @@ type UpsertInput = {
 export async function upsertCustomAction(
   input: UpsertInput,
 ): Promise<{ action: CustomAction } | { error: string }> {
-
-  return serialised(() => upsertInTransaction(input));
+  return serialised(() => upsertRow(input));
 }
 
-// libSQL opens a fresh connection per transaction with no busy timeout, so
-// concurrent writers would fail with SQLITE_BUSY. Queue upserts in-process and
-// keep the immediate transaction for atomicity of check-then-write.
+// Upserts are queued in-process instead of wrapped in a transaction: libSQL
+// opens a fresh connection per transaction with no busy timeout, so an
+// IMMEDIATE transaction would make concurrent built-in writes fail with
+// SQLITE_BUSY. The unique (scope, owner_id, name) index still prevents duplicates.
 let upsertQueue: Promise<unknown> = Promise.resolve();
 
 function serialised<T>(task: () => Promise<T>): Promise<T> {
@@ -90,59 +90,48 @@ function serialised<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function upsertInTransaction(input: UpsertInput) {
+async function upsertRow(input: UpsertInput) {
   const { scope, ownerId, name, phrase, image, createdBy } = input;
-  return drizzleDb.transaction(
-    async (tx) => {
-      if (createdBy) {
-        const [ban] = await tx
-          .select({ userId: customActionBans.userId })
-          .from(customActionBans)
-          .where(eq(customActionBans.userId, createdBy));
-        if (ban) {
-          return { error: "You can't create custom actions." };
-        }
-      }
+  if (createdBy && (await isCreatorBanned(createdBy))) {
+    return { error: "You can't create custom actions." };
+  }
 
-      const now = new Date().toISOString();
-      const [existing] = await tx
-        .select()
-        .from(customActions)
-        .where(actionCondition(scope, ownerId, name));
+  const now = new Date().toISOString();
+  const [existing] = await drizzleDb
+    .select()
+    .from(customActions)
+    .where(actionCondition(scope, ownerId, name));
 
-      if (existing) {
-        const [action] = await tx
-          .update(customActions)
-          .set({ phrase, image, updatedAt: now })
-          .where(eq(customActions.id, existing.id))
-          .returning();
-        return { action };
-      }
+  if (existing) {
+    const [action] = await drizzleDb
+      .update(customActions)
+      .set({ phrase, image, updatedAt: now })
+      .where(eq(customActions.id, existing.id))
+      .returning();
+    return { action };
+  }
 
-      const owned = await tx
-        .select({ id: customActions.id })
-        .from(customActions)
-        .where(ownerCondition(scope, ownerId));
-      if (owned.length >= CUSTOM_ACTION_LIMIT) {
-        return { error: LIMIT_ERRORS[scope] };
-      }
-      const [action] = await tx
-        .insert(customActions)
-        .values({
-          name,
-          phrase,
-          scope,
-          ownerId,
-          image,
-          createdBy,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .returning();
-      return { action };
-    },
-    { behavior: "immediate" },
-  );
+  const owned = await drizzleDb
+    .select({ id: customActions.id })
+    .from(customActions)
+    .where(ownerCondition(scope, ownerId));
+  if (owned.length >= CUSTOM_ACTION_LIMIT) {
+    return { error: LIMIT_ERRORS[scope] };
+  }
+  const [action] = await drizzleDb
+    .insert(customActions)
+    .values({
+      name,
+      phrase,
+      scope,
+      ownerId,
+      image,
+      createdBy,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+  return { action };
 }
 
 export async function removeCustomAction(

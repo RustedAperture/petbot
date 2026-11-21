@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import type { TestDb } from "../../helpers/testDb.js";
-import { customActionBans, customActions } from "../../../src/db/schema.js";
+import { actionData, customActionBans, customActions } from "../../../src/db/schema.js";
 
 vi.mock("../../../src/logger.js", () => ({
   default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
@@ -123,6 +123,26 @@ describe("upsertCustomAction", () => {
     ]);
     expect(results.every((r) => "action" in r)).toBe(true);
     expect(await listCustomActions("user", "u1")).toHaveLength(1);
+  });
+
+  it("does not block ordinary actionData writes while upserts are in flight", async () => {
+    await testDb.current.db.delete(actionData);
+    const now = "2026-01-01T00:00:00.000Z";
+    const upserts = Array.from({ length: 4 }, (_, i) =>
+      upsertCustomAction(input({ name: `n${i}` })),
+    );
+    const writes = Array.from({ length: 8 }, (_, i) =>
+      testDb.current.db.insert(actionData).values({
+        userId: `w${i}`,
+        locationId: "g1",
+        actionType: "pet",
+        createdAt: now,
+        updatedAt: now,
+      }),
+    );
+
+    await expect(Promise.all([...upserts, ...writes])).resolves.toBeDefined();
+    expect(await testDb.current.db.select().from(actionData)).toHaveLength(8);
   });
 
   it("rejects a banned creator", async () => {
