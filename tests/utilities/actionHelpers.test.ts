@@ -87,6 +87,7 @@ describe("actionHelpers", () => {
     for (const s of sets) {
       expect(typeof s.updatedAt).toBe("string");
     }
+    expect(recordActionEvent).toHaveBeenCalledTimes(1);
     expect(recordActionEvent).toHaveBeenCalledWith({
       actionType: "pet",
       performerId: "a",
@@ -100,7 +101,15 @@ describe("actionHelpers", () => {
     (recordActionEvent as any).mockRejectedValueOnce(new Error("db down"));
     await expect(
       performAction("pet" as any, { id: "t" } as any, { id: "a" } as any, "g1"),
-    ).resolves.toBeDefined();
+    ).resolves.toBe("container");
+  });
+
+  it("performAction resolves while the event write is still pending", async () => {
+    arrangePerform();
+    (recordActionEvent as any).mockReturnValueOnce(new Promise(() => {}));
+    await expect(
+      performAction("pet" as any, { id: "t" } as any, { id: "a" } as any, "g1"),
+    ).resolves.toBe("container");
   });
 
   it("performAction increments counters and returns built reply", async () => {

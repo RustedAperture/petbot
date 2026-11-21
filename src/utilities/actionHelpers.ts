@@ -131,16 +131,15 @@ export async function performAction(
       .where(eq(actionData.id, authorRow!.id)),
   ]);
 
-  try {
-    await recordActionEvent({
-      actionType: actionKind,
-      performerId: author.id,
-      targetId: target.id,
-      locationId: guild,
-    });
-  } catch (error) {
+  // Not awaited: a slow feed write must not delay the Discord reply.
+  void recordActionEvent({
+    actionType: actionKind,
+    performerId: author.id,
+    targetId: target.id,
+    locationId: guild,
+  }).catch((error) => {
     logger.error({ err: error }, "Failed to record action event");
-  }
+  });
 
   const refreshed: any[] = await drizzleDb
     .select()

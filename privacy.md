@@ -33,7 +33,8 @@ addresses, or real names) is collected or stored by PetBot.
 The collected data are used solely to power the bot's features, keep
 track of user statistics, and maintain operational integrity. Data are
 retained indefinitely unless a user chooses to delete their information
-via the web interface. Removing the bot from a server or uninstalling it
+via the web interface. The one exception is the activity log, which is
+automatically removed after 30 days. Removing the bot from a server or uninstalling it
 from your Discord applications does **not** automatically erase any
 stored data; you must explicitly request deletion through the web
 interface.
