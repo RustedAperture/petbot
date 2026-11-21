@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { actionEvents } from "../db/schema.js";
+import logger from "../logger.js";
 
 export type ActionEventRow = typeof actionEvents.$inferSelect;
 
@@ -9,8 +10,15 @@ const emitter = new EventEmitter();
 // Each open browser tab holds one listener.
 emitter.setMaxListeners(0);
 
+/** Delivers to every subscriber; one that throws is logged and skipped. */
 export function publishActionEvent(row: ActionEventRow): void {
-  emitter.emit(EVENT_NAME, row);
+  for (const listener of emitter.listeners(EVENT_NAME)) {
+    try {
+      listener(row);
+    } catch (error) {
+      logger.error({ err: error }, "Action event subscriber failed");
+    }
+  }
 }
 
 /** Subscribe to new action events. Returns an unsubscribe function. */

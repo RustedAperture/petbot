@@ -15,6 +15,10 @@ import { migrate } from "drizzle-orm/libsql/migrator";
 import { actionEvents } from "../../src/db/schema.js";
 import { hashUserId } from "../../src/utilities/crypto.js";
 
+vi.mock("../../src/logger.js", () => ({
+  default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
+
 const { db } = vi.hoisted(() => ({ db: { current: null as unknown } }));
 
 vi.mock("../../src/db/connector.js", async () => {
@@ -88,6 +92,23 @@ afterEach(() => {
 });
 
 describe("recordActionEvent", () => {
+  it("keeps delivering and resolves when a subscriber throws", async () => {
+    const seen: ActionEventRow[] = [];
+    const stopBad = subscribeActionEvents(() => {
+      throw new Error("boom");
+    });
+    const stopGood = subscribeActionEvents((r) => seen.push(r));
+    const row = await recordActionEvent({
+      actionType: "pet",
+      performerId: "1",
+      targetId: "2",
+      locationId: null,
+    });
+    stopBad();
+    stopGood();
+    expect(seen).toEqual([row]);
+  });
+
   it("records hashed ids, never raw ids, and publishes the row", async () => {
     const seen: ActionEventRow[] = [];
     const stop = subscribeActionEvents((r) => seen.push(r));
