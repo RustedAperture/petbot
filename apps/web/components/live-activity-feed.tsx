@@ -121,7 +121,7 @@ export default function LiveActivityFeed({
                       <ItemMedia>
                         <ActionIcon actionType={event.actionType} />
                       </ItemMedia>
-                      <ItemTitle>{actionPhrase(event.actionType)}</ItemTitle>
+                      <ItemTitle>{actionPhrase(event.actionType, event.phrase)}</ItemTitle>
                       <ItemActions
                         className={cn(
                           "ml-auto text-xs",

@@ -118,6 +118,7 @@ export default function GlobalStatsPage() {
             locationId={null}
             actionType={selectedAction}
             onActionTypeChange={setSelectedAction}
+            actionKeys={Object.keys(data.totalsByAction)}
             className="w-full"
           />
         </div>

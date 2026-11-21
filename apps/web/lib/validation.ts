@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { ACTIONS } from "@petbot/constants";
 
 export const discordIdSchema = z.string().regex(/^\d+$/, "Invalid Discord ID");
 
@@ -17,7 +16,7 @@ export const userLocationParams = z.object({
 export const setImagesBody = z
   .object({
     guildId: discordIdSchema.nullable().optional(),
-    actionType: z.string().refine((v) => v in ACTIONS, "Invalid action type"),
+    actionType: z.string().regex(/^[a-z]{1,20}$/, "Invalid action type"),
     images: z
       .array(
         z.union([

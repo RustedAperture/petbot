@@ -48,7 +48,9 @@ export function DistributionChart({
         action: actionKey,
         count: data.totalHasPerformed,
         displayCount: Math.log1p(data.totalHasPerformed),
-        fill: `var(--color-${actionKey})`,
+        fill: Object.hasOwn(chartConfig, actionKey)
+          ? `var(--color-${actionKey})`
+          : "var(--muted-foreground)",
       }))
       .filter((d) => d.count > 0)
       .sort((a, b) => b.count - a.count);

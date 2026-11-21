@@ -77,7 +77,11 @@ export function applyLiveEvent(
   };
 }
 
-export function actionPhrase(actionType: string): string {
+/** Feed sentence for an action; a custom `phrase` replaces the derived verb. */
+export function actionPhrase(actionType: string, phrase?: string): string {
+  if (phrase) {
+    return `Someone got ${phrase}`;
+  }
   if (Object.hasOwn(IRREGULAR_PHRASES, actionType)) {
     return IRREGULAR_PHRASES[actionType];
   }

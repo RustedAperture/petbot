@@ -4,6 +4,14 @@ import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { useGuildSettings } from "@/hooks/use-guild-settings";
 import { getDiscordGuildIconUrl } from "@/lib/utils";
+import CustomActionsManager from "@/components/custom-actions-manager";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import AdminGuildSettingsForm from "./AdminGuildSettingsForm";
 
 export default function AdminGuildPageContent({
@@ -49,17 +57,33 @@ export default function AdminGuildPageContent({
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
   return (
-    <AdminGuildSettingsForm
-      guildId={guildId}
-      settings={settings}
-      isSettingsLoading={isSettingsLoading}
-      isSettingsError={isSettingsError}
-      update={update}
-      channelItems={channelItems}
-      channelsError={channelsError}
-      pageLoading={pageLoading}
-      guild={guild}
-      guildIconUrl={guildIconUrl}
-    />
+    <div className="flex w-full flex-col gap-6">
+      <AdminGuildSettingsForm
+        guildId={guildId}
+        settings={settings}
+        isSettingsLoading={isSettingsLoading}
+        isSettingsError={isSettingsError}
+        update={update}
+        channelItems={channelItems}
+        channelsError={channelsError}
+        pageLoading={pageLoading}
+        guild={guild}
+        guildIconUrl={guildIconUrl}
+      />
+      {!pageLoading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Server actions</CardTitle>
+            <CardDescription>
+              Custom actions everyone in this server can use with
+              /custom-action.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CustomActionsManager scope={{ kind: "guild", guildId }} />
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

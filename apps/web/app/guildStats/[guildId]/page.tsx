@@ -143,6 +143,7 @@ export default function GuildStatsPage({
             locationId={guildId}
             actionType={selectedAction}
             onActionTypeChange={setSelectedAction}
+            actionKeys={Object.keys(data.totalsByAction)}
             context="guild"
             className="w-full"
           />

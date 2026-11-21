@@ -3,6 +3,7 @@ export type LiveActionEvent = {
   actionType: string;
   createdAt: string;
   role?: "performed" | "received" | "both";
+  phrase?: string;
 };
 
 export type LiveScope =

@@ -66,6 +66,10 @@ vi.mock("@/hooks/use-session", () => ({
   useSession: () => sessionState,
 }));
 
+vi.mock("@/components/custom-actions-manager", () => ({
+  default: () => createElement("div", { "data-testid": "custom-actions" }),
+}));
+
 vi.mock("@/hooks/use-guild-channels", () => ({
   useGuildChannels: () => guildChannelsState,
 }));
@@ -120,6 +124,7 @@ vi.mock("@/components/ui/card", () => ({
   CardTitle: (props: any) => createElement("div", props, props.children),
   CardDescription: (props: any) => createElement("div", props, props.children),
   CardAction: (props: any) => createElement("div", props, props.children),
+  CardContent: (props: any) => createElement("div", props, props.children),
 }));
 
 vi.mock("@/components/ui/avatar", () => ({
@@ -265,6 +270,8 @@ describe("Admin guild page", () => {
   it("renders AdminGuildPage with params-derived guildId", () => {
     const { container, unmount } = render(<AdminGuildPage />);
     expect(container.textContent).toContain("Test Guild");
+    expect(container.textContent).toContain("Server actions");
+    expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
     unmount();
   });
 

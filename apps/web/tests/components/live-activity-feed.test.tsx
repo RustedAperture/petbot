@@ -48,6 +48,17 @@ describe("LiveActivityFeed", () => {
     expect(screen.getByText("Live")).toBeTruthy();
   });
 
+  it("shows the custom phrase carried by an event", () => {
+    render(
+      <LiveActivityFeed
+        events={[{ ...ev(1, "boop", NOW - 12_000), phrase: "zorped" }]}
+        status="live"
+        isLoading={false}
+      />,
+    );
+    expect(screen.getByText("Someone got zorped")).toBeTruthy();
+  });
+
   it("shows the empty state copy", () => {
     render(<LiveActivityFeed events={[]} status="live" isLoading={false} />);
     expect(screen.getByText("It's quiet in here")).toBeTruthy();

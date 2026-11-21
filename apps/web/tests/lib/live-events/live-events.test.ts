@@ -100,6 +100,13 @@ describe("live-events", () => {
   });
 
   it.each([
+    ["boop", "zorped", "Someone got zorped"],
+    ["pet", "pawed", "Someone got pawed"],
+  ])("actionPhrase(%s, %s) prefers the custom phrase", (type, custom, phrase) => {
+    expect(actionPhrase(type, custom)).toBe(phrase);
+  });
+
+  it.each([
     [0, "now"],
     [4_000, "now"],
     [5_000, "5s"],
