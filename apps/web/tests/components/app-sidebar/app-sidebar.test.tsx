@@ -153,6 +153,11 @@ vi.mock("@/hooks/use-session", () => ({
   }),
 }));
 
+let isOwner = false;
+vi.mock("@/hooks/use-is-owner", () => ({
+  useIsOwner: () => ({ isOwner, isLoading: false }),
+}));
+
 function render(element: any) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -227,6 +232,17 @@ describe("AppSidebar mobile behaviour", () => {
     expect(memberLink).toBeFalsy();
 
     unmount();
+  });
+
+  it.each([
+    [true, true],
+    [false, false],
+  ])("with isOwner %s the Owner link shown is %s", (value, isShown) => {
+    isOwner = value;
+    const { container, unmount } = render(<AppSidebar />);
+    expect(!!container.querySelector("a[href='/owner']")).toBe(isShown);
+    unmount();
+    isOwner = false;
   });
 
   it("isAdminOrOwnerGuild helper returns expected values", () => {

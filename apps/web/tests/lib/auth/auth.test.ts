@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock internal-api module
 vi.mock("@/lib/internal-api", () => ({
@@ -16,6 +16,7 @@ import {
   assertSelf,
   assertGuildMembership,
   resolveGuilds,
+  assertOwner,
 } from "@/lib/auth";
 
 const mockReadCookie = vi.mocked(readCookie);
@@ -189,5 +190,29 @@ describe("resolveGuilds", () => {
 
     const result = await resolveGuilds(session);
     expect(result).toEqual([]);
+  });
+});
+
+describe("assertOwner", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("passes for the configured owner", () => {
+    vi.stubEnv("OWNER_USER_ID", "111");
+    expect(() => assertOwner({ user: { id: "111" } })).not.toThrow();
+  });
+
+  it.each([
+    ["a different user", "111", "222"],
+    ["an empty OWNER_USER_ID", "", ""],
+  ])("throws 403 for %s", (_label, ownerId, userId) => {
+    vi.stubEnv("OWNER_USER_ID", ownerId);
+    try {
+      assertOwner({ user: { id: userId } });
+      expect.unreachable();
+    } catch (e) {
+      expect((e as Response).status).toBe(403);
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { assertSelf, requireSession, resolveGuilds } from "./auth";
+import { assertOwner, assertSelf, requireSession, resolveGuilds } from "./auth";
 import { apiError } from "./errors";
 
 export const customActionsBase = "/api/customActions";
@@ -43,4 +43,9 @@ export async function relay(run: () => Promise<Response>): Promise<Response> {
     }
     throw res;
   }
+}
+
+/** Session user must be the configured owner; the bot trusts this check. */
+export function authorizeOwner(req: Request): void {
+  assertOwner(requireSession(req));
 }
