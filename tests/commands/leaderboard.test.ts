@@ -1,12 +1,18 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
 
+vi.mock("../../src/utilities/customActions/store.js", () => ({
+  listCustomActions: vi.fn().mockResolvedValue([]),
+  setCustomActionImage: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("../../src/utilities/leaderboard.js", () => ({
   getLeaderboard: vi.fn(),
 }));
 
 import { command } from "../../src/commands/slash/leaderboard.js";
 import { getLeaderboard } from "../../src/utilities/leaderboard.js";
+import { ACTIONS } from "../../src/types/constants.js";
 
 describe("/leaderboard command", () => {
   beforeEach(() => {
@@ -70,6 +76,22 @@ describe("/leaderboard command", () => {
 
     expect(getLeaderboard).toHaveBeenCalledWith(
       expect.objectContaining({ locationId: "dm-123" }),
+    );
+  });
+
+  it("limits an all-actions DM leaderboard to built-in actions", async () => {
+    (getLeaderboard as any).mockResolvedValue({
+      locationId: "dm-123",
+      actionType: null,
+      entries: [],
+    });
+
+    const interaction = mockInteraction({ channelId: "dm-123" });
+    interaction.guildId = null;
+    await command.execute(interaction as any);
+
+    expect(getLeaderboard).toHaveBeenCalledWith(
+      expect.objectContaining({ actionTypes: Object.keys(ACTIONS) }),
     );
   });
 

@@ -64,6 +64,7 @@ vi.mock("@utils/helper.js", () => ({
 }));
 
 import { buildStatsReply } from "@components/buildStatsReply.js";
+import { resolveBuiltIn } from "../../src/utilities/customActions/resolver.js";
 
 describe("buildStatsReply", () => {
   beforeEach(() => {
@@ -78,7 +79,7 @@ describe("buildStatsReply", () => {
       displayAvatarURL: () => "http://avatar",
     } as any;
 
-    const container = buildStatsReply(data, images, target, "pet", 7);
+    const container = buildStatsReply(data, images, target, resolveBuiltIn("pet"), 7);
 
     expect((container as any).accent).toEqual([1, 2, 3]);
     expect((container as any).media.length).toBe(1);
@@ -88,5 +89,26 @@ describe("buildStatsReply", () => {
     expect((container as any).sections[0].text[0].content).toContain(
       "Tester pet stats",
     );
+  });
+
+  it("renders custom stats without a gallery when every slot is null", () => {
+    const custom = {
+      ...resolveBuiltIn("pet"),
+      name: "boop",
+      phrase: "booped",
+      isBuiltIn: false,
+    };
+    const target = {
+      username: "Tester",
+      displayAvatarURL: () => "http://avatar",
+    } as any;
+    const container = buildStatsReply(
+      { hasReceived: 1, hasPerformed: 1 },
+      [null],
+      target,
+      custom,
+      1,
+    );
+    expect((container as any).media.length).toBe(0);
   });
 });

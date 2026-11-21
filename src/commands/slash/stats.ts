@@ -7,9 +7,27 @@ import {
   MessageFlags,
   SlashCommandBuilder,
   User,
+  type AutocompleteInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
+import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
+import { ACTIONS } from "../../types/constants.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
+import { groupStatsCards } from "../../utilities/statsMessages.js";
+import { respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
+
+/** Built-ins plus the custom names the target has recorded rows for at this location. */
+async function listStatsNames(
+  targetId: string,
+  locationId: string,
+): Promise<string[]> {
+  return [
+    ...Object.keys(ACTIONS),
+    ...(await listCustomNamesWithRows(targetId, locationId)),
+  ];
+}
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -20,9 +38,7 @@ export const command = {
         .setName("action")
         .setDescription("The action you want to get stats for")
         .setRequired(false)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
+        .setAutocomplete(true),
     )
     .addUserOption((option) =>
       option
@@ -40,10 +56,26 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   aliases: ["bite-stats", "pet-stats"],
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const targetId =
+      interaction.options.get("target")?.value?.toString() ?? interaction.user.id;
+    const locationId = interaction.guildId ?? interaction.channelId;
+    await respondWithActions(
+      interaction,
+      await listStatsNames(targetId, locationId),
+    );
+  },
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply({
-      flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
-    });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    const targetId =
+      interaction.options.getUser("target")?.id ?? interaction.user.id;
+    const locationId = interaction.guildId ?? interaction.channelId;
+    const names = await listStatsNames(targetId, locationId);
+    const requested = interaction.options.getString("action");
+    if (requested !== null && !names.includes(requested)) {
+      await interaction.editReply({ content: UNAVAILABLE_MESSAGE });
+      return;
+    }
 
     const inServer = interaction.guild;
     const target = inServer
@@ -83,23 +115,27 @@ export const command = {
     await targetUser.fetch(true);
 
     const containers: ContainerBuilder[] = [];
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
+    const ctx = await buildActionContextFor({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      authorId: targetId,
+      client: interaction.client,
+    });
+    const actionKinds = action !== null ? [action] : names;
 
     for (const kind of actionKinds) {
-      if (action !== null && action !== kind) {
-        continue;
-      }
       const statsContainer = await getActionStatsContainer(
-        kind,
+        await resolveStatsAction(kind, ctx),
         targetUser,
         guild,
       );
       containers.push(statsContainer);
     }
 
-    for (let i = 0; i < containers.length; i++) {
+    const messages = groupStatsCards(containers);
+    for (let i = 0; i < messages.length; i++) {
       const options = {
-        components: [containers[i]],
+        components: messages[i],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
       };
       if (i === 0) {

@@ -8,7 +8,11 @@ import {
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
+import { groupStatsCards } from "../../utilities/statsMessages.js";
+import { ACTIONS } from "../../types/constants.js";
+import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -43,15 +47,30 @@ export const command = {
 
     const containers: ContainerBuilder[] = [];
 
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
-    for (const kind of actionKinds) {
-      const stats = await getActionStatsContainer(kind, target, guild);
+    const ctx = await buildActionContextFor({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      authorId: interaction.targetUser.id,
+      client: interaction.client,
+    });
+    const kinds = [
+      ...Object.keys(ACTIONS),
+      ...(await listCustomNamesWithRows(interaction.targetUser.id, guild)),
+    ];
+    for (const kind of kinds) {
+      const stats = await getActionStatsContainer(
+        await resolveStatsAction(kind, ctx),
+        target,
+        guild,
+      );
       containers.push(stats);
     }
 
-    for (let i = 0; i < containers.length; i++) {
+    const messages = groupStatsCards(containers);
+
+    for (let i = 0; i < messages.length; i++) {
       const options = {
-        components: [containers[i]],
+        components: messages[i],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
       };
       if (i === 0) {

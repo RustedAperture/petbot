@@ -134,7 +134,6 @@ vi.mock("next-themes", () => ({
 }));
 
 const { AppSidebar } = await import("@/components/app-sidebar");
-const { isAdminOrOwnerGuild } = await import("@/lib/utils");
 
 vi.mock("@/hooks/use-session", () => ({
   useSession: () => ({
@@ -144,6 +143,7 @@ vi.mock("@/hooks/use-session", () => ({
         { id: "111", name: "Owner Server", owner: true },
         { id: "222", name: "Admin Server", permissions: "8" },
         { id: "333", name: "Member Server", permissions: "0" },
+        { id: "444", name: "Manager Server", permissions: "32" },
       ],
     },
     loading: false,
@@ -151,6 +151,11 @@ vi.mock("@/hooks/use-session", () => ({
     signIn: vi.fn(),
     signOut: vi.fn(),
   }),
+}));
+
+let isOwner = false;
+vi.mock("@/hooks/use-is-owner", () => ({
+  useIsOwner: () => ({ isOwner, isLoading: false }),
 }));
 
 function render(element: any) {
@@ -225,15 +230,21 @@ describe("AppSidebar mobile behaviour", () => {
     expect(adminLink).toBeTruthy();
     expect(adminLink?.textContent).toContain("Admin Server");
     expect(memberLink).toBeFalsy();
+    expect(container.querySelector("a[href='/admin/444']")?.textContent).toContain(
+      "Manager Server",
+    );
 
     unmount();
   });
 
-  it("isAdminOrOwnerGuild helper returns expected values", () => {
-    expect(isAdminOrOwnerGuild({ owner: true })).toBe(true);
-    expect(isAdminOrOwnerGuild({ permissions: "8" })).toBe(true);
-    expect(isAdminOrOwnerGuild({ permissions: "0" })).toBe(false);
-    expect(isAdminOrOwnerGuild({ permissions: "2" })).toBe(false);
-    expect(isAdminOrOwnerGuild({})).toBe(false);
+  it.each([
+    [true, true],
+    [false, false],
+  ])("with isOwner %s the Owner link shown is %s", (value, isShown) => {
+    isOwner = value;
+    const { container, unmount } = render(<AppSidebar />);
+    expect(!!container.querySelector("a[href='/owner']")).toBe(isShown);
+    unmount();
+    isOwner = false;
   });
 });

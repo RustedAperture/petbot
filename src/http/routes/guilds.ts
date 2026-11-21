@@ -1,7 +1,8 @@
 import type { Request, Response } from "express";
-import { actionData, botData, userSessions } from "../../db/schema.js";
+import type { Client } from "discord.js";
+import { actionData, botData, customActions, userSessions } from "../../db/schema.js";
 import { drizzleDb } from "../../db/connector.js";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 /**
  * GET /api/guilds — list all guild IDs the bot knows about.
@@ -70,4 +71,41 @@ export async function memberGuildsHandler(
     .where(inArray(actionData.locationId, memberGuildIds));
 
   res.json({ guildIds: rows.map((r) => r.locationId) });
+}
+
+/**
+ * GET /api/guilds/bot/:guildId — whether the id is a known guild location: the
+ * bot is in it, or it still has custom actions or settings after the bot left.
+ * `isBotMember` is narrower: the bot is in the guild right now.
+ * 503 until the client is ready, so callers fail closed.
+ */
+export function botGuildHandler(client: Client) {
+  return async function (req: Request, res: Response): Promise<void> {
+    if (!client.isReady()) {
+      res.status(503).json({ error: "not_ready" });
+      return;
+    }
+    const guildId = req.params.guildId as string;
+    if (client.guilds.cache.has(guildId)) {
+      res.json({ isBotGuild: true, isBotMember: true });
+      return;
+    }
+    const [action] = await drizzleDb
+      .select({ id: customActions.id })
+      .from(customActions)
+      .where(
+        and(eq(customActions.scope, "guild"), eq(customActions.ownerId, guildId)),
+      )
+      .limit(1);
+    if (action) {
+      res.json({ isBotGuild: true, isBotMember: false });
+      return;
+    }
+    const [settings] = await drizzleDb
+      .select({ id: botData.id })
+      .from(botData)
+      .where(eq(botData.guildId, guildId))
+      .limit(1);
+    res.json({ isBotGuild: Boolean(settings), isBotMember: false });
+  };
 }

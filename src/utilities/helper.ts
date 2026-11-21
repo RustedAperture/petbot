@@ -148,34 +148,25 @@ export async function fetchStatsForLocation(locationId: string) {
   return fetchStatsInternal(locationId);
 }
 
-export async function isGuildAdmin(
+/** Guild owner, Administrator or Manage Server may manage a server's settings and custom actions. */
+export async function canManageServer(
   client: Client<boolean>,
   guildId: string,
   userId: string,
 ): Promise<boolean> {
-  let guild;
-  try {
-    guild = await client.guilds.fetch(guildId);
-  } catch {
-    return false;
-  }
-
+  const guild = await client.guilds.fetch(guildId).catch(() => null);
   if (!guild) {
     return false;
   }
-
   if (guild.ownerId === userId) {
     return true;
   }
-
-  const member = await guild.members.fetch(userId).catch(() => null);
-  if (!member) {
-    return false;
-  }
-
-  if (member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-    return true;
-  }
-
-  return false;
+  // Bypass the member cache so a revoked permission is not honoured.
+  const member = await guild.members
+    .fetch({ user: userId, force: true })
+    .catch(() => null);
+  return Boolean(
+    member?.permissions.has([PermissionsBitField.Flags.ManageGuild], true) ||
+      member?.permissions.has(PermissionsBitField.Flags.Administrator),
+  );
 }

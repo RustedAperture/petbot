@@ -1,3 +1,7 @@
+import type {
+  ActionContext,
+  ResolvedAction,
+} from "../utilities/customActions/resolver.js";
 import {
   GuildMember,
   MessageFlags,
@@ -27,12 +31,19 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
     return;
   }
 
-  await modal.deferReply();
   let action: string | null = null;
   try {
     action = modal.fields.getStringSelectValues("action")[0];
   } catch {
     // not a text input modal
+  }
+
+  if (!action) {
+    // attempt to read selection from raw modal data (label -> component pattern)
+    const comp = (modal as any).data?.components?.[0]?.component;
+    if (comp && Array.isArray(comp.values) && comp.values.length > 0) {
+      action = comp.values[0];
+    }
   }
 
   const guild = modal.guildId ?? modal.channelId!;
@@ -42,6 +53,34 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
     authorRaw && (authorRaw as any).user
       ? (authorRaw as any).user
       : (authorRaw as any);
+
+  let resolved: ResolvedAction | null = null;
+  let ctx: ActionContext | null = null;
+  if (action && author?.id) {
+    const { buildActionContextFor } = await import(
+      "../utilities/customActions/context.js"
+    );
+    const { resolveAction } = await import(
+      "../utilities/customActions/resolver.js"
+    );
+    ctx = await buildActionContextFor({
+      guildId: modal.guildId,
+      channelId: modal.channelId,
+      authorId: author.id,
+      targetId,
+      client: modal.client,
+    });
+    resolved = await resolveAction(action, ctx);
+    if (!resolved) {
+      await modal.reply({
+        content: "That action isn't available here.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+  }
+
+  await modal.deferReply();
 
   try {
     // fetch target (try member first) and normalize types
@@ -57,14 +96,6 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
       target = (await modal.client.users.fetch(targetId)) as User;
     }
 
-    if (!action) {
-      // attempt to read selection from raw modal data (label -> component pattern)
-      const comp = (modal as any).data?.components?.[0]?.component;
-      if (comp && Array.isArray(comp.values) && comp.values.length > 0) {
-        action = comp.values[0];
-      }
-    }
-
     // defensive check: ensure ids exist
     if (!target || !(target as any).id) {
       await modal.editReply({ content: "Failed to resolve target." });
@@ -75,15 +106,8 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
       return;
     }
 
-    if (!action) {
+    if (!action || !resolved || !ctx) {
       await modal.editReply({ content: "No action provided." });
-      return;
-    }
-
-    // validate action
-    const { ACTIONS } = await import("../types/constants.js");
-    if (!(action in ACTIONS)) {
-      await modal.editReply({ content: "Invalid action." });
       return;
     }
 
@@ -92,17 +116,14 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
 
     // Ensure both target and author have action rows ready concurrently
     await Promise.all([
-      checkUser(action as any, target, guild),
-      checkUser(action as any, author, guild),
+      checkUser(resolved.name, target, guild),
+      checkUser(resolved.name, author, guild),
     ]);
 
-    const container = await performAction(
-      action as any,
-      target,
-      author,
-      guild,
-      { skipChecks: true },
-    );
+    const container = await performAction(resolved, target, author, guild, {
+      skipChecks: true,
+      isRestricted: ctx.isRestricted,
+    });
 
     await modal.editReply({
       components: [container] as any,

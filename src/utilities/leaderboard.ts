@@ -21,11 +21,13 @@ export interface LeaderboardResult {
 export async function getLeaderboard(opts: {
   locationId?: string;
   actionType?: string;
+  /** Restricts the aggregate to these action names when no single actionType is given. */
+  actionTypes?: string[];
   limit?: number;
   currentUserId?: string;
   discordClient: Client;
 }): Promise<LeaderboardResult> {
-  const { locationId, actionType, limit = 10, currentUserId, discordClient } = opts;
+  const { locationId, actionType, actionTypes, limit = 10, currentUserId, discordClient } = opts;
 
   const whereClauses: SQL[] = [];
   if (locationId) {
@@ -33,6 +35,8 @@ export async function getLeaderboard(opts: {
   }
   if (actionType) {
     whereClauses.push(eq(actionData.actionType, actionType));
+  } else if (actionTypes) {
+    whereClauses.push(inArray(actionData.actionType, actionTypes));
   }
 
   const rows = await drizzleDb

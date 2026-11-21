@@ -70,3 +70,15 @@ export async function resolveGuilds(
   }
   return [];
 }
+
+/** Reads `OWNER_USER_ID` per call so deployments and tests can change it. */
+export function isOwner(session: Session): boolean {
+  const ownerId = process.env.OWNER_USER_ID;
+  return !!ownerId && session.user?.id === ownerId;
+}
+
+export function assertOwner(session: Session): void {
+  if (!isOwner(session)) {
+    throw apiError(403, "forbidden");
+  }
+}

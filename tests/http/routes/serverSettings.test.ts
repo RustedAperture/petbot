@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
-const { selectMock, updateMock, isGuildAdminMock } = vi.hoisted(() => ({
+const { selectMock, updateMock, canManageMock } = vi.hoisted(() => ({
   selectMock: vi.fn(),
   updateMock: vi.fn(),
-  isGuildAdminMock: vi.fn(),
+  canManageMock: vi.fn(),
 }));
 
 vi.mock("../../../src/db/connector.js", () => ({
@@ -27,7 +27,7 @@ vi.mock("../../../src/db/schema.js", () => ({
 }));
 
 vi.mock("../../../src/utilities/helper.js", () => ({
-  isGuildAdmin: isGuildAdminMock,
+  canManageServer: canManageMock,
 }));
 
 vi.mock("../../../src/logger.js", () => ({
@@ -61,13 +61,13 @@ describe("/api/serverSettings/:guildId/:userId", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.INTERNAL_API_SECRET;
-    isGuildAdminMock.mockResolvedValue(true);
+    canManageMock.mockResolvedValue(true);
     app = createApp({} as any);
   });
 
   describe("GET", () => {
     it("returns 403 when user is not guild admin", async () => {
-      isGuildAdminMock.mockResolvedValue(false);
+      canManageMock.mockResolvedValue(false);
 
       const res = await supertest(app)
         .get("/api/serverSettings/G1/userId/U1")
@@ -116,7 +116,7 @@ describe("/api/serverSettings/:guildId/:userId", () => {
 
   describe("PATCH", () => {
     it("returns 403 when user is not guild admin", async () => {
-      isGuildAdminMock.mockResolvedValue(false);
+      canManageMock.mockResolvedValue(false);
 
       const res = await supertest(app)
         .patch("/api/serverSettings/G1/userId/U1")

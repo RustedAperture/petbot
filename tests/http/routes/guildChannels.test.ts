@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
-const { isGuildAdminMock } = vi.hoisted(() => ({
-  isGuildAdminMock: vi.fn(),
+const { canManageMock } = vi.hoisted(() => ({
+  canManageMock: vi.fn(),
 }));
 
 vi.mock("../../../src/utilities/helper.js", () => ({
-  isGuildAdmin: isGuildAdminMock,
+  canManageServer: canManageMock,
 }));
 vi.mock("../../../src/logger.js", () => ({
   default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
@@ -40,7 +40,7 @@ describe("/api/guildChannels/:guildId/user/:userId", () => {
   }
 
   it("returns 403 when user is not admin", async () => {
-    isGuildAdminMock.mockResolvedValue(false);
+    canManageMock.mockResolvedValue(false);
     const { app } = createAppWithClient();
 
     const res = await supertest(app)
@@ -51,7 +51,7 @@ describe("/api/guildChannels/:guildId/user/:userId", () => {
   });
 
   it("returns list of text channels when user is admin", async () => {
-    isGuildAdminMock.mockResolvedValue(true);
+    canManageMock.mockResolvedValue(true);
     const { app } = createAppWithClient();
 
     const res = await supertest(app)
@@ -64,7 +64,7 @@ describe("/api/guildChannels/:guildId/user/:userId", () => {
   });
 
   it("returns 404 when guild not found", async () => {
-    isGuildAdminMock.mockResolvedValue(true);
+    canManageMock.mockResolvedValue(true);
     const client = {
       guilds: {
         fetch: vi.fn().mockResolvedValue(null),

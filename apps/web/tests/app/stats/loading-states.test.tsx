@@ -4,9 +4,11 @@ import GlobalStatsPage from "@/app/globalStats/page";
 import UserStatsPage from "@/app/userStats/page";
 import { StatsCardViewProvider } from "@/components/stats/stats-card-view";
 import { useGlobalStats } from "@/hooks/use-global-stats";
+import { useLiveEvents } from "@/hooks/use-live-events";
 import { useSession } from "@/hooks/use-session";
 
 vi.mock("@/hooks/use-global-stats");
+vi.mock("@/hooks/use-live-events");
 vi.mock("@/hooks/use-session");
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -19,9 +21,16 @@ const stats = {
   totalLocations: 2,
 };
 const refresh = vi.fn();
+const applyLiveEvent = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(useLiveEvents).mockReturnValue({
+    events: [],
+    status: "live",
+    isLoading: false,
+    latestLiveEvent: null,
+  });
   vi.mocked(useSession).mockReturnValue({
     session: { user: { id: "123", username: "Tester" }, guilds: [] },
     loading: false,
@@ -59,6 +68,7 @@ for (const [name, Page] of [
         isLoading: true,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
@@ -71,6 +81,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: new Error("Failed to fetch stats (500)"),
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByRole("alert")).toHaveTextContent(/couldn't load/i);
@@ -85,6 +96,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText(/no stats available yet/i)).toBeInTheDocument();
@@ -102,6 +114,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText(/no stats available yet/i)).toBeInTheDocument();
@@ -114,6 +127,7 @@ for (const [name, Page] of [
         isLoading: true,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText("Total Actions Performed")).toBeInTheDocument();
@@ -129,6 +143,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: new Error("Network error"),
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText("Total Actions Performed")).toBeInTheDocument();

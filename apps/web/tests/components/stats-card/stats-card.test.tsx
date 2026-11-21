@@ -148,3 +148,31 @@ describe("StatsCard component carousel support", () => {
     unmount();
   });
 });
+
+describe("StatsCard with a custom action that has no image", () => {
+  const props = {
+    actionName: "boop",
+    actionImageUrl: null,
+    performedCount: 5,
+    userCount: 3,
+    totalUniqueUsers: 10,
+    totalActionsPerformed: 20,
+  } as const;
+
+  it("renders a placeholder tile instead of an image in full mode", () => {
+    const { container, unmount } = render(<StatsCardAny {...props} />);
+    expect(container.querySelector("img")).toBeNull();
+    expect(
+      container.querySelector("[data-testid='action-placeholder']"),
+    ).not.toBeNull();
+    expect(container.textContent).toContain("Boop");
+    unmount();
+  });
+
+  it("renders in compact mode", () => {
+    const { container, unmount } = render(<StatsCardAny {...props} compact />);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toContain("Boop");
+    unmount();
+  });
+});

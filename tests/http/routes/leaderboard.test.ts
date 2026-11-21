@@ -4,9 +4,14 @@ vi.mock("../../../src/utilities/leaderboard.js", () => ({
   getLeaderboard: vi.fn(),
 }));
 
+vi.mock("../../../src/utilities/customActions/store.js", () => ({
+  listCustomActions: vi.fn(),
+}));
+
 vi.mock("../../../src/logger.js", () => ({ default: { error: vi.fn() } }));
 
 import leaderboardHandler from "../../../src/http/routes/leaderboard.js";
+import { listCustomActions } from "../../../src/utilities/customActions/store.js";
 import { getLeaderboard } from "../../../src/utilities/leaderboard.js";
 
 const mockClient = {} as any;
@@ -29,6 +34,42 @@ function makeRes() {
 describe("GET /api/leaderboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (listCustomActions as any).mockResolvedValue([{ name: "boop" }]);
+  });
+
+  it("accepts a custom actionType that is one of the guild's actions", async () => {
+    (getLeaderboard as any).mockResolvedValue({ entries: [] });
+    const req = { query: { locationId: "g1", actionType: "boop" } } as any;
+    const res = makeRes();
+    await leaderboardHandler(mockClient)(req, res);
+    expect(res._status).toBe(200);
+    expect(getLeaderboard).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: "boop" }),
+    );
+  });
+
+  it("rejects a custom actionType without a guild or outside its actions", async () => {
+    for (const query of [{ actionType: "boop" }, { locationId: "g1", actionType: "zap" }]) {
+      const res = makeRes();
+      await leaderboardHandler(mockClient)({ query } as any, res);
+      expect(res._status).toBe(400);
+    }
+  });
+
+  it("without an actionType, restricts a guild to built-ins plus its actions and global to built-ins", async () => {
+    (getLeaderboard as any).mockResolvedValue({ entries: [] });
+    await leaderboardHandler(mockClient)({ query: { locationId: "g1" } } as any, makeRes());
+    expect(getLeaderboard).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        actionTypes: ["pet", "bite", "hug", "bonk", "squish", "explode", "boop"],
+      }),
+    );
+    await leaderboardHandler(mockClient)({ query: {} } as any, makeRes());
+    expect(getLeaderboard).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        actionTypes: ["pet", "bite", "hug", "bonk", "squish", "explode"],
+      }),
+    );
   });
 
   it("returns 400 for invalid actionType", async () => {

@@ -12,10 +12,18 @@ vi.mock("../../../src/db/schema.js", () => ({
   actionData: { userId: Symbol("user_id") },
   optOut: { userId: Symbol("user_id") },
 }));
+vi.mock("../../../src/utilities/actionEvents.js", () => ({
+  deleteActionEventsForUser: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../../../src/utilities/customActions/store.js", () => ({
+  deleteUserCustomActionData: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("../../../src/logger.js", () => ({
   default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }));
 
+import { deleteUserCustomActionData } from "../../../src/utilities/customActions/store.js";
+import { deleteActionEventsForUser } from "../../../src/utilities/actionEvents.js";
 import { createApp } from "../../../src/http/expressServer.js";
 
 describe("DELETE /api/userData/:userId", () => {
@@ -36,6 +44,22 @@ describe("DELETE /api/userData/:userId", () => {
     expect(res.body).toEqual({ ok: true });
     expect(deleteMock).toHaveBeenCalledTimes(2);
     expect(where).toHaveBeenCalledTimes(2);
+  });
+
+  it("also deletes the user's action events", async () => {
+    (deleteMock as any).mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    await supertest(app).delete("/api/userData/u1").expect(200);
+    expect(deleteActionEventsForUser).toHaveBeenCalledWith("u1");
+  });
+
+  it("also deletes the user's custom action data", async () => {
+    (deleteMock as any).mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    await supertest(app).delete("/api/userData/u1").expect(200);
+    expect(deleteUserCustomActionData).toHaveBeenCalledWith("u1");
   });
 
   it("returns 404 for GET (method not registered)", async () => {

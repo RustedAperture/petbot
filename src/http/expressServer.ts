@@ -15,7 +15,7 @@ import readyHandler from "./routes/ready.js";
 // Migrated Express route handlers
 import statsHandler from "./routes/stats.js";
 import leaderboardHandler from "./routes/leaderboard.js";
-import guildsHandler, { memberGuildsHandler } from "./routes/guilds.js";
+import guildsHandler, { botGuildHandler, memberGuildsHandler } from "./routes/guilds.js";
 import userSessionsRouter from "./routes/userSessions.js";
 import userDataHandler from "./routes/userData.js";
 import optOutRouter from "./routes/optOut.js";
@@ -23,6 +23,9 @@ import leaderboardConsentRouter from "./routes/leaderboardConsent.js";
 import setImagesHandler from "./routes/setImages.js";
 import serverSettingsRouter from "./routes/serverSettings.js";
 import guildChannelsHandler from "./routes/guildChannels.js";
+import eventsRouter from "./routes/events.js";
+import customActionsRouter from "./routes/customActions.js";
+import ownerRouter from "./routes/owner.js";
 
 /**
  * Resolve TLS key/cert from env vars.
@@ -92,17 +95,21 @@ export function createApp(client?: Client<boolean>): express.Express {
 
   // --- Phase 2b: write/update endpoints ---
   app.use("/api/optOut", optOutRouter);
+  app.use("/api/events", eventsRouter);
   app.use("/api/leaderboardConsent", leaderboardConsentRouter);
   app.post("/api/setImages", setImagesHandler);
+  app.use("/api/customActions", customActionsRouter(client));
 
   // Routes that need the Discord client
   if (client) {
     app.use("/api/serverSettings", serverSettingsRouter(client));
+    app.use("/api/owner", ownerRouter(client));
     app.get(
       "/api/guildChannels/:guildId/user/:userId",
       guildChannelsHandler(client),
     );
     app.get("/api/leaderboard", leaderboardHandler(client));
+    app.get("/api/guilds/bot/:guildId", botGuildHandler(client));
   }
 
   // --- 404 fallback for unmatched /api/* ---

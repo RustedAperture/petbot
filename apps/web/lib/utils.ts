@@ -5,24 +5,32 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function isAdminOrOwnerGuild(guild: {
+type GuildPermissions = {
   owner?: boolean;
   permissions?: string | null;
-}) {
-  if (guild.owner) {
-    return true;
-  }
+};
+
+const ADMINISTRATOR_FLAG = BigInt(8);
+const MANAGE_GUILD_FLAG = BigInt(32);
+
+function hasPermissionFlag(guild: GuildPermissions, flag: bigint): boolean {
   if (!guild.permissions) {
     return false;
   }
-
   try {
-    const perms = BigInt(guild.permissions);
-    const ADMIN_FLAG = BigInt(8);
-    return (perms & ADMIN_FLAG) !== BigInt(0);
+    return (BigInt(guild.permissions) & flag) !== BigInt(0);
   } catch {
     return false;
   }
+}
+
+/** Owner, Administrator or Manage Server: may manage the server's settings and custom actions. */
+export function canManageServerGuild(guild: GuildPermissions) {
+  return (
+    Boolean(guild.owner) ||
+    hasPermissionFlag(guild, ADMINISTRATOR_FLAG) ||
+    hasPermissionFlag(guild, MANAGE_GUILD_FLAG)
+  );
 }
 
 export function getDiscordGuildIconUrl(

@@ -8,6 +8,7 @@ import {
   Handshake,
   LogIn,
   Shield,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -25,11 +26,12 @@ import {
 } from "@/components/ui/sidebar";
 import { STATS_MENU } from "@/types/menu-config";
 import { useSession } from "@/hooks/use-session";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { AppUser } from "@/components/app-user";
 import { Separator } from "./ui/separator";
 import { memo, useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "./ui/theme-toggle";
-import { isAdminOrOwnerGuild, getDiscordGuildIconUrl } from "@/lib/utils";
+import { canManageServerGuild, getDiscordGuildIconUrl } from "@/lib/utils";
 
 export function AppSidebar({
   version,
@@ -38,8 +40,9 @@ export function AppSidebar({
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const { session } = useSession();
+  const { isOwner } = useIsOwner();
   const adminGuilds = useMemo(
-    () => (session?.guilds ?? []).filter(isAdminOrOwnerGuild),
+    () => (session?.guilds ?? []).filter(canManageServerGuild),
     [session?.guilds],
   );
 
@@ -204,6 +207,26 @@ export function AppSidebar({
                   }
                 />
               </SidebarMenuItem>
+
+              {isOwner ? (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Owner"
+                    className={matchPath("/owner") ? activeClass : undefined}
+                    render={
+                      <Link
+                        href="/owner"
+                        onClick={() => isMobile && setOpenMobile(false)}
+                      >
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Owner
+                        </span>
+                        <ShieldCheck className="ml-auto" />
+                      </Link>
+                    }
+                  />
+                </SidebarMenuItem>
+              ) : null}
 
               {version ? (
                 <SidebarMenuItem>

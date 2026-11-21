@@ -3,11 +3,22 @@ import {
   PermissionsBitField,
   EmbedBuilder,
   MessageFlags,
+  type AutocompleteInteraction,
+  type InteractionEditReplyOptions,
 } from "discord.js";
 import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
 import { getBotData, upsertBotData } from "../../db/functions.js";
+import { canManageServer } from "../../utilities/helper.js";
+import { checkImage } from "../../utilities/check_image.js";
+import { normalizeUrl } from "../../utilities/normalizeUrl.js";
+import {
+  isCreatorBanned,
+  setCustomActionImage,
+} from "../../utilities/customActions/store.js";
+import { listBuiltInAndGuildNames, respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -18,9 +29,7 @@ export const command = {
         .setName("action")
         .setDescription("The action for which you want to update the image")
         .setRequired(true)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -28,22 +37,20 @@ export const command = {
         .setDescription("The url of the image that you would like to use")
         .setRequired(true),
     )
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+    .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
+  async autocomplete(interaction: AutocompleteInteraction) {
+    await respondWithActions(
+      interaction,
+      await listBuiltInAndGuildNames(interaction.guildId),
+    );
+  },
   async execute(interaction: any) {
     const action = interaction.options.getString("action");
-    const url = interaction.options.getString("url");
+    let url = interaction.options.getString("url");
 
     if (!action || !url) {
       return interaction.reply({
         content: "Both action and url are required.",
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
-    const actionConfig = ACTIONS[action as keyof typeof ACTIONS];
-    if (!actionConfig) {
-      return interaction.reply({
-        content: `Unknown action: ${action}`,
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -55,6 +62,50 @@ export const command = {
         flags: MessageFlags.Ephemeral,
       });
     }
+
+    const names = await listBuiltInAndGuildNames(guildId);
+    if (!names.includes(action)) {
+      return interaction.reply({
+        content: UNAVAILABLE_MESSAGE,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    const isBuiltIn = Object.hasOwn(ACTIONS, action);
+    // checkImage can outlast Discord's 3s acknowledgement window, so acknowledge first.
+    // The custom branch's deferReply is already ephemeral, and edits don't accept flags.
+    const respond = (payload: InteractionEditReplyOptions) =>
+      isBuiltIn
+        ? interaction.reply({ ...payload, flags: MessageFlags.Ephemeral })
+        : interaction.editReply(payload);
+    if (!isBuiltIn) {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      // Discord's command permission can be re-granted to any role, so check Manage Server here.
+      if (
+        !(await canManageServer(
+          interaction.client,
+          guildId,
+          interaction.user.id,
+        ))
+      ) {
+        return respond({
+          content: "You need Manage Server to manage server actions.",
+        });
+      }
+      if (await isCreatorBanned(interaction.user.id)) {
+        return respond({ content: "You can't create custom actions." });
+      }
+      url = normalizeUrl(url);
+      if (!(await checkImage(url))) {
+        return respond({ content: "Your URL is invalid, please try again" });
+      }
+      if (!(await setCustomActionImage("guild", guildId, action, url))) {
+        return respond({ content: UNAVAILABLE_MESSAGE });
+      }
+    }
+    const actionConfig = isBuiltIn
+      ? ACTIONS[action as keyof typeof ACTIONS]
+      : null;
 
     let guildSettings = (await getBotData(guildId)) as GuildSettings | null;
 
@@ -85,27 +136,30 @@ export const command = {
       }
     }
 
-    // merge into the JSON map so future lookups prefer `defaultImages`
-    const current = guildSettings.defaultImages as any;
-    const map =
-      current && typeof current === "object"
-        ? { ...current }
-        : current
-          ? JSON.parse(current)
-          : {};
-    map[action] = url;
+    if (actionConfig) {
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const current = guildSettings.defaultImages as any;
+      const map =
+        current && typeof current === "object"
+          ? { ...current }
+          : current
+            ? JSON.parse(current)
+            : {};
+      map[action] = url;
 
-    await upsertBotData(guildId, {
-      defaultImages: map,
-    });
+      await upsertBotData(guildId, {
+        defaultImages: map,
+      });
+    }
 
+    const noun = actionConfig?.noun ?? action;
     logger.debug(
-      `Updated default ${actionConfig.noun} image for guild: ${interaction.guildId}`,
+      `Updated default ${noun} image for guild: ${interaction.guildId}`,
     );
     setupEmbed
       .setThumbnail(url)
       .addFields({
-        name: `${actionConfig.noun[0].toUpperCase()}${actionConfig.noun.slice(1)} Default`,
+        name: `${noun[0].toUpperCase()}${noun.slice(1)} Default`,
         value: url,
       })
       .addFields({
@@ -124,14 +178,12 @@ export const command = {
         logger.warn({ error }, "Failed to send to log channel.");
       }
 
-      await interaction.reply({
+      await respond({
         content: "Updated Configs. This has been logged.",
-        flags: MessageFlags.Ephemeral,
       });
     } else {
-      await interaction.reply({
+      await respond({
         embeds: [setupEmbed],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },

@@ -13,10 +13,11 @@ import { ChevronLeftIcon, ChevronRightIcon, PencilIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
 import { EditImagesDialog } from "../dialogs/edit-images-dialog";
+import { ActionIcon } from "../action-icon";
 
 interface StatsCardProps {
   actionName: string;
-  actionImageUrl: string;
+  actionImageUrl: string | null;
   performedCount: number;
   receivedCount?: number;
   userCount: number;
@@ -101,7 +102,7 @@ export default function StatsCard({
               ))}
             </CarouselContent>
           </Carousel>
-        ) : (
+        ) : actionImageUrl ? (
           <Image
             src={actionImageUrl}
             alt={displayName}
@@ -110,6 +111,16 @@ export default function StatsCard({
             sizes="(min-width: 768px) 384px, 100vw"
             className="block w-full aspect-square object-cover rounded-xl"
           />
+        ) : (
+          <div
+            data-testid="action-placeholder"
+            className="flex w-full aspect-square items-center justify-center rounded-xl bg-muted"
+          >
+            <ActionIcon
+              actionType={actionName}
+              className="size-24 rounded-2xl [&_svg]:size-12"
+            />
+          </div>
         )}
         <CardHeader
           className={
@@ -118,7 +129,10 @@ export default function StatsCard({
               : "flex flex-grow items-center justify-between"
           }
         >
-          <CardTitle className={compact ? "text-sm" : undefined}>
+          <CardTitle
+            className={compact ? "flex items-center gap-2 text-sm" : undefined}
+          >
+            {compact && <ActionIcon actionType={actionName} />}
             {displayName}
           </CardTitle>
 

@@ -1,3 +1,36 @@
+## v9.0.0 - Nov 21, 2026
+
+### What You'll Notice
+
+- **Live Activity:** The global, guild, DM, and personal stats pages now have a Live activity card that shows actions as they happen, such as "Someone got petted · now". It shows the latest 50 actions and never shows who was involved.
+- Stats counters update live as actions come in, and Total Actions Performed shows a brief +1.
+- If the connection drops, the card shows Reconnecting, then catches up on missed actions and refreshes the stats once it is back.
+- The card respects reduced-motion settings, and screen readers announce when it goes live or starts reconnecting.
+
+- **Custom Actions:** Make your own actions with `/custom-action add`, then use them with `/action target action`. Autocomplete shows the actions available for that person and server.
+- Server actions also appear as their own slash commands in that server, such as `/boop`.
+- `/custom-action add`, `remove`, and `list` work for `me` (personal) or `server`. PetBot must be added to the server for any `for:server` use. Manage Server is needed to add or remove server actions, and anyone can list them.
+- Each person can have 5 personal actions, and each server can have 5. Names are lowercase letters, 1 to 20 characters. Phrases are up to 32 characters, with no mentions, links, formatting, or line breaks. Each action has one image, which goes through the same image check as `/set`.
+- Personal actions work anywhere, both when you use them and when they are used on you. A server in restricted mode hides personal actions.
+- Autocomplete now includes custom actions in `/set`, `/reset`, `/server-set`, `/stats`, and `/leaderboard`. The right-click Perform, random, and stats menus include them too. `/server-set` replaces a server action's image.
+- Manage personal actions in your user settings on the website. Admins manage server actions on the server admin page.
+- Custom actions appear only on that server's pages and feed, or on your own pages. The global page, global feed, and global leaderboard stay built-in only.
+
+### Fixes
+
+- Action counts now update their last-updated time whenever someone uses an action, not only when images change.
+
+### Privacy
+
+- PetBot now keeps an anonymous activity log for the live feed: the action type, time, location, and hashed user IDs. Entries are deleted automatically after 30 days, and "Delete my data" removes yours right away. The privacy policy has been updated.
+- Custom actions store their name, phrase, and image URL. "Delete my data" deletes your personal actions. Server actions belong to the server and survive it, but your Discord ID is cleared from the ones you created. Moderation bans keep the banned user's Discord ID. The activity log also stores the custom phrase used, and keeps it for 30 days even if the action is deleted.
+
+### Under the Hood
+
+- New custom actions storage, an owner moderation page for deleting any custom action and banning creators, and a single availability check shared by the bot and the website.
+- New `action_events` table, plus bot API routes for recent events and a Server-Sent Events stream, with matching relay routes on the website that apply the same sign-in and server checks as the stats pages.
+- Added database indexes for guild stats, leaderboards, and server-settings lookups, so they no longer scan every row.
+
 ## v8.9.0 - Sep 23, 2026
 
 ### What You'll Notice

@@ -2,7 +2,7 @@ export type ActionTotals = {
   totalHasPerformed: number;
   totalHasReceived?: number;
   totalUsers: number;
-  imageUrl: string;
+  imageUrl: string | null;
   images?: string[];
 };
 

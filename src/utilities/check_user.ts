@@ -2,10 +2,9 @@ import { drizzleDb } from "../db/connector.js";
 import { actionData, optOut } from "../db/schema.js";
 import { sql, eq, and } from "drizzle-orm";
 import logger from "../logger.js";
-import { ActionType } from "../types/constants.js";
 
 export const checkUser = async (
-  actionType: ActionType,
+  actionType: string,
   user: any,
   guild: string,
 ) => {
