@@ -3,6 +3,8 @@ import type {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { getBotData } from "../db/functions.js";
+import { ACTIONS } from "../types/constants.js";
+import { listCustomActions } from "../utilities/customActions/store.js";
 import {
   resolveAvailableActions,
   type ActionContext,
@@ -13,20 +15,49 @@ const MAX_CHOICES = 25;
 
 type ActionInteraction = ChatInputCommandInteraction | AutocompleteInteraction;
 
+type ActionContextInput = {
+  guildId: string | null;
+  channelId: string | null;
+  authorId: string;
+  targetId?: string | null;
+};
+
+/** Builds the resolver context for any interaction type, loading the guild's restricted flag. */
+export async function buildActionContextFor(
+  input: ActionContextInput,
+): Promise<ActionContext> {
+  const { guildId } = input;
+  const settings = guildId ? await getBotData(guildId) : null;
+  return {
+    guildId,
+    locationId: guildId ?? input.channelId!,
+    authorId: input.authorId,
+    targetId: input.targetId ?? null,
+    isRestricted: Boolean(settings?.restricted),
+  };
+}
+
 /** Builds the resolver context; works for chat-input and autocomplete, where the target may be unset. */
 export async function buildActionContext(
   interaction: ActionInteraction,
 ): Promise<ActionContext> {
-  const guildId = interaction.guildId;
-  const settings = guildId ? await getBotData(guildId) : null;
   const target = interaction.options.get("target")?.value;
-  return {
-    guildId,
-    locationId: guildId ?? interaction.channelId!,
+  return buildActionContextFor({
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
     authorId: interaction.user.id,
     targetId: typeof target === "string" ? target : null,
-    isRestricted: Boolean(settings?.restricted),
-  };
+  });
+}
+
+/** Names offered by commands that only know built-ins and the current server's actions. */
+export async function listBuiltInAndGuildNames(
+  guildId: string | null,
+): Promise<string[]> {
+  const guildNames = guildId
+    ? (await listCustomActions("guild", guildId)).map((a) => a.name)
+    : [];
+  return [...Object.keys(ACTIONS), ...guildNames];
 }
 
 function labelFor(

@@ -8,8 +8,9 @@ import {
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
+import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
+import { buildActionContextFor } from "../actionAutocomplete.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -44,10 +45,15 @@ export const command = {
 
     const containers: ContainerBuilder[] = [];
 
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
-    for (const kind of actionKinds) {
+    // Listing names "as" the target yields built-ins plus the customs the target has rows for.
+    const ctx = await buildActionContextFor({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      authorId: interaction.targetUser.id,
+    });
+    for (const kind of await listSettableActionNames(ctx)) {
       const stats = await getActionStatsContainer(
-        resolveBuiltIn(kind),
+        await resolveStatsAction(kind, ctx),
         target,
         guild,
       );

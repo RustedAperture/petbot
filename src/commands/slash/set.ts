@@ -3,6 +3,7 @@ import {
   ApplicationIntegrationType,
   InteractionContextType,
   MessageFlags,
+  type AutocompleteInteraction,
 } from "discord.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { checkImage } from "../../utilities/check_image.js";
@@ -13,6 +14,9 @@ import { actionData, botData } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { updateAction } from "../../utilities/updateAction.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
+import { buildActionContext, respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -23,9 +27,7 @@ export const command = {
         .setName("action")
         .setDescription("The action for which you want to update the image")
         .setRequired(true)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -61,21 +63,28 @@ export const command = {
       InteractionContextType.Guild,
       InteractionContextType.PrivateChannel,
     ]),
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const ctx = await buildActionContext(interaction);
+    await respondWithActions(interaction, await listSettableActionNames(ctx));
+  },
   async execute(interaction) {
     await interaction.deferReply();
     const target = interaction.user;
     const everywhere = interaction.options.getBoolean("everywhere");
     const actionRaw = interaction.options.getString("action");
 
-    if (!actionRaw || !(actionRaw in ACTIONS)) {
+    const names = await listSettableActionNames(
+      await buildActionContext(interaction),
+    );
+    if (!actionRaw || !names.includes(actionRaw)) {
       await interaction.editReply({
-        content: "Invalid action specified.",
+        content: UNAVAILABLE_MESSAGE,
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    const action = actionRaw as ActionType;
+    const action = actionRaw;
 
     let slot = interaction.options.getNumber("slot");
 
@@ -108,7 +117,9 @@ export const command = {
       const adRow = adRows?.[0] ?? null;
       const images: string[] = adRow ? (adRow.images as string[]) : [];
 
-      const defaultBase = ACTIONS[action].defaultImage;
+      const defaultBase = Object.hasOwn(ACTIONS, action)
+        ? ACTIONS[action as ActionType].defaultImage
+        : undefined;
       const defaultImagesRaw = guildSettings?.defaultImages;
       const guildDefault =
         defaultImagesRaw && typeof defaultImagesRaw === "object"

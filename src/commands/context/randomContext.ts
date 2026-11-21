@@ -6,9 +6,9 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
+import { resolveAvailableActions } from "../../utilities/customActions/resolver.js";
+import { buildActionContextFor } from "../actionAutocomplete.js";
 import { isOptedOut } from "../../utilities/check_user.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -52,10 +52,18 @@ export const command = {
 
     await target.fetch(true);
 
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
-    const action = actionKinds[Math.floor(Math.random() * actionKinds.length)];
+    const ctx = await buildActionContextFor({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      authorId: interaction.user.id,
+      targetId: interaction.targetUser.id,
+    });
+    const actions = await resolveAvailableActions(ctx);
+    const action = actions[Math.floor(Math.random() * actions.length)];
 
-    const container = await performAction(resolveBuiltIn(action), target, author, guild);
+    const container = await performAction(action, target, author, guild, {
+      isRestricted: ctx.isRestricted,
+    });
 
     await interaction.editReply({
       components: [container],

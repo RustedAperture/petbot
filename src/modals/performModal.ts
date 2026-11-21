@@ -1,4 +1,3 @@
-import type { ActionType } from "../types/constants.js";
 import {
   GuildMember,
   MessageFlags,
@@ -81,10 +80,21 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
       return;
     }
 
-    // validate action
-    const { ACTIONS } = await import("../types/constants.js");
-    if (!(action in ACTIONS)) {
-      await modal.editReply({ content: "Invalid action." });
+    const { buildActionContextFor } = await import(
+      "../commands/actionAutocomplete.js"
+    );
+    const { resolveAction } = await import(
+      "../utilities/customActions/resolver.js"
+    );
+    const ctx = await buildActionContextFor({
+      guildId: modal.guildId,
+      channelId: modal.channelId,
+      authorId: author.id,
+      targetId: target.id,
+    });
+    const resolved = await resolveAction(action, ctx);
+    if (!resolved) {
+      await modal.editReply({ content: "That action isn't available here." });
       return;
     }
 
@@ -93,20 +103,14 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
 
     // Ensure both target and author have action rows ready concurrently
     await Promise.all([
-      checkUser(action as any, target, guild),
-      checkUser(action as any, author, guild),
+      checkUser(resolved.name, target, guild),
+      checkUser(resolved.name, author, guild),
     ]);
 
-    const { resolveBuiltIn } = await import(
-      "../utilities/customActions/resolver.js"
-    );
-    const container = await performAction(
-      resolveBuiltIn(action as ActionType),
-      target,
-      author,
-      guild,
-      { skipChecks: true },
-    );
+    const container = await performAction(resolved, target, author, guild, {
+      skipChecks: true,
+      isRestricted: ctx.isRestricted,
+    });
 
     await modal.editReply({
       components: [container] as any,

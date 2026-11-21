@@ -3,11 +3,15 @@ import {
   PermissionsBitField,
   EmbedBuilder,
   MessageFlags,
+  type AutocompleteInteraction,
 } from "discord.js";
 import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
 import { getBotData, upsertBotData } from "../../db/functions.js";
+import { setCustomActionImage } from "../../utilities/customActions/store.js";
+import { listBuiltInAndGuildNames, respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -18,9 +22,7 @@ export const command = {
         .setName("action")
         .setDescription("The action for which you want to update the image")
         .setRequired(true)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
+        .setAutocomplete(true),
     )
     .addStringOption((option) =>
       option
@@ -29,6 +31,12 @@ export const command = {
         .setRequired(true),
     )
     .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+  async autocomplete(interaction: AutocompleteInteraction) {
+    await respondWithActions(
+      interaction,
+      await listBuiltInAndGuildNames(interaction.guildId),
+    );
+  },
   async execute(interaction: any) {
     const action = interaction.options.getString("action");
     const url = interaction.options.getString("url");
@@ -40,14 +48,6 @@ export const command = {
       });
     }
 
-    const actionConfig = ACTIONS[action as keyof typeof ACTIONS];
-    if (!actionConfig) {
-      return interaction.reply({
-        content: `Unknown action: ${action}`,
-        flags: MessageFlags.Ephemeral,
-      });
-    }
-
     const guildId = interaction.guildId;
     if (!guildId) {
       return interaction.reply({
@@ -55,6 +55,19 @@ export const command = {
         flags: MessageFlags.Ephemeral,
       });
     }
+
+    const names = await listBuiltInAndGuildNames(guildId);
+    if (!names.includes(action)) {
+      return interaction.reply({
+        content: UNAVAILABLE_MESSAGE,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
+    const isBuiltIn = Object.hasOwn(ACTIONS, action);
+    const actionConfig = isBuiltIn
+      ? ACTIONS[action as keyof typeof ACTIONS]
+      : null;
 
     let guildSettings = (await getBotData(guildId)) as GuildSettings | null;
 
@@ -85,27 +98,32 @@ export const command = {
       }
     }
 
-    // merge into the JSON map so future lookups prefer `defaultImages`
-    const current = guildSettings.defaultImages as any;
-    const map =
-      current && typeof current === "object"
-        ? { ...current }
-        : current
-          ? JSON.parse(current)
-          : {};
-    map[action] = url;
+    if (actionConfig) {
+      // merge into the JSON map so future lookups prefer `defaultImages`
+      const current = guildSettings.defaultImages as any;
+      const map =
+        current && typeof current === "object"
+          ? { ...current }
+          : current
+            ? JSON.parse(current)
+            : {};
+      map[action] = url;
 
-    await upsertBotData(guildId, {
-      defaultImages: map,
-    });
+      await upsertBotData(guildId, {
+        defaultImages: map,
+      });
+    } else {
+      await setCustomActionImage("guild", guildId, action, url);
+    }
 
+    const noun = actionConfig?.noun ?? action;
     logger.debug(
-      `Updated default ${actionConfig.noun} image for guild: ${interaction.guildId}`,
+      `Updated default ${noun} image for guild: ${interaction.guildId}`,
     );
     setupEmbed
       .setThumbnail(url)
       .addFields({
-        name: `${actionConfig.noun[0].toUpperCase()}${actionConfig.noun.slice(1)} Default`,
+        name: `${noun[0].toUpperCase()}${noun.slice(1)} Default`,
         value: url,
       })
       .addFields({

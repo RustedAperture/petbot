@@ -7,6 +7,16 @@ export function mockInteraction(overrides: any = {}) {
   };
 
   const options = {
+    get: (k: string) => {
+      if (overrides.options?.get) {
+        return overrides.options.get(k);
+      }
+      const raw = overrides.options?.[k];
+      if (raw === undefined || raw === null || typeof raw === "function") {
+        return null;
+      }
+      return { value: typeof raw === "object" ? raw.id : raw };
+    },
     getString: (k: string) =>
       overrides.options?.getString
         ? overrides.options.getString(k)

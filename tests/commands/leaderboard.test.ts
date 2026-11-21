@@ -1,6 +1,11 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
 
+vi.mock("../../src/utilities/customActions/store.js", () => ({
+  listCustomActions: vi.fn().mockResolvedValue([]),
+  setCustomActionImage: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock("../../src/utilities/leaderboard.js", () => ({
   getLeaderboard: vi.fn(),
 }));

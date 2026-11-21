@@ -1,6 +1,21 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { mockInteraction } from "../helpers/mockInteraction.js";
 
+vi.mock("../../src/db/functions.js", () => ({
+  getBotData: vi.fn().mockResolvedValue(null),
+}));
+vi.mock("../../src/utilities/customActions/resolver.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/utilities/customActions/resolver.js")>();
+  const { ACTIONS } = await import("../../src/types/constants.js");
+  return {
+    ...original,
+    resolveAvailableActions: vi.fn(async () =>
+      (Object.keys(ACTIONS) as Array<keyof typeof ACTIONS>).map(original.resolveBuiltIn),
+    ),
+    listSettableActionNames: vi.fn(async () => Object.keys(ACTIONS)),
+  };
+});
+
 vi.mock("../../src/utilities/actionHelpers", () => ({
   getActionStatsContainer: vi.fn(),
 }));

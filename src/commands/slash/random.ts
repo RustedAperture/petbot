@@ -7,9 +7,8 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
-// isOptedOut no longer needed; opt-out logic handled by helper
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { resolveAvailableActions } from "../../utilities/customActions/resolver.js";
+import { buildActionContextFor } from "../actionAutocomplete.js";
 import { collectUniqueUsers } from "../../utilities/targetCollection.js";
 import { checkOptOuts } from "../../utilities/optOutHelper.js";
 
@@ -82,8 +81,6 @@ export const command = {
 
     const uniqueTargets = collectUniqueUsers(target1, target2, target3);
 
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
-
     let firstReply = true;
     for (const { user, member } of uniqueTargets) {
       if (optedOutIds.has(user.id)) {
@@ -93,11 +90,19 @@ export const command = {
         });
         continue;
       }
-      const action =
-        actionKinds[Math.floor(Math.random() * actionKinds.length)];
+      const ctx = await buildActionContextFor({
+        guildId: interaction.guildId,
+        channelId: interaction.channelId,
+        authorId: interaction.user.id,
+        targetId: user.id,
+      });
+      const actions = await resolveAvailableActions(ctx);
+      const action = actions[Math.floor(Math.random() * actions.length)];
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performAction(resolveBuiltIn(action), target, author, guild);
+      const container = await performAction(action, target, author, guild, {
+        isRestricted: ctx.isRestricted,
+      });
       const replyOptions = {
         components: [container],
         flags: MessageFlags.IsComponentsV2,

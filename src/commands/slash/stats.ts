@@ -7,10 +7,14 @@ import {
   MessageFlags,
   SlashCommandBuilder,
   User,
+  type AutocompleteInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
+import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
+import { ACTIONS } from "../../types/constants.js";
+import { buildActionContext, respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -21,9 +25,7 @@ export const command = {
         .setName("action")
         .setDescription("The action you want to get stats for")
         .setRequired(false)
-        .addChoices(
-          ...(Object.keys(ACTIONS).map((k) => ({ name: k, value: k })) as any),
-        ),
+        .setAutocomplete(true),
     )
     .addUserOption((option) =>
       option
@@ -41,7 +43,24 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   aliases: ["bite-stats", "pet-stats"],
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const ctx = await buildActionContext(interaction);
+    await respondWithActions(interaction, await listSettableActionNames(ctx));
+  },
   async execute(interaction: ChatInputCommandInteraction) {
+    const ctx = await buildActionContext(interaction);
+    const requested = interaction.options.getString("action");
+    if (
+      requested !== null &&
+      !(await listSettableActionNames(ctx)).includes(requested)
+    ) {
+      await interaction.reply({
+        content: UNAVAILABLE_MESSAGE,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
     });
@@ -84,14 +103,11 @@ export const command = {
     await targetUser.fetch(true);
 
     const containers: ContainerBuilder[] = [];
-    const actionKinds = Object.keys(ACTIONS) as ActionType[];
+    const actionKinds = action !== null ? [action] : Object.keys(ACTIONS);
 
     for (const kind of actionKinds) {
-      if (action !== null && action !== kind) {
-        continue;
-      }
       const statsContainer = await getActionStatsContainer(
-        resolveBuiltIn(kind),
+        await resolveStatsAction(kind, ctx),
         targetUser,
         guild,
       );
