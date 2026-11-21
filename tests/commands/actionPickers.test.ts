@@ -14,6 +14,10 @@ vi.mock("../../src/utilities/actionHelpers.js", () => ({
 vi.mock("../../src/utilities/check_image.js", () => ({
   checkImage: vi.fn().mockResolvedValue(true),
 }));
+vi.mock("../../src/utilities/helper.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/utilities/helper.js")>()),
+  canManageServerActions: vi.fn().mockResolvedValue(true),
+}));
 vi.mock("../../src/utilities/check_user.js", () => ({
   checkUser: vi.fn(),
   isOptedOut: vi.fn().mockResolvedValue(false),
@@ -41,6 +45,7 @@ vi.mock("../../src/db/connector.js", async () => {
 
 import { MessageFlags } from "discord.js";
 import { checkImage } from "../../src/utilities/check_image.js";
+import { canManageServerActions } from "../../src/utilities/helper.js";
 import {
   getActionStatsContainer,
   performAction,
@@ -87,6 +92,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   store.isImageUpdateLost = false;
   (checkImage as any).mockResolvedValue(true);
+  (canManageServerActions as any).mockResolvedValue(true);
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(customActionBans);
   await testDb.current.db.delete(actionData);
@@ -207,6 +213,33 @@ describe("/server-set", () => {
     expect(interaction.__calls.editedReplies).toEqual([
       { content: "That action isn't available here." },
     ]);
+  });
+
+  it("refuses a user without Manage Server and keeps the stored image", async () => {
+    await seed("guild", "guild-1", "boop");
+    (canManageServerActions as any).mockResolvedValue(false);
+
+    const interaction = mockInteraction({
+      options: { action: "boop", url: "https://example.com/boop.png" },
+    });
+    await serverSetCommand.execute(interaction as any);
+
+    const [row] = await testDb.current.db.select().from(customActions);
+    expect(row.image).toBeNull();
+    expect(checkImage).not.toHaveBeenCalled();
+    expect(interaction.__calls.editedReplies).toEqual([
+      { content: "You need Manage Server to manage server actions." },
+    ]);
+  });
+
+  it("does not check Manage Server for built-in actions", async () => {
+    (canManageServerActions as any).mockResolvedValue(false);
+    const interaction = mockInteraction({
+      options: { action: "pet", url: "https://example.com/pet.png" },
+    });
+    await serverSetCommand.execute(interaction as any);
+
+    expect(canManageServerActions).not.toHaveBeenCalled();
   });
 
   it("refuses a banned creator before writing the custom action image", async () => {

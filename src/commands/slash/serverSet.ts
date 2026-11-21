@@ -10,6 +10,7 @@ import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
 import { getBotData, upsertBotData } from "../../db/functions.js";
+import { canManageServerActions } from "../../utilities/helper.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import {
@@ -79,6 +80,18 @@ export const command = {
         : interaction.editReply(payload);
     if (!isBuiltIn) {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      // Discord's command permission can be re-granted to any role, so check Manage Server here.
+      if (
+        !(await canManageServerActions(
+          interaction.client,
+          guildId,
+          interaction.user.id,
+        ))
+      ) {
+        return respond({
+          content: "You need Manage Server to manage server actions.",
+        });
+      }
       if (await isCreatorBanned(interaction.user.id)) {
         return respond({ content: "You can't create custom actions." });
       }
