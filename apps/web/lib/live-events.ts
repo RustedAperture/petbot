@@ -12,16 +12,17 @@ const IRREGULAR_PHRASES: Record<string, string> = {
 
 /** Relay path for a scope; the SSE stream is this path plus `/stream`. */
 export function liveEventsPath(scope: LiveScope): string {
-  switch (scope.kind) {
-    case "global":
-      return "/api/events";
-    case "guild":
-      return `/api/events/guild/${encodeURIComponent(scope.guildId)}`;
-    case "user":
-      return `/api/events/user/${encodeURIComponent(scope.userId)}`;
-    case "userLocation":
-      return `/api/events/user/${encodeURIComponent(scope.userId)}/location/${encodeURIComponent(scope.locationId)}`;
+  if (scope.kind === "global") {
+    return "/api/events";
   }
+  if (scope.kind === "guild") {
+    return `/api/events/guild/${encodeURIComponent(scope.guildId)}`;
+  }
+  const user = `/api/events/user/${encodeURIComponent(scope.userId)}`;
+  if (scope.kind === "user") {
+    return user;
+  }
+  return `${user}/location/${encodeURIComponent(scope.locationId)}`;
 }
 
 export function countsAsPerformed(event: LiveActionEvent): boolean {
@@ -52,25 +53,23 @@ export function applyLiveEvent(
     ? stats.totalsByAction[event.actionType]
     : undefined;
 
+  const totalsByAction = { ...stats.totalsByAction };
+  if (current) {
+    const updated = {
+      ...current,
+      totalHasPerformed: current.totalHasPerformed + (isPerformed ? 1 : 0),
+    };
+    if (isReceived || current.totalHasReceived !== undefined) {
+      updated.totalHasReceived =
+        (current.totalHasReceived ?? 0) + (isReceived ? 1 : 0);
+    }
+    totalsByAction[event.actionType] = updated;
+  }
+
   return {
     ...stats,
     totalActionsPerformed: stats.totalActionsPerformed + (isPerformed ? 1 : 0),
-    totalsByAction: current
-      ? {
-          ...stats.totalsByAction,
-          [event.actionType]: {
-            ...current,
-            totalHasPerformed:
-              current.totalHasPerformed + (isPerformed ? 1 : 0),
-            ...(isReceived || current.totalHasReceived !== undefined
-              ? {
-                  totalHasReceived:
-                    (current.totalHasReceived ?? 0) + (isReceived ? 1 : 0),
-                }
-              : {}),
-          },
-        }
-      : stats.totalsByAction,
+    totalsByAction,
   };
 }
 
