@@ -5,7 +5,10 @@ import type { AddressInfo } from "node:net";
 import http from "node:http";
 import type { Server } from "node:http";
 
-const { listRecent } = vi.hoisted(() => ({ listRecent: vi.fn() }));
+const { listRecent, listGuildActions } = vi.hoisted(() => ({
+  listRecent: vi.fn(),
+  listGuildActions: vi.fn(),
+}));
 
 vi.mock("../../../src/db/connector.js", () => ({ drizzleDb: {} }));
 vi.mock("../../../src/logger.js", () => ({
@@ -16,6 +19,10 @@ vi.mock("../../../src/utilities/actionEvents.js", async (importOriginal) => ({
     typeof import("../../../src/utilities/actionEvents.js")
   >()),
   listRecentActionEvents: listRecent,
+}));
+
+vi.mock("../../../src/utilities/customActions/store.js", () => ({
+  listCustomActions: listGuildActions,
 }));
 
 import { createApp } from "../../../src/http/expressServer.js";
@@ -73,6 +80,81 @@ describe("/api/events", () => {
         },
       ],
     });
+  });
+
+  it("global recent omits custom-action events", async () => {
+    listRecent.mockResolvedValue([
+      { ...rowAt(1, "1"), actionType: "boop" },
+      rowAt(2, "1"),
+    ]);
+    const res = await supertest(createApp()).get("/api/events/recent").expect(200);
+    expect(res.body.events.map((e: { id: number }) => e.id)).toEqual([2]);
+  });
+
+  it("guild recent includes built-ins and the guild's own actions only", async () => {
+    listGuildActions.mockResolvedValue([{ name: "boop" }]);
+    listRecent.mockResolvedValue([
+      { ...rowAt(1, "1"), actionType: "boop" },
+      { ...rowAt(2, "1"), actionType: "zap" },
+      rowAt(3, "1"),
+    ]);
+    const res = await supertest(createApp()).get("/api/events/recent?locationId=1").expect(200);
+    expect(res.body.events.map((e: { id: number }) => e.id)).toEqual([1, 3]);
+    expect(listGuildActions).toHaveBeenCalledWith("guild", "1");
+  });
+
+  it("user recent is unscoped", async () => {
+    listRecent.mockResolvedValue([{ ...rowAt(1, "1"), actionType: "zap" }]);
+    const res = await supertest(createApp()).get("/api/events/recent?userId=2").expect(200);
+    expect(res.body.events).toHaveLength(1);
+  });
+
+  it("stream drops custom-action events from the global feed and other guilds' actions from a guild feed", async () => {
+    listGuildActions.mockResolvedValue([{ name: "boop" }]);
+    server = createApp().listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const collect = async (query: string, rows: ActionEventRow[], stopAt: string) => {
+        const res = await fetch(`http://127.0.0.1:${port}/api/events/stream${query}`, {
+          signal: controller.signal,
+        });
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        await reader.read();
+        rows.forEach(publishActionEvent);
+        let received = "";
+        while (!received.includes(stopAt)) {
+          const { value, done } = await reader.read();
+          if (done) {
+            break;
+          }
+          received += decoder.decode(value);
+        }
+        await reader.cancel();
+        return received;
+      };
+      const global = await collect(
+        "",
+        [{ ...rowAt(30, "1"), actionType: "boop" }, rowAt(31, "1")],
+        "id: 31\n",
+      );
+      expect(global).not.toContain("id: 30\n");
+      const guild = await collect(
+        "?locationId=1",
+        [
+          { ...rowAt(40, "1"), actionType: "zap" },
+          { ...rowAt(41, "1"), actionType: "boop" },
+        ],
+        "id: 41\n",
+      );
+      expect(guild).not.toContain("id: 40\n");
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
   });
 
   it.each(["locationId=abc", "userId=1;drop", "locationId=1&locationId=2"])(

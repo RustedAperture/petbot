@@ -8,6 +8,8 @@ import {
   type ActionEventFilter,
   type PublicActionEvent,
 } from "../../utilities/actionEvents.js";
+import { ACTIONS } from "../../types/constants.js";
+import { listCustomActions } from "../../utilities/customActions/store.js";
 import { subscribeActionEvents } from "../../utilities/actionEventBus.js";
 
 const PING_INTERVAL_MS = 25_000;
@@ -36,6 +38,34 @@ function parseFilter(req: Request): ActionEventFilter | null {
   return filter;
 }
 
+const isBuiltIn = (actionType: string) => Object.hasOwn(ACTIONS, actionType);
+
+/**
+ * Global feeds show built-ins only; a guild feed adds that guild's current
+ * actions. User-scoped feeds are unrestricted.
+ */
+function visibilityWithoutLookup(
+  filter: ActionEventFilter,
+): ((actionType: string) => boolean) | null {
+  if (filter.userId !== undefined) {
+    return () => true;
+  }
+  return filter.locationId === undefined ? isBuiltIn : null;
+}
+
+async function createVisibility(
+  filter: ActionEventFilter,
+): Promise<(actionType: string) => boolean> {
+  const simple = visibilityWithoutLookup(filter);
+  if (simple) {
+    return simple;
+  }
+  const guildNames = new Set(
+    (await listCustomActions("guild", filter.locationId as string)).map((a) => a.name),
+  );
+  return (actionType) => isBuiltIn(actionType) || guildNames.has(actionType);
+}
+
 /**
  * GET /api/events/recent — latest anonymised action events.
  */
@@ -47,9 +77,14 @@ router.get("/recent", async (req: Request, res: Response) => {
   }
 
   try {
-    const rows = await listRecentActionEvents(filter);
+    const [rows, isVisible] = await Promise.all([
+      listRecentActionEvents(filter),
+      createVisibility(filter),
+    ]);
     res.json({
-      events: rows.map((row) => toPublicActionEvent(row, filter.userId)),
+      events: rows
+        .filter((row) => isVisible(row.actionType))
+        .map((row) => toPublicActionEvent(row, filter.userId)),
     });
   } catch (err) {
     logger.error({ err }, "events recent error");
@@ -97,10 +132,30 @@ router.get("/stream", (req: Request, res: Response) => {
     }
   };
 
+  // Guild feeds need a lookup per event; chaining keeps events in order. The
+  // other feeds stay synchronous so a backpressured write stops them at once.
+  const simpleVisibility = visibilityWithoutLookup(filter);
+  let pending: Promise<void> = Promise.resolve();
   unsubscribe = subscribeActionEvents((row) => {
-    if (matchesActionEventFilter(row, filter)) {
-      write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
+    if (!matchesActionEventFilter(row, filter)) {
+      return;
     }
+    if (simpleVisibility) {
+      if (simpleVisibility(row.actionType)) {
+        write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
+      }
+      return;
+    }
+    pending = pending.then(async () => {
+      try {
+        const isVisible = await createVisibility(filter);
+        if (isVisible(row.actionType)) {
+          write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
+        }
+      } catch (err) {
+        logger.error({ err }, "events stream error");
+      }
+    });
   });
   const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
   // Downstream proxies only flush headers with the first body chunk; without

@@ -24,6 +24,8 @@ import setImagesHandler from "./routes/setImages.js";
 import serverSettingsRouter from "./routes/serverSettings.js";
 import guildChannelsHandler from "./routes/guildChannels.js";
 import eventsRouter from "./routes/events.js";
+import customActionsRouter from "./routes/customActions.js";
+import ownerRouter from "./routes/owner.js";
 
 /**
  * Resolve TLS key/cert from env vars.
@@ -96,10 +98,12 @@ export function createApp(client?: Client<boolean>): express.Express {
   app.use("/api/events", eventsRouter);
   app.use("/api/leaderboardConsent", leaderboardConsentRouter);
   app.post("/api/setImages", setImagesHandler);
+  app.use("/api/customActions", customActionsRouter(client));
 
   // Routes that need the Discord client
   if (client) {
     app.use("/api/serverSettings", serverSettingsRouter(client));
+    app.use("/api/owner", ownerRouter(client));
     app.get(
       "/api/guildChannels/:guildId/user/:userId",
       guildChannelsHandler(client),

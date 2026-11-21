@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import type { Client } from "discord.js";
 import { getLeaderboard } from "../../utilities/leaderboard.js";
+import { ACTIONS } from "../../types/constants.js";
+import { listCustomActions } from "../../utilities/customActions/store.js";
 import logger from "../../logger.js";
 
 export default function leaderboardHandler(client: Client) {
@@ -14,10 +16,12 @@ export default function leaderboardHandler(client: Client) {
         25,
       );
 
-      if (
-        actionType &&
-        !["pet", "bite", "hug", "bonk", "squish", "explode"].includes(actionType)
-      ) {
+      const guildNames = locationId
+        ? (await listCustomActions("guild", locationId)).map((a) => a.name)
+        : [];
+      const names = [...Object.keys(ACTIONS), ...guildNames];
+
+      if (actionType && !names.includes(actionType)) {
         res.status(400).json({ error: "invalid_actionType" });
         return;
       }
@@ -25,6 +29,7 @@ export default function leaderboardHandler(client: Client) {
       const result = await getLeaderboard({
         locationId,
         actionType,
+        actionTypes: names,
         limit,
         currentUserId,
         discordClient: client,

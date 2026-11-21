@@ -2,12 +2,31 @@ import type { Request, Response } from "express";
 import { drizzleDb } from "../../db/connector.js";
 import { actionData } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
-import { ACTIONS, type ActionType } from "../../types/constants.js";
+import { ACTIONS } from "../../types/constants.js";
+import { buildActionContextFor } from "../../commands/actionAutocomplete.js";
+import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
 import logger from "../../logger.js";
 import { checkImage } from "../../utilities/check_image.js";
 
 const MAX_URL_LENGTH = 2048;
 const ALLOWED_SCHEMES = /^https?:\/\//i;
+
+async function isSettable(
+  actionType: string,
+  userId: string,
+  guildId: unknown,
+): Promise<boolean> {
+  if (Object.hasOwn(ACTIONS, actionType)) {
+    return true;
+  }
+  const location = typeof guildId === "string" && /^\d+$/.test(guildId) ? guildId : null;
+  const ctx = await buildActionContextFor({
+    guildId: location,
+    channelId: location ?? "",
+    authorId: userId,
+  });
+  return (await listSettableActionNames(ctx)).includes(actionType);
+}
 
 /**
  * POST /api/setImages — set action images for a user.
@@ -24,7 +43,7 @@ export default async function setImagesHandler(
     return;
   }
 
-  if (typeof actionType !== "string" || !(actionType in ACTIONS)) {
+  if (typeof actionType !== "string" || !(await isSettable(actionType, userId, guildId))) {
     res.status(400).json({ error: "invalid_actionType" });
     return;
   }
@@ -47,7 +66,7 @@ export default async function setImagesHandler(
     return;
   }
 
-  const action = actionType as ActionType;
+  const action: string = actionType;
   const imagesArray = [
     ...new Set(
       (images as string[]).map((url) => url.trim()).filter((url) => url !== ""),

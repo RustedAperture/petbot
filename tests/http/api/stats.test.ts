@@ -17,7 +17,17 @@ vi.mock("../../../src/db/schema.js", () => ({
   botData: {},
 }));
 
+vi.mock("../../../src/utilities/customActions/store.js", () => ({
+  listCustomActions: vi.fn(),
+  listCustomActionsForOwners: vi.fn(),
+}));
+vi.mock("../../../src/utilities/customActions/resolver.js", () => ({
+  listCustomNamesWithRows: vi.fn(),
+}));
+
 import statsHandler from "../../../src/http/routes/stats.js";
+import { listCustomActions, listCustomActionsForOwners } from "../../../src/utilities/customActions/store.js";
+import { listCustomNamesWithRows } from "../../../src/utilities/customActions/resolver.js";
 
 function makeRes() {
   const res: any = {};
@@ -32,6 +42,9 @@ function makeRes() {
 describe("/api/stats handler - DM location presence behavior", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    (listCustomActions as any).mockResolvedValue([]);
+    (listCustomActionsForOwners as any).mockResolvedValue([]);
+    (listCustomNamesWithRows as any).mockResolvedValue([]);
   });
 
   it("returns 404 when user has no row for the requested location", async () => {
