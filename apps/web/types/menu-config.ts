@@ -1,4 +1,4 @@
-import { Earth, Users, User, MessageSquare } from "lucide-react";
+import { Earth, Users, User, MessageSquare, WandSparkles } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 export type MenuItem = {
@@ -13,4 +13,5 @@ export const STATS_MENU: MenuItem[] = [
   { id: "guild", title: "Guild", href: "/guildStats", Icon: Users },
   { id: "dm", title: "DM", href: "/dmStats", Icon: MessageSquare },
   { id: "user", title: "User", href: "/userStats", Icon: User },
+  { id: "actions", title: "Actions", href: "/actions", Icon: WandSparkles },
 ];

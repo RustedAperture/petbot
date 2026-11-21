@@ -53,7 +53,9 @@ async function getActionAggregates(
 /**
  * Custom action names to report beside the built-ins, with their definition
  * image (guild first, then the user's own). A guild-only scope lists the
- * guild's current actions; a user scope lists the names the user has rows for.
+ * guild's current actions; a user scope lists the names the user has rows for,
+ * and a user + guild scope also lists the user's own actions so they can set
+ * images for them before first use.
  */
 async function loadCustomEntries(
   userId: string | null,
@@ -62,9 +64,16 @@ async function loadCustomEntries(
   const definitions = userId
     ? await listCustomActionsForOwners(guildId, [userId])
     : await listCustomActions("guild", guildId as string);
-  const names = userId
-    ? await listCustomNamesWithRows(userId, guildId ?? undefined)
-    : definitions.map((d) => d.name);
+  let names = definitions.map((d) => d.name);
+  if (userId) {
+    const withRows = await listCustomNamesWithRows(userId, guildId ?? undefined);
+    const own = guildId
+      ? definitions
+        .filter((d) => d.scope === "user" && d.ownerId === userId)
+        .map((d) => d.name)
+      : [];
+    names = [...new Set([...withRows, ...own])].sort();
+  }
   const imageByName = new Map<string, string | null>();
   for (const name of names) {
     const named = definitions.filter((d) => d.name === name);

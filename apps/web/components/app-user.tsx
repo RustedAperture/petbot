@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/hooks/use-session";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { useDeleteUserData } from "@/hooks/use-delete-user-data";
 import { useDeleteUserSessions } from "@/hooks/use-delete-user-sessions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +20,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { EllipsisVertical, LogOut, Settings } from "lucide-react";
+import { EllipsisVertical, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { UserSettingsDialog } from "./dialogs/user-settings-dialog";
 
 export function AppUser({
@@ -32,7 +34,9 @@ export function AppUser({
   };
   onSignOut?: () => void | Promise<void>;
 }) {
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const router = useRouter();
+  const { isOwner } = useIsOwner();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { session } = useSession();
   const { deleteUserData } = useDeleteUserData();
@@ -73,6 +77,19 @@ export function AppUser({
                 <Settings />
                 Settings
               </DropdownMenuItem>
+              {isOwner ? (
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (isMobile) {
+                      setOpenMobile(false);
+                    }
+                    router.push("/owner");
+                  }}
+                >
+                  <ShieldCheck />
+                  Owner
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() =>

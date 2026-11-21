@@ -14,7 +14,7 @@ import { canManageServer } from "../../utilities/helper.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import {
-  isCreatorBanned,
+  creatorBanMessage,
   setCustomActionImage,
 } from "../../utilities/customActions/store.js";
 import { listBuiltInAndGuildNames, respondWithActions } from "../actionAutocomplete.js";
@@ -92,8 +92,9 @@ export const command = {
           content: "You need Manage Server to manage server actions.",
         });
       }
-      if (await isCreatorBanned(interaction.user.id)) {
-        return respond({ content: "You can't create custom actions." });
+      const banMessage = await creatorBanMessage(interaction.user.id);
+      if (banMessage) {
+        return respond({ content: banMessage });
       }
       url = normalizeUrl(url);
       if (!(await checkImage(url))) {

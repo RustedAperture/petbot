@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
-const { selectMock, updateMock, insertMock, checkImageMock, listSettableMock } = vi.hoisted(() => ({
+const { selectMock, updateMock, insertMock, checkImageMock, listSettableMock, setEverywhereMock } = vi.hoisted(() => ({
+  setEverywhereMock: vi.fn(),
   listSettableMock: vi.fn(),
   selectMock: vi.fn(),
   updateMock: vi.fn(),
@@ -36,6 +37,9 @@ vi.mock("../../../src/utilities/customActions/context.js", () => ({
 }));
 vi.mock("../../../src/utilities/customActions/resolver.js", () => ({
   listSettableActionNames: listSettableMock,
+}));
+vi.mock("../../../src/utilities/setImagesEverywhere.js", () => ({
+  setImagesEverywhere: setEverywhereMock,
 }));
 
 import { createApp } from "../../../src/http/expressServer.js";
@@ -245,10 +249,8 @@ describe("POST /api/setImages", () => {
       expect(inserted.images).toEqual(["https://example.com/pet.png"]);
     });
 
-    it("everywhere=true issues bulk UPDATE without prior SELECT", async () => {
-      const updateWhere = vi.fn().mockResolvedValue(undefined);
-      const updateSet = vi.fn(() => ({ where: updateWhere }));
-      (updateMock as any).mockReturnValueOnce({ set: updateSet });
+    it("everywhere=true hands the cleaned images to setImagesEverywhere", async () => {
+      setEverywhereMock.mockResolvedValue(undefined);
 
       const res = await supertest(app)
         .post("/api/setImages")
@@ -261,7 +263,9 @@ describe("POST /api/setImages", () => {
         .expect(200);
 
       expect(res.body).toEqual({ ok: true });
-      expect(updateMock).toHaveBeenCalledTimes(1);
+      expect(setEverywhereMock).toHaveBeenCalledWith("111", "pet", [
+        "https://example.com/pet.png",
+      ]);
       expect(selectMock).not.toHaveBeenCalled();
     });
   });

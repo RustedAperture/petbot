@@ -12,6 +12,7 @@ import {
   PUT as guildPUT,
 } from "@/app/api/customActions/guild/[guildId]/route";
 import { DELETE as guildDELETE } from "@/app/api/customActions/guild/[guildId]/[name]/route";
+import { GET as phraseGET } from "@/app/api/customActions/phrase/[name]/route";
 
 function cookieFor(session: unknown) {
   return `petbot_session=${encodeURIComponent(createSessionCookieValue(session))}`;
@@ -159,4 +160,28 @@ describe("guild relay", () => {
     const res = await guildPUT(req("PUT", me, input), ctx("G1") as any);
     expect(res.status).toBe(403);
   });
+});
+
+describe("phrase lookup relay", () => {
+  const ctx = (name: string) => ({ params: Promise.resolve({ name }) });
+
+  it("asks the bot for a valid name when signed in", async () => {
+    const res = await phraseGET(req("GET", me), ctx("shake"));
+    expect(res.status).toBe(200);
+    expect(mockFetch.mock.calls[0][0]).toContain(
+      "/api/customActions/phrase/shake",
+    );
+  });
+
+  it.each([
+    ["signed out", undefined, "shake", 401],
+    ["an invalid name", me, "Sh4ke", 400],
+  ])(
+    "rejects %s without asking the bot",
+    async (_label, cookie, name, status) => {
+      const res = await phraseGET(req("GET", cookie), ctx(name));
+      expect(res.status).toBe(status);
+      expect(mockFetch).not.toHaveBeenCalled();
+    },
+  );
 });

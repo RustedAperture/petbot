@@ -6,6 +6,8 @@ import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import { canManageServer } from "../../utilities/helper.js";
 import { validateCustomActionInput } from "../../utilities/customActions/validation.js";
 import {
+  findCommonPhrase,
+  findCreatorBan,
   listCustomActions,
   removeCustomAction,
   upsertCustomAction,
@@ -64,8 +66,18 @@ function reply(res: Response, result: Awaited<ReturnType<typeof save>>): void {
 export default function customActionsRouter(client?: Client<boolean>): Router {
   const router = Router();
 
+  router.get("/phrase/:name", async (req: Request, res: Response) => {
+    res.json({ phrase: await findCommonPhrase(req.params.name as string) });
+  });
+
   router.get("/user/:userId", async (req: Request, res: Response) => {
-    res.json({ actions: await listCustomActions("user", req.params.userId as string) });
+    const userId = req.params.userId as string;
+    const ban = await findCreatorBan(userId);
+    res.json({
+      actions: await listCustomActions("user", userId),
+      isBanned: ban !== null,
+      banReason: ban?.reason ?? null,
+    });
   });
 
   router.put("/user/:userId", async (req: Request, res: Response) => {

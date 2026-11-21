@@ -83,6 +83,20 @@ describe("custom actions in /api/stats", () => {
     expect(res.body.totalsByAction.pet.totalHasPerformed).toBe(1);
   });
 
+  it("user and location stats list the user's own unused actions with their image", async () => {
+    await testDb.current.db
+      .insert(customActions)
+      .values(action({ name: "nuzzle", scope: "user", ownerId: "u1", image: "https://example.com/n.png" }));
+    const located = await supertest(app).get("/api/stats/user/u1/guild/g1").expect(200);
+    expect(located.body.totalsByAction.nuzzle).toMatchObject({
+      totalHasPerformed: 0,
+      imageUrl: "https://example.com/n.png",
+      images: ["https://example.com/n.png"],
+    });
+    const overall = await supertest(app).get("/api/stats/user/u1").expect(200);
+    expect(overall.body.totalsByAction.nuzzle).toBeUndefined();
+  });
+
   it("custom-only activity elsewhere does not change the global headline numbers", async () => {
     const before = (await supertest(app).get("/api/stats").expect(200)).body;
     await testDb.current.db.insert(actionData).values(rowFor("u7", "g7", "boop", 9));

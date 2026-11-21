@@ -4,7 +4,10 @@ import { createSessionCookieValue } from "@/lib/internal-api";
 
 import { GET as meGET } from "@/app/api/owner/me/route";
 import { GET as actionsGET } from "@/app/api/owner/customActions/route";
-import { DELETE as actionDELETE } from "@/app/api/owner/customActions/[id]/route";
+import {
+  DELETE as actionDELETE,
+  PATCH as actionPATCH,
+} from "@/app/api/owner/customActions/[id]/route";
 import { GET as bansGET } from "@/app/api/owner/bans/route";
 import {
   DELETE as banDELETE,
@@ -49,6 +52,10 @@ const calls = [
   [
     "DELETE customActions/:id",
     (c?: string) => actionDELETE(req("DELETE", c), idCtx),
+  ],
+  [
+    "PATCH customActions/:id",
+    (c?: string) => actionPATCH(req("PATCH", c), idCtx),
   ],
   ["GET bans", (c?: string) => bansGET(req("GET", c))],
   ["PUT bans/:userId", (c?: string) => banPUT(req("PUT", c), userCtx)],
@@ -115,6 +122,38 @@ describe("owner routes", () => {
       expect(mockFetch).not.toHaveBeenCalled();
     },
   );
+
+  it("forwards only the phrase and image of an edit", async () => {
+    const request = new Request("http://localhost/api/owner/customActions/7", {
+      method: "PATCH",
+      headers: { cookie: owner },
+      body: JSON.stringify({
+        phrase: "p",
+        image: "https://x.io/a.png",
+        name: "x",
+      }),
+    }) as any;
+    await actionPATCH(request, idCtx);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toContain("/api/owner/customActions/7");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({
+      phrase: "p",
+      image: "https://x.io/a.png",
+    });
+  });
+
+  it("forwards only the ban reason to the bot", async () => {
+    const request = new Request("http://localhost/api/owner/bans", {
+      method: "PUT",
+      headers: { cookie: owner },
+      body: JSON.stringify({ reason: "spam", extra: true }),
+    }) as any;
+    await banPUT(request, userCtx);
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({
+      reason: "spam",
+    });
+  });
 
   it("forwards the filters to the bot", async () => {
     await actionsGET(

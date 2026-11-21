@@ -13,8 +13,10 @@ export function PUT(req: Request, context: Context) {
     if (!DISCORD_ID.test(userId)) {
       return apiError(400, "invalid_user_id");
     }
+    const body = await req.json().catch(() => null);
     return proxyRequest(`/api/owner/bans/${encodeURIComponent(userId)}`, {
       method: "PUT",
+      body: { reason: body?.reason ?? null },
     });
   });
 }

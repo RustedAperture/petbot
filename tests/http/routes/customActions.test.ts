@@ -71,7 +71,7 @@ describe("user custom action routes", () => {
   });
 
   it.each([
-    ["an invalid name", { name: "Bad1" }, "Names can only use lowercase letters a–z (1–20)."],
+    ["an invalid name", { name: "Bad1" }, "Names can only use letters a–z (1–20)."],
     ["a reserved name", { name: "pet" }, "That name is already a built-in action or command."],
     ["a bad phrase", { phrase: "@everyone" }, "Phrases can't contain mentions, links or formatting."],
     ["a missing image", { image: undefined }, "Your URL is invalid, please try again"],
@@ -108,6 +108,53 @@ describe("user custom action routes", () => {
       .put("/api/customActions/user/u1")
       .send(body)
       .expect(400, { error: "You can't create custom actions." });
+  });
+
+  it.each([
+    ["no ban", undefined, false, null],
+    ["a ban without a reason", null, true, null],
+    ["a ban with a reason", "spam", true, "spam"],
+  ])("lists %s", async (_label, reason, isBanned, banReason) => {
+    if (reason !== undefined) {
+      await testDb.current.db
+        .insert(customActionBans)
+        .values({ userId: "u1", createdAt: "2026-01-01", reason });
+    }
+    const list = await supertest(app).get("/api/customActions/user/u1").expect(200);
+    expect(list.body).toMatchObject({ isBanned, banReason });
+  });
+});
+
+describe("GET /phrase/:name", () => {
+  const row = (ownerId: string, phrase: string, updatedAt: string) => ({
+    name: "shake",
+    phrase,
+    scope: "user" as const,
+    ownerId,
+    image: null,
+    createdBy: ownerId,
+    createdAt: updatedAt,
+    updatedAt,
+  });
+
+  it.each([
+    ["no action uses it", [], null],
+    [
+      "most actions share a phrase",
+      [row("u1", "shook", "1"), row("u2", "shook", "2"), row("u3", "shaked", "3")],
+      "shook",
+    ],
+    [
+      "a tie",
+      [row("u1", "shook", "1"), row("u2", "shaked", "2")],
+      "shaked",
+    ],
+  ])("offers the common phrase when %s", async (_label, rows, phrase) => {
+    if (rows.length > 0) {
+      await testDb.current.db.insert(customActions).values(rows);
+    }
+    const res = await supertest(app).get("/api/customActions/phrase/shake").expect(200);
+    expect(res.body).toEqual({ phrase });
   });
 });
 

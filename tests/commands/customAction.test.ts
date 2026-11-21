@@ -108,7 +108,7 @@ describe("/custom-action add", () => {
     await command.execute(interaction);
 
     expect(interaction.__calls.editedReplies[0].content).toBe(
-      "Names can only use lowercase letters a–z (1–20).",
+      "Names can only use letters a–z (1–20).",
     );
     expect(checkImage).not.toHaveBeenCalled();
   });

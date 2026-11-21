@@ -7,6 +7,7 @@ import { buildActionContextFor } from "../../utilities/customActions/context.js"
 import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
 import logger from "../../logger.js";
 import { checkImage } from "../../utilities/check_image.js";
+import { setImagesEverywhere } from "../../utilities/setImagesEverywhere.js";
 
 const MAX_URL_LENGTH = 2048;
 const ALLOWED_SCHEMES = /^https?:\/\//i;
@@ -82,12 +83,7 @@ export default async function setImagesHandler(
 
   try {
     if (isEverywhere) {
-      await drizzleDb
-        .update(actionData)
-        .set({ images: imagesArray, updatedAt: new Date().toISOString() })
-        .where(
-          and(eq(actionData.userId, userId), eq(actionData.actionType, action)),
-        );
+      await setImagesEverywhere(userId, action, imagesArray);
     } else {
       if (typeof guildId !== "string" || !/^\d+$/.test(guildId)) {
         res.status(400).json({ error: "invalid_guildId" });

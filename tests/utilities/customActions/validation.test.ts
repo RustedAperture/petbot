@@ -7,11 +7,8 @@ import {
 describe("validateCustomActionInput", () => {
   it.each([
     ["boop", "booped", { name: "boop", phrase: "booped" }],
-    [
-      "  Boop ",
-      " booped ",
-      { error: "Names can only use lowercase letters a–z (1–20)." },
-    ],
+    ["  Boop ", " Booped ", { name: "boop", phrase: "booped" }],
+    ["bo0p", "booped", { error: "Names can only use letters a–z (1–20)." }],
     [
       "pet",
       "petted",

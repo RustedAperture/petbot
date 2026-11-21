@@ -126,4 +126,5 @@ export const customActions = sqliteTable(
 export const customActionBans = sqliteTable("custom_action_bans", {
   userId: text("user_id").primaryKey(),
   createdAt: text().notNull(),
+  reason: text(),
 });

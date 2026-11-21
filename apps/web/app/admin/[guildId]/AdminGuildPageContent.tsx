@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import AdminGuildSettingsForm from "./AdminGuildSettingsForm";
+import DefaultImagesCard from "./DefaultImagesCard";
 
 export default function AdminGuildPageContent({
   guildId,
@@ -61,8 +62,13 @@ export default function AdminGuildPageContent({
   const guildIconUrl = guild
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
+  const isShowingServerActions =
+    !pageLoading && !isMembershipLoading && isBotMember === true;
+  // Matches the settings form, which shows an error alert in place of its cards.
+  const isShowingDefaultImages =
+    !pageLoading && !isSettingsError && !channelsError;
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="grid w-full items-start gap-6 xl:grid-cols-2">
       <AdminGuildSettingsForm
         guildId={guildId}
         settings={settings}
@@ -76,8 +82,8 @@ export default function AdminGuildPageContent({
         guildIconUrl={guildIconUrl}
       />
       {/* Without the bot, the settings form's "Bot not in server" alert is the only notice. */}
-      {!pageLoading && !isMembershipLoading && isBotMember === true && (
-        <Card>
+      {isShowingServerActions && (
+        <Card className="order-1 min-w-0">
           <CardHeader>
             <CardTitle>Server actions</CardTitle>
             <CardDescription>
@@ -88,6 +94,15 @@ export default function AdminGuildPageContent({
             <CustomActionsManager scope={{ kind: "guild", guildId }} />
           </CardContent>
         </Card>
+      )}
+      {isShowingDefaultImages && (
+        <DefaultImagesCard
+          settings={settings}
+          update={update}
+          className={
+            isShowingServerActions ? "order-2 min-w-0" : "xl:col-span-2"
+          }
+        />
       )}
     </div>
   );

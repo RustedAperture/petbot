@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 
 // Render the dialog inline when open so the reset logic can be exercised
@@ -100,5 +100,52 @@ describe("EditImagesDialog reset", () => {
       }),
     );
     expect(slot(1).value).toBe("https://edited/1.png");
+  });
+});
+
+describe("EditImagesDialog saving", () => {
+  function renderOpen() {
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    (globalThis as any).fetch = fetchMock;
+    render(
+      createElement(EditImagesDialog, {
+        ...baseProps,
+        open: true,
+        initialImages: ["https://a.example/1.png"],
+      }),
+    );
+    return fetchMock;
+  }
+
+  const sentBody = (fetchMock: ReturnType<typeof vi.fn>) =>
+    JSON.parse((fetchMock.mock.calls[0] as any[])[1].body);
+
+  it("saves everywhere by default, after confirming", async () => {
+    const fetchMock = renderOpen();
+    expect(screen.getByRole("checkbox")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(fetchMock).not.toHaveBeenCalled();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Save everywhere" }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(sentBody(fetchMock)).toMatchObject({
+      everywhere: true,
+      guildId: null,
+    });
+  });
+
+  it("saves for this server only without asking once unticked", async () => {
+    const fetchMock = renderOpen();
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(sentBody(fetchMock)).toMatchObject({
+      everywhere: false,
+      guildId: "g1",
+    });
   });
 });

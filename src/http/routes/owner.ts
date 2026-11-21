@@ -7,12 +7,17 @@ import {
   listAllCustomActions,
   listBannedCreators,
   unbanCreator,
+  updateCustomActionById,
   type CustomActionScope,
 } from "../../utilities/customActions/store.js";
+import { validatePhrase } from "../../utilities/customActions/validation.js";
+import { checkImage } from "../../utilities/check_image.js";
+import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import logger from "../../logger.js";
 import { syncGuildCommands } from "../../utilities/customActions/guildCommandSync.js";
 
 const NUMERIC_ID = /^\d+$/;
+const MAX_BAN_REASON_LENGTH = 200;
 
 /** Absent or empty is fine; anything but a single string is malformed (null). */
 function singleString(value: unknown): string | undefined | null {
@@ -64,12 +69,48 @@ export default function ownerRouter(client: Client<boolean>): Router {
     res.json({ ok: true });
   });
 
+  router.patch("/customActions/:id", async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    const { phrase, image } = (req.body ?? {}) as Record<string, unknown>;
+    const validated = validatePhrase(typeof phrase === "string" ? phrase : "");
+    if ("error" in validated) {
+      res.status(400).json({ error: validated.error });
+      return;
+    }
+    const normalized = normalizeUrl(typeof image === "string" ? image : "");
+    if (!normalized || !(await checkImage(normalized))) {
+      res.status(400).json({ error: "Your URL is invalid, please try again" });
+      return;
+    }
+    const action = Number.isInteger(id)
+      ? await updateCustomActionById(id, {
+        phrase: validated.phrase,
+        image: normalized,
+      })
+      : null;
+    if (!action) {
+      res.status(404).json({ error: "not_found" });
+      return;
+    }
+    res.json({ action });
+  });
+
   router.get("/bans", async (_req: Request, res: Response) => {
     res.json({ bans: await listBannedCreators() });
   });
 
   router.put("/bans/:userId", async (req: Request, res: Response) => {
-    await banCreator(req.params.userId as string);
+    const raw: unknown = req.body?.reason;
+    if (raw !== undefined && raw !== null && typeof raw !== "string") {
+      res.status(400).json({ error: "invalid_reason" });
+      return;
+    }
+    const reason = raw?.trim() || null;
+    if (reason && reason.length > MAX_BAN_REASON_LENGTH) {
+      res.status(400).json({ error: "Reasons must be 200 characters or fewer." });
+      return;
+    }
+    await banCreator(req.params.userId as string, reason);
     res.json({ ok: true });
   });
 

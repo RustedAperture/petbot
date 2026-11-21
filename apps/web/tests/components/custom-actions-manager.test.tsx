@@ -8,6 +8,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,8 +19,10 @@ const hook = {
   save: vi.fn(),
   remove: vi.fn(),
 };
+const commonPhrases: Record<string, string> = { shake: "shook" };
 vi.mock("@/hooks/use-custom-actions", () => ({
   useCustomActions: () => hook,
+  useCommonPhrase: (name: string) => commonPhrases[name] ?? null,
 }));
 
 import CustomActionsManager from "@/components/custom-actions-manager";
@@ -63,6 +66,14 @@ describe("CustomActionsManager", () => {
     expect(screen.getByText("nuzzle — nuzzled")).toBeInTheDocument();
   });
 
+  it("shows each action's image as a button that opens it", () => {
+    render(<CustomActionsManager scope={scope} />);
+    const view = screen.getByRole("button", { name: "View boop image" });
+    expect(view.querySelector("img")?.getAttribute("src")).toContain(
+      encodeURIComponent("https://x.io/a.png"),
+    );
+  });
+
   it("shows the API error verbatim when a save fails", async () => {
     hook.save.mockResolvedValue(
       "You've reached the limit of 5 custom actions.",
@@ -93,10 +104,77 @@ describe("CustomActionsManager", () => {
     );
   });
 
-  it("removes an action", () => {
+  it("asks before removing an action", async () => {
     render(<CustomActionsManager scope={scope} />);
     fireEvent.click(screen.getByRole("button", { name: "Remove boop" }));
-    expect(hook.remove).toHaveBeenCalledWith("boop");
+    expect(hook.remove).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
+    await waitFor(() => expect(hook.remove).toHaveBeenCalledWith("boop"));
+  });
+
+  it("edits an action's phrase and image, keeping its name", async () => {
+    render(<CustomActionsManager scope={scope} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit boop" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    fireEvent.change(dialog.getByLabelText("Phrase"), {
+      target: { value: "bopped" },
+    });
+    fireEvent.click(dialog.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(hook.save).toHaveBeenCalledWith({
+        name: "boop",
+        phrase: "bopped",
+        image: "https://x.io/a.png",
+      }),
+    );
+  });
+
+  it("shows a failed edit inside the dialog", async () => {
+    hook.save.mockResolvedValue("Your URL is invalid, please try again");
+    render(<CustomActionsManager scope={scope} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit boop" }));
+    const dialog = within(await screen.findByRole("dialog"));
+    fireEvent.click(dialog.getByRole("button", { name: "Save" }));
+    expect(
+      await dialog.findByText("Your URL is invalid, please try again"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the action when the removal is cancelled", async () => {
+    render(<CustomActionsManager scope={scope} />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove boop" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Remove" })).toBeNull(),
+    );
+    expect(hook.remove).not.toHaveBeenCalled();
+  });
+
+  it("offers the phrase an existing name uses, leaving the image alone", () => {
+    render(<CustomActionsManager scope={scope} />);
+    fill("Shake", "", "https://x.io/mine.png");
+    expect(screen.getByText("Suggested phrase: “shook”.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Use this phrase" }));
+    expect(screen.getByLabelText("Phrase")).toHaveValue("shook");
+    expect(screen.getByLabelText("Image URL")).toHaveValue(
+      "https://x.io/mine.png",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Use this phrase" }),
+    ).toBeNull();
+  });
+
+  it("renders its dialogs without duplicate React keys", () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    render(<CustomActionsManager scope={scope} />);
+    expect(
+      consoleError.mock.calls.some((args) =>
+        String(args[0]).includes("same key"),
+      ),
+    ).toBe(false);
+    consoleError.mockRestore();
   });
 
   it("disables Add at the limit", () => {
@@ -126,6 +204,7 @@ describe("CustomActionsManager failures", () => {
     hook.remove.mockResolvedValue("not_found");
     render(<CustomActionsManager scope={scope} />);
     fireEvent.click(screen.getByRole("button", { name: "Remove boop" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Remove" }));
     expect(await screen.findByText("not_found")).toBeInTheDocument();
   });
 

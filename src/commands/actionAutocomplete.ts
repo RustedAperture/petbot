@@ -39,7 +39,8 @@ export async function listBuiltInAndGuildNames(
   return [...Object.keys(ACTIONS), ...guildNames];
 }
 
-function labelFor(
+/** How an action is named in pickers: whose custom action it is, after a dot. */
+export function actionChoiceLabel(
   action: ResolvedAction,
   authorId: string,
   targetId: string | null,
@@ -73,7 +74,7 @@ export async function respondWithActions(
     .map((a) =>
       typeof a === "string"
         ? { name: a, value: a }
-        : { name: labelFor(a, authorId, targetId, targetName), value: a.name },
+        : { name: actionChoiceLabel(a, authorId, targetId, targetName), value: a.name },
     )
     .filter((c) => c.value.toLowerCase().startsWith(focused))
     .slice(0, MAX_CHOICES);

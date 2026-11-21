@@ -291,8 +291,24 @@ describe("perform context menu", () => {
 
     const json = interaction.__calls.showModals[0].toJSON();
     const options = json.components[0].component.options;
-    expect(options.at(-1)).toMatchObject({ label: "boop (server)", value: "boop" });
+    expect(options.at(-1)).toMatchObject({ label: "boop · server", value: "boop" });
     expect(options[0]).toMatchObject({ label: "pet", value: "pet" });
+  });
+
+  it("names the target as the owner of their personal action", async () => {
+    await seed("user", "t1", "wave");
+    const target = { id: "t1", displayName: "Zimi" };
+    const interaction = mockInteraction({
+      targetUser: target,
+      targetMember: target,
+    });
+    interaction.context = 0;
+
+    await performContext.execute(interaction as any);
+
+    const options =
+      interaction.__calls.showModals[0].toJSON().components[0].component.options;
+    expect(options.at(-1)).toMatchObject({ label: "wave · @Zimi", value: "wave" });
   });
 });
 

@@ -20,7 +20,6 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { useLeaderboardConsent } from "@/hooks/use-leaderboard-consent";
 import { Switch } from "../ui/switch";
-import CustomActionsManager from "../custom-actions-manager";
 
 export function UserSettingsDialog({
   open,
@@ -197,23 +196,6 @@ export function UserSettingsDialog({
                 </Field>
               </FieldSet>
             </FieldGroup>
-            {session?.user.id && (
-              <>
-                <Separator />
-                <FieldGroup className="px-6">
-                  <FieldSet>
-                    <FieldLegend>Custom actions</FieldLegend>
-                    <FieldDescription>
-                      Create your own actions to use with /action. Each needs a
-                      name, a phrase and an image.
-                    </FieldDescription>
-                    <CustomActionsManager
-                      scope={{ kind: "user", userId: session.user.id }}
-                    />
-                  </FieldSet>
-                </FieldGroup>
-              </>
-            )}
             <Separator />
             <FieldGroup className="px-6">
               <FieldSet>

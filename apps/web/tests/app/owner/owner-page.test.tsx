@@ -53,7 +53,9 @@ beforeEach(() => {
       return json({ actions: [action] });
     }
     if (url === "/api/owner/bans" && !init?.method) {
-      return json({ bans: [{ userId: "555", createdAt: "" }] });
+      return json({
+        bans: [{ userId: "555", createdAt: "", reason: "spam" }],
+      });
     }
     return json({ ok: true });
   });
@@ -77,6 +79,7 @@ describe("OwnerPage", () => {
     expect(await screen.findByText("booped")).toBeTruthy();
     expect(screen.getByText("900")).toBeTruthy();
     expect(await screen.findByText("555")).toBeTruthy();
+    expect(screen.getByText("spam")).toBeTruthy();
   });
 
   it("sends the filter as name", async () => {
@@ -95,17 +98,37 @@ describe("OwnerPage", () => {
     );
   });
 
-  it("bans a user id", async () => {
+  it.each([
+    [
+      "the form",
+      "777777777777777777",
+      () => {
+        fireEvent.change(screen.getByLabelText("User ID"), {
+          target: { value: "777777777777777777" },
+        });
+        fireEvent.click(screen.getByRole("button", { name: "Ban" }));
+      },
+    ],
+    [
+      "an action's row",
+      "111",
+      () => fireEvent.click(screen.getByRole("button", { name: "Ban 111" })),
+    ],
+  ])("bans from %s with a reason", async (_label, userId, openBan) => {
     renderPage();
-    await screen.findByText("555");
-    fireEvent.change(screen.getByLabelText("User ID"), {
-      target: { value: "777777777777777777" },
+    await screen.findByText("booped");
+    openBan();
+    fireEvent.change(await screen.findByLabelText("Ban reason"), {
+      target: { value: " spam " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Ban" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ban user" }));
     await waitFor(() =>
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/owner/bans/777777777777777777",
-        expect.objectContaining({ method: "PUT" }),
+        `/api/owner/bans/${userId}`,
+        expect.objectContaining({
+          method: "PUT",
+          body: JSON.stringify({ reason: "spam" }),
+        }),
       ),
     );
   });
@@ -162,6 +185,27 @@ describe("OwnerPage", () => {
     );
   });
 
+  it("edits an action's phrase and image", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Edit boop" }));
+    fireEvent.change(await screen.findByLabelText("Phrase"), {
+      target: { value: "nuzzled" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/owner/customActions/7",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            phrase: "nuzzled",
+            image: "https://x.io/a.png",
+          }),
+        }),
+      ),
+    );
+  });
+
   it("unbans a user", async () => {
     renderPage();
     fireEvent.click(await screen.findByRole("button", { name: "Unban 555" }));
@@ -201,6 +245,7 @@ describe("OwnerPage", () => {
       target: { value: "777777777777777777" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Ban" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ban user" }));
     expect(await screen.findByText("nope")).toBeTruthy();
   });
 });

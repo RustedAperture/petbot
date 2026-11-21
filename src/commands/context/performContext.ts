@@ -10,6 +10,7 @@ import {
   StringSelectMenuBuilder,
 } from "discord.js";
 import { resolveAvailableActions } from "../../utilities/customActions/resolver.js";
+import { actionChoiceLabel } from "../actionAutocomplete.js";
 import { buildActionContextFor } from "../../utilities/customActions/context.js";
 import { isOptedOut } from "../../utilities/check_user.js";
 import { MessageFlags } from "discord.js";
@@ -61,10 +62,11 @@ export const command = {
       targetId: target.id,
       client: interaction.client,
     });
+    const targetName = target.displayName;
     const options = (await resolveAvailableActions(ctx))
       .slice(0, MAX_OPTIONS)
       .map((a) => ({
-        label: a.sources.includes("guild") ? `${a.name} (server)` : a.name,
+        label: actionChoiceLabel(a, interaction.user.id, target.id, targetName),
         value: a.name,
       }));
 

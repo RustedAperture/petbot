@@ -71,6 +71,9 @@ vi.mock("@/hooks/use-session", () => ({
 vi.mock("@/components/custom-actions-manager", () => ({
   default: () => createElement("div", { "data-testid": "custom-actions" }),
 }));
+vi.mock("@/app/admin/[guildId]/DefaultImagesCard", () => ({
+  default: () => createElement("div", { "data-testid": "default-images" }),
+}));
 
 let botMembershipState: {
   isBotMember: boolean | null;

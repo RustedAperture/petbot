@@ -1,4 +1,4 @@
-import { and, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, inArray, max, or, type SQL } from "drizzle-orm";
 import { drizzleDb } from "../../db/connector.js";
 import { customActionBans, customActions } from "../../db/schema.js";
 import { emitGuildActionsChanged } from "./changeEvents.js";
@@ -103,8 +103,9 @@ function serialised<T>(task: () => Promise<T>): Promise<T> {
 
 async function upsertRow(input: UpsertInput) {
   const { scope, ownerId, name, phrase, image, createdBy } = input;
-  if (createdBy && (await isCreatorBanned(createdBy))) {
-    return { error: "You can't create custom actions." };
+  const banMessage = createdBy ? await creatorBanMessage(createdBy) : null;
+  if (banMessage) {
+    return { error: banMessage };
   }
 
   const now = new Date().toISOString();
@@ -218,19 +219,64 @@ export function deleteCustomActionById(
   });
 }
 
-export async function isCreatorBanned(userId: string): Promise<boolean> {
+/** The phrase most actions with this name use (newest wins a tie), or null when the name is unused. */
+export async function findCommonPhrase(name: string): Promise<string | null> {
   const [row] = await drizzleDb
-    .select({ userId: customActionBans.userId })
-    .from(customActionBans)
-    .where(eq(customActionBans.userId, userId));
-  return Boolean(row);
+    .select({ phrase: customActions.phrase })
+    .from(customActions)
+    .where(eq(customActions.name, name))
+    .groupBy(customActions.phrase)
+    .orderBy(desc(count()), desc(max(customActions.updatedAt)))
+    .limit(1);
+  return row?.phrase ?? null;
 }
 
-export async function banCreator(userId: string): Promise<void> {
+/** Owner moderation: changes an action's phrase and image, keeping its name and creator. */
+export function updateCustomActionById(
+  id: number,
+  changes: { phrase: string; image: string },
+): Promise<CustomAction | null> {
+  return serialised(async () => {
+    const [row] = await drizzleDb
+      .update(customActions)
+      .set({ ...changes, updatedAt: new Date().toISOString() })
+      .where(eq(customActions.id, id))
+      .returning();
+    if (row?.scope === "guild") {
+      emitGuildActionsChanged(row.ownerId);
+    }
+    return row ?? null;
+  });
+}
+
+/** The user's ban with the owner's reason; null when not banned. */
+export async function findCreatorBan(
+  userId: string,
+): Promise<{ reason: string | null } | null> {
+  const [row] = await drizzleDb
+    .select({ reason: customActionBans.reason })
+    .from(customActionBans)
+    .where(eq(customActionBans.userId, userId));
+  return row ?? null;
+}
+
+/** The message shown to a banned creator, including the owner's reason; null when not banned. */
+export async function creatorBanMessage(userId: string): Promise<string | null> {
+  const row = await findCreatorBan(userId);
+  if (!row) {
+    return null;
+  }
+  return row.reason
+    ? `You can't create custom actions: ${row.reason}`
+    : "You can't create custom actions.";
+}
+
+/** Banning again replaces the reason. */
+export async function banCreator(userId: string, reason: string | null = null): Promise<void> {
   await drizzleDb
     .insert(customActionBans)
-    .values({ userId, createdAt: new Date().toISOString() })
-    .onConflictDoNothing();
+    .values({ userId, createdAt: new Date().toISOString(), reason })
+    .onConflictDoUpdate({ target: customActionBans.userId, set: { reason } });
 }
 
 export async function unbanCreator(userId: string): Promise<void> {

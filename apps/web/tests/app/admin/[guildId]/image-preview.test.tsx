@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { createElement } from "react";
 
-import { ImagePreview } from "@/app/admin/[guildId]/AdminGuildSettingsForm";
+import { ImagePreview } from "@/app/admin/[guildId]/DefaultImagesCard";
 
 const A = "https://a.example/pet.png";
 const B = "https://b.example/pet.png";

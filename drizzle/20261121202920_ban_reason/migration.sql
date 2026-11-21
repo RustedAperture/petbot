@@ -1,0 +1,1 @@
+ALTER TABLE `custom_action_bans` ADD `reason` text;

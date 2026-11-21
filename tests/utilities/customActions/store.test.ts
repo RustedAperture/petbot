@@ -22,7 +22,7 @@ import {
   CUSTOM_ACTION_LIMIT,
   deleteCustomActionById,
   deleteUserCustomActionData,
-  isCreatorBanned,
+  creatorBanMessage,
   listAllCustomActions,
   listBannedCreators,
   listCustomActions,
@@ -224,13 +224,14 @@ describe("mutations", () => {
 
 describe("bans", () => {
   it("bans, lists and unbans", async () => {
-    expect(await isCreatorBanned("u1")).toBe(false);
+    expect(await creatorBanMessage("u1")).toBeNull();
     await banCreator("u1");
-    await banCreator("u1");
-    expect(await isCreatorBanned("u1")).toBe(true);
+    expect(await creatorBanMessage("u1")).toBe("You can't create custom actions.");
+    await banCreator("u1", "spam");
+    expect(await creatorBanMessage("u1")).toBe("You can't create custom actions: spam");
     expect((await listBannedCreators()).map((b) => b.userId)).toEqual(["u1"]);
     await unbanCreator("u1");
-    expect(await isCreatorBanned("u1")).toBe(false);
+    expect(await creatorBanMessage("u1")).toBeNull();
   });
 });
 
@@ -253,6 +254,6 @@ describe("deleteUserCustomActionData", () => {
       .from(customActions)
       .where(eq(customActions.ownerId, "g1"));
     expect(guild[0].createdBy).toBeNull();
-    expect(await isCreatorBanned("u1")).toBe(true);
+    expect(await creatorBanMessage("u1")).not.toBeNull();
   });
 });
