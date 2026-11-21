@@ -59,16 +59,27 @@ describe("live-events", () => {
     expect(next.totalsByAction.pet.totalHasReceived).toBe(1);
   });
 
-  it("applyLiveEvent with an unknown action bumps the total only", () => {
-    const next = applyLiveEvent(stats, { id: 1, actionType: "boop", createdAt: "t" }, "location");
-    expect(next.totalActionsPerformed).toBe(10);
-    expect(next.totalsByAction).toEqual(stats.totalsByAction);
-  });
+  it.each(["boop", "constructor"])(
+    "applyLiveEvent with the unknown action %s bumps the total only",
+    (actionType) => {
+      const next = applyLiveEvent(stats, { id: 1, actionType, createdAt: "t" }, "location");
+      expect(next.totalActionsPerformed).toBe(10);
+      expect(next.totalsByAction).toEqual(stats.totalsByAction);
+    },
+  );
 
-  it("applyLiveEvent with an inherited property name bumps the total only", () => {
-    const next = applyLiveEvent(stats, { id: 1, actionType: "constructor", createdAt: "t" }, "location");
-    expect(next.totalActionsPerformed).toBe(10);
-    expect(next.totalsByAction).toEqual(stats.totalsByAction);
+  it("applyLiveEvent leaves an absent received count absent when the event is not received", () => {
+    const bare: GlobalStats = {
+      ...stats,
+      totalsByAction: { pet: { totalHasPerformed: 1, totalUsers: 1, imageUrl: "" } },
+    };
+    const next = applyLiveEvent(
+      bare,
+      { id: 1, actionType: "pet", createdAt: "t", role: "performed" },
+      "user",
+    );
+    expect(next.totalsByAction.pet.totalHasPerformed).toBe(2);
+    expect("totalHasReceived" in next.totalsByAction.pet).toBe(false);
   });
 
   it.each([

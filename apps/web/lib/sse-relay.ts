@@ -5,11 +5,11 @@ import { apiError } from "./errors";
 
 export type EventsMode = "recent" | "stream";
 
-export type EventsScope = {
-  guildId?: string;
-  userId?: string;
-  locationId?: string;
-};
+/** `locationId` is only valid with `userId`; guild scope has its own location. */
+export type EventsScope =
+  | { guildId?: never; userId?: never; locationId?: never }
+  | { guildId: string; userId?: never; locationId?: never }
+  | { guildId?: never; userId: string; locationId?: string };
 
 /** Pipes the bot's SSE stream to the browser; aborts upstream when the client disconnects. */
 export async function relayEventStream(
@@ -37,7 +37,7 @@ export async function relayEventStream(
   });
 }
 
-function requireNumeric(name: keyof EventsScope, value: string | undefined) {
+function requireNumeric(name: "guildId" | "userId" | "locationId", value: string | undefined) {
   if (value !== undefined && !/^\d+$/.test(value)) {
     throw apiError(400, `invalid_${name}`);
   }

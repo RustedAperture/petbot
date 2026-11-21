@@ -1,6 +1,7 @@
 import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
 import { drizzleDb } from "../db/connector.js";
 import { actionEvents } from "../db/schema.js";
+import logger from "../logger.js";
 import { hashUserId } from "./crypto.js";
 import { publishActionEvent, type ActionEventRow } from "./actionEventBus.js";
 
@@ -124,7 +125,7 @@ export async function deleteActionEventsForUser(userId: string): Promise<void> {
 export function startActionEventPruning(): () => void {
   const prune = () => {
     pruneActionEvents().catch((error) => {
-      console.error("Failed to prune action events", error);
+      logger.error({ err: error }, "Failed to prune action events");
     });
   };
   prune();

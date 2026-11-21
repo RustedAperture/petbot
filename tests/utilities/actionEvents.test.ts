@@ -212,8 +212,9 @@ describe("retention and deletion", () => {
       "g1",
       new Date(now.getTime() - 29 * day).toISOString(),
     );
+    await seed("A", "B", "g1", new Date(now.getTime() - 30 * day).toISOString());
     await pruneActionEvents(now);
-    expect((await listRecentActionEvents({})).length).toBe(1);
+    expect((await listRecentActionEvents({})).length).toBe(2);
   });
 
   it("deleteActionEventsForUser removes rows where the user is performer or target", async () => {
@@ -235,6 +236,11 @@ describe("retention and deletion", () => {
       expect((await listRecentActionEvents({})).length).toBe(0);
     });
     expect(vi.getTimerCount()).toBe(1);
+    await seed("A", "B", "g1", "2000-01-01T00:00:00.000Z");
+    await vi.advanceTimersByTimeAsync(3_600_000);
+    await vi.waitFor(async () => {
+      expect((await listRecentActionEvents({})).length).toBe(0);
+    });
     stop();
     expect(vi.getTimerCount()).toBe(0);
   });

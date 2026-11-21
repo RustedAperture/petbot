@@ -74,7 +74,6 @@ router.get("/stream", (req: Request, res: Response) => {
 
   let isStopped = false;
   let unsubscribe = () => {};
-  let pingTimer: NodeJS.Timeout | undefined;
 
   const stop = () => {
     if (isStopped) {
@@ -103,7 +102,7 @@ router.get("/stream", (req: Request, res: Response) => {
       write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
     }
   });
-  pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
+  const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
 
   // Tied to the response: a GET body consumed by express.json fires the
   // request's "close" while the stream is still open.

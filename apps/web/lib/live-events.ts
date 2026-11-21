@@ -62,8 +62,12 @@ export function applyLiveEvent(
             ...current,
             totalHasPerformed:
               current.totalHasPerformed + (isPerformed ? 1 : 0),
-            totalHasReceived:
-              (current.totalHasReceived ?? 0) + (isReceived ? 1 : 0),
+            ...(isReceived || current.totalHasReceived !== undefined
+              ? {
+                  totalHasReceived:
+                    (current.totalHasReceived ?? 0) + (isReceived ? 1 : 0),
+                }
+              : {}),
           },
         }
       : stats.totalsByAction,

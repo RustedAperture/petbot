@@ -101,6 +101,18 @@ describe("useLiveEvents", () => {
     vi.unstubAllGlobals();
   });
 
+  it("orders a backfill that resolves after stream events newest-first", async () => {
+    let resolveFetch: (value: unknown) => void = () => {};
+    fetchMock.mockReturnValue(new Promise((resolve) => (resolveFetch = resolve)));
+    const r = renderHook(() => useLiveEvents(global));
+    FakeEventSource.last.open();
+    FakeEventSource.last.emit("action", ev(10));
+    resolveFetch(json({ events: [ev(11), ev(10)] }));
+    await flush();
+    expect(r.result.current.events.map((e) => e.id)).toEqual([11, 10]);
+    r.unmount();
+  });
+
   it("backfills, then prepends stream events and fires onEvent", async () => {
     fetchMock.mockResolvedValue(json({ events: [ev(2), ev(1)] }));
     const onEvent = vi.fn();

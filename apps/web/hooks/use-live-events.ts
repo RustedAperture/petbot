@@ -122,10 +122,12 @@ export function useLiveEvents(
           return;
         }
         const backfilled = (body.events ?? []).slice(0, MAX_EVENTS);
-        // Stream events may have arrived first; keep them ahead of older backfill.
         const fresh = backfilled.filter((event) => !seenIds.has(event.id));
         fresh.forEach((event) => seenIds.add(event.id));
-        setEvents((prev) => [...prev, ...fresh].slice(0, MAX_EVENTS));
+        // Stream events may have arrived first; ids are monotonic, so id order is recency order.
+        setEvents((prev) =>
+          [...prev, ...fresh].sort((a, b) => b.id - a.id).slice(0, MAX_EVENTS),
+        );
       } catch {
         // The stream still works without a backfill.
       } finally {
