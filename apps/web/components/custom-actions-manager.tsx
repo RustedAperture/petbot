@@ -74,6 +74,10 @@ export default function CustomActionsManager({
     setImage("");
   }
 
+  async function handleRemove(actionName: string) {
+    setError(await remove(actionName));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
@@ -86,7 +90,9 @@ export default function CustomActionsManager({
         <Empty className="border">
           <EmptyHeader>
             <EmptyTitle>No custom actions yet</EmptyTitle>
-            <EmptyDescription>Add one below.</EmptyDescription>
+            <EmptyDescription>
+              Add one below, then use it with /action.
+            </EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (
@@ -105,7 +111,7 @@ export default function CustomActionsManager({
                   variant="ghost"
                   size="icon"
                   aria-label={`Remove ${action.name}`}
-                  onClick={() => void remove(action.name)}
+                  onClick={() => void handleRemove(action.name)}
                 >
                   <XIcon />
                 </Button>

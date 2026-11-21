@@ -8,10 +8,15 @@ import type {
 
 const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
+async function errorMessage(res: Response): Promise<string> {
+  const json = await res.json().catch(() => null);
+  return typeof json?.error === "string" ? json.error : FALLBACK_ERROR;
+}
+
 const fetcher = async (url: string): Promise<{ actions: CustomAction[] }> => {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`Failed to load custom actions (${res.status})`);
+    throw new Error(await errorMessage(res));
   }
   return res.json();
 };
@@ -22,25 +27,16 @@ function endpointFor(scope: CustomActionsScope): string {
     : `/api/customActions/guild/${encodeURIComponent(scope.guildId)}`;
 }
 
-async function errorMessage(res: Response): Promise<string> {
-  const json = await res.json().catch(() => null);
-  return typeof json?.error === "string" ? json.error : FALLBACK_ERROR;
-}
-
 export function useCustomActions(scope: CustomActionsScope) {
   const endpoint = endpointFor(scope);
   const { data, error, isLoading, mutate } = useSWR(endpoint, fetcher);
 
-  /** Resolves to the API's error message, or null on success. */
-  const save = useCallback(
-    async (input: CustomActionInput): Promise<string | null> => {
+  /** Sends a write and resolves to the API's error message, or null on success. */
+  const write = useCallback(
+    async (url: string, init: RequestInit): Promise<string | null> => {
       let res: Response;
       try {
-        res = await fetch(endpoint, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
+        res = await fetch(url, init);
       } catch {
         return FALLBACK_ERROR;
       }
@@ -50,17 +46,23 @@ export function useCustomActions(scope: CustomActionsScope) {
       await mutate();
       return null;
     },
-    [endpoint, mutate],
+    [mutate],
+  );
+
+  const save = useCallback(
+    (input: CustomActionInput) =>
+      write(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      }),
+    [endpoint, write],
   );
 
   const remove = useCallback(
-    async (name: string): Promise<void> => {
-      await fetch(`${endpoint}/${encodeURIComponent(name)}`, {
-        method: "DELETE",
-      });
-      await mutate();
-    },
-    [endpoint, mutate],
+    (name: string) =>
+      write(`${endpoint}/${encodeURIComponent(name)}`, { method: "DELETE" }),
+    [endpoint, write],
   );
 
   return {

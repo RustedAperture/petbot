@@ -39,7 +39,7 @@ const action = (name: string, phrase: string) => ({
 beforeEach(() => {
   hook.actions = [action("boop", "booped"), action("nuzzle", "nuzzled")];
   hook.save = vi.fn().mockResolvedValue(null);
-  hook.remove = vi.fn().mockResolvedValue(undefined);
+  hook.remove = vi.fn().mockResolvedValue(null);
 });
 afterEach(cleanup);
 
@@ -118,5 +118,21 @@ describe("CustomActionsManager", () => {
     render(<CustomActionsManager scope={scope} />);
     expect(screen.getByText("0 of 5 used")).toBeInTheDocument();
     expect(screen.getByText("No custom actions yet")).toBeInTheDocument();
+  });
+});
+
+describe("CustomActionsManager failures", () => {
+  it("shows a failed remove inline", async () => {
+    hook.remove.mockResolvedValue("not_found");
+    render(<CustomActionsManager scope={scope} />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove boop" }));
+    expect(await screen.findByText("not_found")).toBeInTheDocument();
+  });
+
+  it("shows a failed load inline", () => {
+    (hook as any).error = new Error("Add PetBot first.");
+    render(<CustomActionsManager scope={scope} />);
+    expect(screen.getByText("Add PetBot first.")).toBeInTheDocument();
+    (hook as any).error = null;
   });
 });

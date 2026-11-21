@@ -14,6 +14,7 @@ import Leaderboard from "@/components/leaderboard";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import LiveActivityFeed from "@/components/live-activity-feed";
 import { flashKeyFor } from "@/lib/live-events";
+import { ACTIONS } from "@petbot/constants";
 import type { LiveScope } from "@/types/live";
 
 export default function DmStatsLocationPage({
@@ -248,7 +249,11 @@ export default function DmStatsLocationPage({
                     userCount={totals.totalUsers}
                     totalUniqueUsers={data.totalUniqueUsers}
                     totalActionsPerformed={data.totalActionsPerformed}
-                    onMouseEnter={() => setHoveredAction(actionKey)}
+                    onMouseEnter={() =>
+                      setHoveredAction(
+                        Object.hasOwn(ACTIONS, actionKey) ? actionKey : null,
+                      )
+                    }
                     onMouseLeave={() => setHoveredAction(null)}
                     compact={compact}
                   />

@@ -83,3 +83,55 @@ it("still rejects guild results for non-members", async () => {
   expect(response.status).toBe(403);
   expect(upstream).not.toHaveBeenCalled();
 });
+
+function memberRequest(query: string, guilds: Array<{ id: string }>) {
+  const cookie = createSessionCookieValue({ user: { id: "123" }, guilds });
+  return new Request(`http://localhost/api/leaderboard${query}`, {
+    headers: { cookie: `petbot_session=${cookie}` },
+  });
+}
+
+function routeUpstream(stats: unknown) {
+  upstream.mockImplementation(async (url: string) =>
+    String(url).includes("/api/stats/user/")
+      ? Response.json(stats)
+      : Response.json({ locationId: "456", actionType: null, entries: [] }),
+  );
+}
+
+const noActivity = { totalsByAction: {} };
+const someActivity = {
+  totalsByAction: { pet: { totalHasPerformed: 2, totalUsers: 1 } },
+};
+
+it("rejects a non-member guild location sent with a DM label", async () => {
+  routeUpstream(noActivity);
+  const response = await GET(memberRequest("?locationId=456", []));
+  expect(response.status).toBe(403);
+  expect(
+    upstream.mock.calls.some(([u]) => String(u).includes("/api/leaderboard")),
+  ).toBe(false);
+});
+
+it.each(["", "&scope=guild"])(
+  "allows a guild member to read their guild (%s)",
+  async (extra) => {
+    routeUpstream(noActivity);
+    const response = await GET(
+      memberRequest(`?locationId=456${extra}`, [{ id: "456" }]),
+    );
+    expect(response.status).toBe(200);
+  },
+);
+
+it("allows a DM participant", async () => {
+  routeUpstream(someActivity);
+  const response = await GET(memberRequest("?locationId=456", []));
+  expect(response.status).toBe(200);
+});
+
+it("rejects a DM label that claims guild scope for a DM location", async () => {
+  routeUpstream(someActivity);
+  const response = await GET(memberRequest("?locationId=456&scope=guild", []));
+  expect(response.status).toBe(403);
+});

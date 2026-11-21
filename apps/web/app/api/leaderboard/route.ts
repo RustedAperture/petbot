@@ -5,6 +5,33 @@ import {
 } from "../../../lib/internal-api";
 import { apiError } from "../../../lib/errors";
 
+/** A non-guild location is only visible to users who have activity in it. */
+async function isDmParticipant(
+  userId: string,
+  locationId: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${getInternalApiBase()}/api/stats/user/${encodeURIComponent(userId)}/location/${encodeURIComponent(locationId)}`,
+      { headers: internalApiHeadersOptional() },
+    );
+    if (!res.ok) {
+      return false;
+    }
+    const stats = (await res.json()) as {
+      totalsByAction?: Record<
+        string,
+        { totalHasPerformed?: number; totalHasReceived?: number }
+      >;
+    };
+    return Object.values(stats.totalsByAction ?? {}).some(
+      (t) => (t.totalHasPerformed ?? 0) > 0 || (t.totalHasReceived ?? 0) > 0,
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -30,10 +57,18 @@ export async function GET(req: Request) {
     }
     const currentUserId = session?.user?.id;
 
-    if (scope === "guild" && locationId && session) {
+    // The bot picks guild custom actions from locationId alone, so the
+    // location is authorized here regardless of the client's scope label.
+    if (locationId && session) {
       const guilds = await resolveGuilds(session);
-      if (!guilds.some((g) => g.id === locationId)) {
-        throw apiError(403, "forbidden");
+      const isGuildMember = guilds.some((g) => g.id === locationId);
+      if (!isGuildMember) {
+        const isParticipant =
+          scope !== "guild" &&
+          (await isDmParticipant(session.user!.id!, locationId));
+        if (!isParticipant) {
+          throw apiError(403, "forbidden");
+        }
       }
     }
 

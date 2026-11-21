@@ -76,7 +76,7 @@ export default function AdminGuildPageContent({
             <CardTitle>Server actions</CardTitle>
             <CardDescription>
               Custom actions everyone in this server can use with
-              /custom-action.
+              /action.
             </CardDescription>
           </CardHeader>
           <CardContent>
