@@ -4,9 +4,11 @@ import GlobalStatsPage from "@/app/globalStats/page";
 import UserStatsPage from "@/app/userStats/page";
 import { StatsCardViewProvider } from "@/components/stats/stats-card-view";
 import { useGlobalStats } from "@/hooks/use-global-stats";
+import { useLiveEvents } from "@/hooks/use-live-events";
 import { useSession } from "@/hooks/use-session";
 
 vi.mock("@/hooks/use-global-stats");
+vi.mock("@/hooks/use-live-events");
 vi.mock("@/hooks/use-session");
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
@@ -23,6 +25,12 @@ const applyLiveEvent = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(useLiveEvents).mockReturnValue({
+    events: [],
+    status: "live",
+    isLoading: false,
+    latestLiveEvent: null,
+  });
   vi.mocked(useSession).mockReturnValue({
     session: { user: { id: "123", username: "Tester" }, guilds: [] },
     loading: false,

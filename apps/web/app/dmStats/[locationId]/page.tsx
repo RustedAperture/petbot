@@ -11,6 +11,9 @@ import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Leaderboard from "@/components/leaderboard";
+import { useLiveEvents } from "@/hooks/use-live-events";
+import LiveActivityFeed from "@/components/live-activity-feed";
+import type { LiveScope } from "@/types/live";
 
 export default function DmStatsLocationPage({
   params,
@@ -26,9 +29,21 @@ export default function DmStatsLocationPage({
   const userInitiatedRef = React.useRef(false);
   const attemptedLocationRef = React.useRef<string | null>(null);
 
-  const { data, isLoading, error } = useGlobalStats({
+  const sessionUserId = session?.user.id ?? null;
+  const { data, isLoading, error, refresh, applyLiveEvent } = useGlobalStats({
     locationId,
-    userId: session?.user.id ?? null,
+    userId: sessionUserId,
+  });
+  const scope = React.useMemo<LiveScope | null>(
+    () =>
+      sessionUserId
+        ? { kind: "userLocation", userId: sessionUserId, locationId }
+        : null,
+    [sessionUserId, locationId],
+  );
+  const live = useLiveEvents(scope, {
+    onEvent: (e) => applyLiveEvent(e, "user"),
+    onReconnect: refresh,
   });
 
   const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
@@ -248,11 +263,14 @@ export default function DmStatsLocationPage({
         </div>
 
         {/* Right: leaderboard (desktop) */}
-        <Leaderboard
-          locationId={locationId}
-          actionType={hoveredAction}
-          className="col-span-4 xl:col-span-1"
-        />
+        <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+          <LiveActivityFeed
+            events={live.events}
+            status={live.status}
+            isLoading={live.isLoading}
+          />
+          <Leaderboard locationId={locationId} actionType={hoveredAction} />
+        </div>
       </div>
     </main>
   );

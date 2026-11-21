@@ -14,6 +14,9 @@ import StatsCard from "@/components/stats/stats-card";
 import StatsCardView from "@/components/stats/stats-card-view";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { UserDistributionChart } from "@/components/stats/user-distribution-chart";
+import { useLiveEvents } from "@/hooks/use-live-events";
+import LiveActivityFeed from "@/components/live-activity-feed";
+import type { LiveScope } from "@/types/live";
 
 export default function UserStatsPage() {
   const params = useSearchParams();
@@ -72,10 +75,23 @@ function UserStatsContent({
   queryLocationId: string | null;
   userScoped: boolean;
 }) {
-  const { data, isLoading, error, refresh } = useGlobalStats({
+  const { data, isLoading, error, refresh, applyLiveEvent } = useGlobalStats({
     userId,
     guildId: queryLocationId,
     userScoped,
+  });
+  const isLegacyLocation = queryLocationId !== null && !userScoped;
+  const scope = React.useMemo<LiveScope>(() => {
+    if (queryLocationId === null) {
+      return { kind: "user", userId };
+    }
+    return userScoped
+      ? { kind: "userLocation", userId, locationId: queryLocationId }
+      : { kind: "guild", guildId: queryLocationId };
+  }, [userId, queryLocationId, userScoped]);
+  const live = useLiveEvents(scope, {
+    onEvent: (e) => applyLiveEvent(e, isLegacyLocation ? "location" : "user"),
+    onReconnect: refresh,
   });
 
   if (!data) {
@@ -151,8 +167,13 @@ function UserStatsContent({
 
         <aside
           aria-label="Interaction distribution"
-          className="mx-auto w-full min-w-0 max-w-xl xl:mx-0 xl:max-w-none"
+          className="mx-auto flex w-full min-w-0 max-w-xl flex-col gap-4 xl:mx-0 xl:max-w-none"
         >
+          <LiveActivityFeed
+            events={live.events}
+            status={live.status}
+            isLoading={live.isLoading}
+          />
           <UserDistributionChart totalsByAction={data.totalsByAction} />
         </aside>
       </div>

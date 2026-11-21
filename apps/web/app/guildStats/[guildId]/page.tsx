@@ -11,6 +11,10 @@ import StatsCardView from "@/components/stats/stats-card-view";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import Leaderboard from "@/components/leaderboard";
 import { DistributionChart } from "@/components/stats/distribution-chart";
+import { useLiveEvents } from "@/hooks/use-live-events";
+import LiveActivityFeed from "@/components/live-activity-feed";
+import { countsAsPerformed } from "@/lib/live-events";
+import type { LiveScope } from "@/types/live";
 
 export default function GuildStatsPage({
   params,
@@ -47,8 +51,16 @@ export default function GuildStatsPage({
     [router],
   );
 
-  const { data, isLoading, error } = useGlobalStats({
+  const { data, isLoading, error, refresh, applyLiveEvent } = useGlobalStats({
     guildId,
+  });
+  const scope = React.useMemo<LiveScope>(
+    () => ({ kind: "guild", guildId }),
+    [guildId],
+  );
+  const live = useLiveEvents(scope, {
+    onEvent: (e) => applyLiveEvent(e, "location"),
+    onReconnect: refresh,
   });
 
   const [selectedAction, setSelectedAction] = React.useState<string | null>(
@@ -82,6 +94,12 @@ export default function GuildStatsPage({
               <StatsCardSimple
                 statString="Total Actions Performed"
                 value={data.totalActionsPerformed}
+                flashKey={
+                  live.latestLiveEvent &&
+                  countsAsPerformed(live.latestLiveEvent)
+                    ? live.latestLiveEvent.id
+                    : undefined
+                }
               />
               <StatsCardSimple
                 statString="Total Unique Users"
@@ -115,6 +133,11 @@ export default function GuildStatsPage({
         </div>
 
         <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+          <LiveActivityFeed
+            events={live.events}
+            status={live.status}
+            isLoading={live.isLoading}
+          />
           <DistributionChart
             totalsByAction={data.totalsByAction}
             title="Guild Action Distribution"
