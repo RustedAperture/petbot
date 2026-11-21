@@ -6,10 +6,12 @@ import {
   type Client,
 } from "discord.js";
 import logger from "../logger.js";
+import { executeCustomGuildCommand } from "../commands/customGuildCommand.js";
 
 interface Executable {
   name: string;
   execute: (interaction: Interaction) => Promise<void>;
+  autocomplete?: (interaction: Interaction) => Promise<void>;
   aliases?: string[];
 }
 
@@ -37,6 +39,15 @@ function findCommandByAlias(
 const interactionCreate = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {
+    if (interaction.isAutocomplete()) {
+      const client = interaction.client as ClientWithCommands;
+      try {
+        await client.slashCommands?.get(interaction.commandName)?.autocomplete?.(interaction);
+      } catch (error) {
+        logger.error({ error, commandName: interaction.commandName }, "Autocomplete failed");
+      }
+      return;
+    }
     if (
       interaction.isChatInputCommand() ||
       interaction.isUserContextMenuCommand() ||
@@ -66,6 +77,16 @@ const interactionCreate = {
       }
 
       if (!command) {
+        if (interaction.isChatInputCommand() && interaction.guildId) {
+          try {
+            if (await executeCustomGuildCommand(interaction)) {
+              return;
+            }
+          } catch (error) {
+            logger.error({ error, commandName: interaction.commandName }, "Custom guild command failed");
+            return;
+          }
+        }
         logger.error(
           { commandName: interaction.commandName },
           "No command matching interaction was found.",

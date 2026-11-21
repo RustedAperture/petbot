@@ -7,6 +7,7 @@
 */
 
 // Slash commands
+import action from "./slash/action.js";
 import bite from "./slash/bite.js";
 import bonk from "./slash/bonk.js";
 import botStats from "./slash/botStats.js";
@@ -30,6 +31,7 @@ import randomContext from "./context/randomContext.js";
 import statsContext from "./context/statsContext.js";
 
 export const slashCommands = [
+  action,
   bite,
   bonk,
   botStats,
