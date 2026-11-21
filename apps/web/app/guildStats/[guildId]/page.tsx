@@ -13,7 +13,7 @@ import Leaderboard from "@/components/leaderboard";
 import { DistributionChart } from "@/components/stats/distribution-chart";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import LiveActivityFeed from "@/components/live-activity-feed";
-import { countsAsPerformed } from "@/lib/live-events";
+import { flashKeyFor } from "@/lib/live-events";
 import type { LiveScope } from "@/types/live";
 
 export default function GuildStatsPage({
@@ -94,12 +94,7 @@ export default function GuildStatsPage({
               <StatsCardSimple
                 statString="Total Actions Performed"
                 value={data.totalActionsPerformed}
-                flashKey={
-                  live.latestLiveEvent &&
-                  countsAsPerformed(live.latestLiveEvent)
-                    ? live.latestLiveEvent.id
-                    : undefined
-                }
+                flashKey={flashKeyFor(live.latestLiveEvent, "location")}
               />
               <StatsCardSimple
                 statString="Total Unique Users"
