@@ -8,9 +8,13 @@ import {
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
+import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
+import { ACTIONS } from "../../types/constants.js";
 import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
 import { buildActionContextFor } from "../actionAutocomplete.js";
+
+const CARDS_PER_MESSAGE = 6;
+const MAX_MESSAGES = 6;
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -45,13 +49,16 @@ export const command = {
 
     const containers: ContainerBuilder[] = [];
 
-    // Listing names "as" the target yields built-ins plus the customs the target has rows for.
     const ctx = await buildActionContextFor({
       guildId: interaction.guildId,
       channelId: interaction.channelId,
       authorId: interaction.targetUser.id,
     });
-    for (const kind of await listSettableActionNames(ctx)) {
+    const kinds = [
+      ...Object.keys(ACTIONS),
+      ...(await listCustomNamesWithRows(interaction.targetUser.id)),
+    ];
+    for (const kind of kinds) {
       const stats = await getActionStatsContainer(
         await resolveStatsAction(kind, ctx),
         target,
@@ -60,9 +67,16 @@ export const command = {
       containers.push(stats);
     }
 
-    for (let i = 0; i < containers.length; i++) {
+    // Discord allows one reply plus five follow-ups, and a V2 message holds 40 components (5 per card).
+    const messages: ContainerBuilder[][] = [];
+    const capped = containers.slice(0, CARDS_PER_MESSAGE * MAX_MESSAGES);
+    for (let i = 0; i < capped.length; i += CARDS_PER_MESSAGE) {
+      messages.push(capped.slice(i, i + CARDS_PER_MESSAGE));
+    }
+
+    for (let i = 0; i < messages.length; i++) {
       const options = {
-        components: [containers[i]],
+        components: messages[i],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
       };
       if (i === 0) {

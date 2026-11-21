@@ -115,24 +115,28 @@ export async function resolveAction(
   return defs.length > 0 ? mergeDefinitions(name, defs, ctx) : null;
 }
 
-export async function listSettableActionNames(
-  ctx: ActionContext,
-): Promise<string[]> {
-  const available = (await resolveAvailableActions(ctx)).map((a) => a.name);
+/** Distinct custom action names a user has recorded rows for, sorted. */
+export async function listCustomNamesWithRows(userId: string): Promise<string[]> {
   const rows = await drizzleDb
     .selectDistinct({ actionType: actionData.actionType })
     .from(actionData)
     .where(
       and(
-        eq(actionData.userId, ctx.authorId),
+        eq(actionData.userId, userId),
         not(inArray(actionData.actionType, BUILT_IN_NAMES)),
       ),
     );
+  return rows.map((r) => r.actionType).sort();
+}
+
+export async function listSettableActionNames(
+  ctx: ActionContext,
+): Promise<string[]> {
+  const available = (await resolveAvailableActions(ctx)).map((a) => a.name);
   const known = new Set(available);
-  const extra = rows
-    .map((r) => r.actionType)
-    .filter((name) => !known.has(name))
-    .sort();
+  const extra = (await listCustomNamesWithRows(ctx.authorId)).filter(
+    (name) => !known.has(name),
+  );
   return [...available, ...extra];
 }
 

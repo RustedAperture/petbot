@@ -12,7 +12,10 @@ vi.mock("../../src/utilities/customActions/resolver.js", async (importOriginal) 
     resolveAvailableActions: vi.fn(async () =>
       (Object.keys(ACTIONS) as Array<keyof typeof ACTIONS>).map(original.resolveBuiltIn),
     ),
-    listSettableActionNames: vi.fn(async () => Object.keys(ACTIONS)),
+    listCustomNamesWithRows: vi.fn(async () => ["wave", "hop"]),
+    resolveAction: vi.fn(async (name: string) =>
+      name in ACTIONS ? original.resolveBuiltIn(name as keyof typeof ACTIONS) : null,
+    ),
   };
 });
 
@@ -40,9 +43,17 @@ describe("stats context menu", () => {
 
     await command.execute(interaction as any);
 
-    const expected = Object.keys(ACTIONS).length;
-    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(expected);
+    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(
+      Object.keys(ACTIONS).length + 2,
+    );
     expect(interaction.__calls.editedReplies.length).toBe(1);
-    expect(interaction.__calls.followUps.length).toBe(expected - 1);
+    expect(interaction.__calls.followUps.length).toBeLessThanOrEqual(5);
+    const sent = [
+      ...interaction.__calls.editedReplies,
+      ...interaction.__calls.followUps,
+    ];
+    expect(sent.flatMap((m: any) => m.components)).toHaveLength(
+      Object.keys(ACTIONS).length + 2,
+    );
   });
 });

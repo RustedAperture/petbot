@@ -41,10 +41,8 @@ export const command = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     const requested = interaction.options.getString("action");
-    if (
-      requested &&
-      !(await listBuiltInAndGuildNames(interaction.guildId)).includes(requested)
-    ) {
+    const names = await listBuiltInAndGuildNames(interaction.guildId);
+    if (requested && !names.includes(requested)) {
       await interaction.reply({
         content: UNAVAILABLE_MESSAGE,
         flags: MessageFlags.Ephemeral,
@@ -66,6 +64,7 @@ export const command = {
     const result = await getLeaderboard({
       locationId,
       actionType,
+      actionTypes: interaction.guildId ? names : undefined,
       limit: 10,
       discordClient: interaction.client,
     });

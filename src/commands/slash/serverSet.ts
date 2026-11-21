@@ -9,6 +9,8 @@ import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
 import { GuildSettings } from "../../types/guild.js";
 import { getBotData, upsertBotData } from "../../db/functions.js";
+import { checkImage } from "../../utilities/check_image.js";
+import { normalizeUrl } from "../../utilities/normalizeUrl.js";
 import { setCustomActionImage } from "../../utilities/customActions/store.js";
 import { listBuiltInAndGuildNames, respondWithActions } from "../actionAutocomplete.js";
 import { UNAVAILABLE_MESSAGE } from "./action.js";
@@ -39,7 +41,7 @@ export const command = {
   },
   async execute(interaction: any) {
     const action = interaction.options.getString("action");
-    const url = interaction.options.getString("url");
+    let url = interaction.options.getString("url");
 
     if (!action || !url) {
       return interaction.reply({
@@ -65,6 +67,21 @@ export const command = {
     }
 
     const isBuiltIn = Object.hasOwn(ACTIONS, action);
+    if (!isBuiltIn) {
+      url = normalizeUrl(url);
+      if (!(await checkImage(url))) {
+        return interaction.reply({
+          content: "Your URL is invalid, please try again",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+      if (!(await setCustomActionImage("guild", guildId, action, url))) {
+        return interaction.reply({
+          content: UNAVAILABLE_MESSAGE,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    }
     const actionConfig = isBuiltIn
       ? ACTIONS[action as keyof typeof ACTIONS]
       : null;
@@ -112,8 +129,6 @@ export const command = {
       await upsertBotData(guildId, {
         defaultImages: map,
       });
-    } else {
-      await setCustomActionImage("guild", guildId, action, url);
     }
 
     const noun = actionConfig?.noun ?? action;
