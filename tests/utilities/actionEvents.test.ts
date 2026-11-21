@@ -182,7 +182,9 @@ describe("recordActionEvent", () => {
     stop();
     expect(row.performerHash).toBe(hashUserId("111"));
     expect(row.targetHash).toBe(hashUserId("222"));
-    expect(JSON.stringify(row)).not.toContain("111");
+    // Field values, not the serialised row: a timestamp like ".111Z" would match a substring check.
+    expect(Object.values(row)).not.toContain("111");
+    expect(Object.values(row)).not.toContain("222");
     expect(seen).toEqual([row]);
     expect(actionEventListenerCount()).toBe(0);
   });
