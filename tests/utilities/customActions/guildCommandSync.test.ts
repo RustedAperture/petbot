@@ -1,16 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "discord.js";
 
-const { logger, listCustomActions, listAllCustomActions } = vi.hoisted(() => ({
+const { logger, listCustomActions } = vi.hoisted(() => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
   listCustomActions: vi.fn(),
-  listAllCustomActions: vi.fn(),
 }));
 
 vi.mock("../../../src/logger.js", () => ({ default: logger }));
 vi.mock("../../../src/utilities/customActions/store.js", () => ({
   listCustomActions,
-  listAllCustomActions,
 }));
 
 import {
@@ -26,7 +24,7 @@ const action = (name: string, ownerId = "g1") =>
 function makeClient(guildIds: string[], put = vi.fn().mockResolvedValue([])) {
   return {
     client: {
-      guilds: { cache: new Set(guildIds) },
+      guilds: { cache: new Map(guildIds.map((id) => [id, {}])) },
       application: { id: "app1" },
       user: { id: "user1" },
       rest: { put },
@@ -97,16 +95,67 @@ describe("syncGuildCommands", () => {
 });
 
 describe("syncAllGuildCommands", () => {
-  it("syncs each distinct guild with guild-scoped actions once", async () => {
-    listAllCustomActions.mockResolvedValue([
-      action("a", "g1"),
-      action("b", "g1"),
-      action("c", "g2"),
-    ]);
-    listCustomActions.mockResolvedValue([]);
+  it("overwrites every cached guild, using an empty list when it has no actions", async () => {
+    listCustomActions.mockImplementation(async (_scope, id) =>
+      id === "g1" ? [action("boop")] : [],
+    );
     const { client, put } = makeClient(["g1", "g2"]);
     await syncAllGuildCommands(client);
-    expect(listAllCustomActions).toHaveBeenCalledWith({ scope: "guild" });
     expect(put).toHaveBeenCalledTimes(2);
+    expect(put).toHaveBeenCalledWith("/applications/app1/guilds/g1/commands", {
+      body: [expect.objectContaining({ name: "boop" })],
+    });
+    expect(put).toHaveBeenCalledWith("/applications/app1/guilds/g2/commands", {
+      body: [],
+    });
+  });
+
+  it("runs guild syncs one at a time", async () => {
+    listCustomActions.mockResolvedValue([]);
+    let releaseFirst!: () => void;
+    const put = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (releaseFirst = resolve)),
+      )
+      .mockResolvedValue([]);
+    const { client } = makeClient(["g1", "g2"], put);
+    const done = syncAllGuildCommands(client);
+    await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(put).toHaveBeenCalledTimes(1);
+    releaseFirst();
+    await done;
+    expect(put.mock.calls.map((c) => c[0])).toEqual([
+      "/applications/app1/guilds/g1/commands",
+      "/applications/app1/guilds/g2/commands",
+    ]);
+  });
+});
+
+describe("overlapping syncs for one guild", () => {
+  it("reads current state when each queued sync gets its turn", async () => {
+    listCustomActions
+      .mockResolvedValueOnce([action("boop")])
+      .mockResolvedValueOnce([action("boop"), action("hug")]);
+    let releaseFirst!: () => void;
+    const put = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => (releaseFirst = resolve)),
+      )
+      .mockResolvedValue([]);
+    const { client } = makeClient(["g1"], put);
+    const first = syncGuildCommands(client, "g1");
+    const second = syncGuildCommands(client, "g1");
+    await vi.waitFor(() => expect(put).toHaveBeenCalledTimes(1));
+    expect(listCustomActions).toHaveBeenCalledTimes(1);
+    releaseFirst();
+    await Promise.all([first, second]);
+    expect(put).toHaveBeenCalledTimes(2);
+    expect(put.mock.calls[1][1].body.map((b: { name: string }) => b.name)).toEqual([
+      "boop",
+      "hug",
+    ]);
   });
 });

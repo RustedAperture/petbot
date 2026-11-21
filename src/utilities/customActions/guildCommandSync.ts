@@ -6,7 +6,6 @@ import {
 } from "discord.js";
 import logger from "../../logger.js";
 import {
-  listAllCustomActions,
   listCustomActions,
   type CustomAction,
 } from "./store.js";
@@ -28,11 +27,9 @@ export function buildGuildCommandBodies(
   );
 }
 
-/** Overwrites the guild's commands with its current custom actions; returns false on any failure. */
-export async function syncGuildCommands(
-  client: Client,
-  guildId: string,
-): Promise<boolean> {
+const guildSyncTails = new Map<string, Promise<unknown>>();
+
+async function runGuildSync(client: Client, guildId: string): Promise<boolean> {
   if (!client.guilds.cache.has(guildId)) {
     return false;
   }
@@ -53,11 +50,28 @@ export async function syncGuildCommands(
   }
 }
 
-/** Syncs every guild that has custom actions, one at a time to respect rate limits. */
+/**
+ * Overwrites the guild's commands with its current custom actions; returns false on any failure.
+ * Syncs for one guild are queued so each reads the database only when its turn comes.
+ */
+export function syncGuildCommands(
+  client: Client,
+  guildId: string,
+): Promise<boolean> {
+  const previous = guildSyncTails.get(guildId) ?? Promise.resolve();
+  const run = previous.then(() => runGuildSync(client, guildId));
+  guildSyncTails.set(guildId, run);
+  void run.then(() => {
+    if (guildSyncTails.get(guildId) === run) {
+      guildSyncTails.delete(guildId);
+    }
+  });
+  return run;
+}
+
+/** Reconciles every cached guild, one at a time to respect rate limits; guilds without actions get an empty overwrite so failed clears are retried. */
 export async function syncAllGuildCommands(client: Client): Promise<void> {
-  const actions = await listAllCustomActions({ scope: "guild" });
-  const guildIds = [...new Set(actions.map((a) => a.ownerId))];
-  for (const guildId of guildIds) {
+  for (const guildId of [...client.guilds.cache.keys()]) {
     await syncGuildCommands(client, guildId);
   }
 }
