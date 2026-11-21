@@ -88,6 +88,43 @@ describe("upsertCustomAction", () => {
     ).toHaveProperty("action");
   });
 
+  it("keeps the original createdBy when another admin edits", async () => {
+    const guild = { scope: "guild" as const, ownerId: "g1" };
+    await upsertCustomAction(input({ ...guild, createdBy: "admin1" }));
+    const edited = await upsertCustomAction(
+      input({ ...guild, createdBy: "admin2", phrase: "bopped" }),
+    );
+    if ("error" in edited) {
+      throw new Error("unexpected");
+    }
+    expect(edited.action.createdBy).toBe("admin1");
+    expect(edited.action.phrase).toBe("bopped");
+  });
+
+  it("never exceeds the limit under concurrent inserts", async () => {
+    for (let i = 0; i < CUSTOM_ACTION_LIMIT - 1; i++) {
+      await upsertCustomAction(input({ name: "a".repeat(i + 1) }));
+    }
+    const results = await Promise.all([
+      upsertCustomAction(input({ name: "x" })),
+      upsertCustomAction(input({ name: "y" })),
+    ]);
+    expect(results.filter((r) => "action" in r)).toHaveLength(1);
+    expect(results.filter((r) => "error" in r)).toHaveLength(1);
+    expect(await listCustomActions("user", "u1")).toHaveLength(
+      CUSTOM_ACTION_LIMIT,
+    );
+  });
+
+  it("resolves concurrent upserts of the same new name", async () => {
+    const results = await Promise.all([
+      upsertCustomAction(input({ phrase: "one" })),
+      upsertCustomAction(input({ phrase: "two" })),
+    ]);
+    expect(results.every((r) => "action" in r)).toBe(true);
+    expect(await listCustomActions("user", "u1")).toHaveLength(1);
+  });
+
   it("rejects a banned creator", async () => {
     await banCreator("u1");
     expect(await upsertCustomAction(input())).toEqual({
@@ -165,8 +202,13 @@ describe("deleteUserCustomActionData", () => {
     await upsertCustomAction(
       input({ scope: "guild", ownerId: "g1", name: "wave" }),
     );
+    await upsertCustomAction(
+      input({ ownerId: "u2", name: "poke", createdBy: "u1" }),
+    );
     await banCreator("u1");
     await deleteUserCustomActionData("u1");
+    const other = await listCustomActions("user", "u2");
+    expect(other[0].createdBy).toBe("u1");
     expect(await listCustomActions("user", "u1")).toEqual([]);
     const guild = await testDb.current.db
       .select()
