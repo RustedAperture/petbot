@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TestDb } from "../helpers/testDb.js";
 import { mockInteraction } from "../helpers/mockInteraction.js";
-import { actionData, customActions } from "../../src/db/schema.js";
+import { actionData, customActionBans, customActions } from "../../src/db/schema.js";
 import { eq } from "drizzle-orm";
 
 vi.mock("../../src/logger.js", () => ({
@@ -88,6 +88,7 @@ beforeEach(async () => {
   store.isImageUpdateLost = false;
   (checkImage as any).mockResolvedValue(true);
   await testDb.current.db.delete(customActions);
+  await testDb.current.db.delete(customActionBans);
   await testDb.current.db.delete(actionData);
 });
 
@@ -205,6 +206,24 @@ describe("/server-set", () => {
 
     expect(interaction.__calls.editedReplies).toEqual([
       { content: "That action isn't available here." },
+    ]);
+  });
+
+  it("refuses a banned creator before writing the custom action image", async () => {
+    await seed("guild", "guild-1", "boop");
+    await testDb.current.db
+      .insert(customActionBans)
+      .values({ userId: "user-1", createdAt: NOW });
+
+    const interaction = mockInteraction({
+      options: { action: "boop", url: "https://example.com/boop.png" },
+    });
+    await serverSetCommand.execute(interaction as any);
+
+    const [row] = await testDb.current.db.select().from(customActions);
+    expect(row.image).toBeNull();
+    expect(interaction.__calls.editedReplies).toEqual([
+      { content: "You can't create custom actions." },
     ]);
   });
 
