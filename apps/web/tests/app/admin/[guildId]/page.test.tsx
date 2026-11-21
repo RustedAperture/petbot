@@ -72,6 +72,11 @@ vi.mock("@/components/custom-actions-manager", () => ({
   default: () => createElement("div", { "data-testid": "custom-actions" }),
 }));
 
+let botMembershipState = { isBotMember: true, isLoading: false };
+vi.mock("@/hooks/use-bot-membership", () => ({
+  useBotMembership: () => botMembershipState,
+}));
+
 vi.mock("@/hooks/use-guild-channels", () => ({
   useGuildChannels: () => guildChannelsState,
 }));
@@ -228,6 +233,7 @@ describe("Admin guild page", () => {
       });
 
     params = { guildId: "guild1" };
+    botMembershipState = { isBotMember: true, isLoading: false };
     sessionState = {
       session: {
         user: { id: "user1" },
@@ -292,6 +298,32 @@ describe("Admin guild page", () => {
     expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
     expect(container.querySelector("form")).toBeNull();
     expect(container.textContent).not.toContain("Guild ID");
+    unmount();
+  });
+
+  it("shows an add-PetBot note instead of the manager when the bot is absent", () => {
+    botMembershipState = { isBotMember: false, isLoading: false };
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.textContent).toContain(
+      "Add PetBot to this server to create server actions.",
+    );
+    expect(container.querySelector("[data-testid=custom-actions]")).toBeNull();
+    unmount();
+  });
+
+  it("shows neither the manager nor the note while membership loads", () => {
+    botMembershipState = { isBotMember: false, isLoading: true };
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.querySelector("[data-testid=custom-actions]")).toBeNull();
+    expect(container.textContent).not.toContain("Add PetBot");
     unmount();
   });
 

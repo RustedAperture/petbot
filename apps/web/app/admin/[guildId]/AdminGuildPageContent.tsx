@@ -3,6 +3,8 @@
 import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { useGuildSettings } from "@/hooks/use-guild-settings";
+import { useBotMembership } from "@/hooks/use-bot-membership";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getDiscordGuildIconUrl, isAdminOrOwnerGuild } from "@/lib/utils";
 import CustomActionsManager from "@/components/custom-actions-manager";
 import {
@@ -20,6 +22,9 @@ export default function AdminGuildPageContent({
   guildId: string;
 }) {
   const { session, loading: sessionLoading } = useSession();
+  const { isBotMember, isLoading: isMembershipLoading } = useBotMembership(
+    guildId || null,
+  );
   const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
   // Manage Server users reach the page for custom actions only; the settings
   // endpoints stay restricted to owners and Administrators.
@@ -76,7 +81,7 @@ export default function AdminGuildPageContent({
           guildIconUrl={guildIconUrl}
         />
       )}
-      {!pageLoading && (
+      {!pageLoading && !isMembershipLoading && (
         <Card>
           <CardHeader>
             <CardTitle>Server actions</CardTitle>
@@ -86,7 +91,15 @@ export default function AdminGuildPageContent({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CustomActionsManager scope={{ kind: "guild", guildId }} />
+            {isBotMember ? (
+              <CustomActionsManager scope={{ kind: "guild", guildId }} />
+            ) : (
+              <Alert>
+                <AlertDescription>
+                  Add PetBot to this server to create server actions.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
