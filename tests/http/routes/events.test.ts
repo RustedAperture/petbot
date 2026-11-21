@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import express from "express";
 import supertest from "supertest";
 import type { AddressInfo } from "node:net";
 import http from "node:http";
@@ -18,7 +19,9 @@ vi.mock("../../../src/utilities/actionEvents.js", async (importOriginal) => ({
 }));
 
 import { createApp } from "../../../src/http/expressServer.js";
-import { formatSseEvent } from "../../../src/http/routes/events.js";
+import eventsRouter, {
+  formatSseEvent,
+} from "../../../src/http/routes/events.js";
 import {
   publishActionEvent,
   actionEventListenerCount,
@@ -169,6 +172,43 @@ describe("/api/events", () => {
     }
 
     await vi.waitFor(() => expect(actionEventListenerCount()).toBe(0));
+  });
+
+  it("stream stops its producers and never writes again once a write is backpressured", async () => {
+    const writeSpy = vi.fn(() => false);
+    const app = express();
+    app.use((_req, res, next) => {
+      res.write = writeSpy as unknown as typeof res.write;
+      next();
+    });
+    app.use("/api/events", eventsRouter);
+    server = app.listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+
+    const req = http.get({
+      port,
+      host: "127.0.0.1",
+      path: "/api/events/stream",
+    });
+    req.on("error", () => {});
+    const timeout = setTimeout(() => req.destroy(), 5000);
+
+    try {
+      await new Promise((resolve) => req.once("response", resolve));
+      expect(actionEventListenerCount()).toBe(1);
+
+      expect(() => {
+        publishActionEvent(rowAt(31, "1"));
+        publishActionEvent(rowAt(32, "1"));
+      }).not.toThrow();
+
+      expect(actionEventListenerCount()).toBe(0);
+      expect(writeSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      clearTimeout(timeout);
+      req.destroy();
+    }
   });
 
   it("stream rejects requests without the internal secret when one is set", async () => {

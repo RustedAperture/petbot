@@ -72,27 +72,42 @@ router.get("/stream", (req: Request, res: Response) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  // A reader that stops draining would grow the buffer without bound; end the
-  // response so cleanup runs and EventSource reconnects.
+  let isStopped = false;
+  let unsubscribe = () => {};
+  let pingTimer: NodeJS.Timeout | undefined;
+
+  const stop = () => {
+    if (isStopped) {
+      return;
+    }
+    isStopped = true;
+    unsubscribe();
+    clearInterval(pingTimer);
+  };
+
+  // A reader that stops draining would grow the buffer without bound. Stop the
+  // producers and destroy now: a graceful end() would stay queued behind the
+  // unread data and leave them running.
   const write = (chunk: string) => {
+    if (isStopped) {
+      return;
+    }
     if (!res.write(chunk)) {
-      res.end();
+      stop();
+      res.destroy();
     }
   };
 
-  const unsubscribe = subscribeActionEvents((row) => {
+  unsubscribe = subscribeActionEvents((row) => {
     if (matchesActionEventFilter(row, filter)) {
       write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
     }
   });
-  const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
+  pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
 
   // Tied to the response: a GET body consumed by express.json fires the
   // request's "close" while the stream is still open.
-  res.once("close", () => {
-    unsubscribe();
-    clearInterval(pingTimer);
-  });
+  res.once("close", stop);
 });
 
 export default router;
