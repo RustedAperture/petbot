@@ -1,17 +1,18 @@
 version: 2
 
-updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+multi-ecosystem-groups:
+  weekly-dependencies:
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
       timezone: "America/Toronto"
-    groups:
-      npm:
-        patterns:
-          - "*"
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
     ignore:
       # typescript-eslint's peer range caps TypeScript below 7, so a TS 7 bump breaks npm ci.
       - dependency-name: "typescript"
@@ -19,24 +20,10 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/Toronto"
-    groups:
-      docker:
-        patterns:
-          - "*"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/Toronto"
-    groups:
-      github-actions:
-        patterns:
-          - "*"
+    patterns: ["*"]
+    multi-ecosystem-group: "weekly-dependencies"
