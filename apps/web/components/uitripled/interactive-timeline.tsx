@@ -54,7 +54,7 @@ function TimelineItemComponent({
           <span className="text-xs text-muted-foreground">{item.date}</span>
         )}
         <h3 className="mt-1 text-2xl font-semibold">{item.title}</h3>
-        <div className="mt-1 text-sm text-muted-foreground prose prose-sm dark:prose-invert">
+        <div className="mt-1 max-w-none text-sm text-muted-foreground prose prose-sm dark:prose-invert">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {item.description}
           </ReactMarkdown>
@@ -80,7 +80,7 @@ export function InteractiveTimeline({
   const containerInView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
-    <div ref={ref} className="relative w-full max-w-2xl">
+    <div ref={ref} className="relative w-full">
       {/* Timeline line */}
       <motion.div
         initial={{ scaleY: 0 }}
