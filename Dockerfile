@@ -14,18 +14,8 @@ RUN mkdir -p /home/node/.npm-global && npm install -g npm@11.16.0
 COPY package*.json ./
 COPY apps/web/package*.json apps/web/
 
-# Install build deps for native modules (sqlite3). Add `python-is-python3` and `pkg-config` so node-gyp works reliably
-RUN apt-get update && \
-    apt-get install -y build-essential python3 python-is-python3 pkg-config libsqlite3-dev --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install root dependencies (using BuildKit cache mounts when available).
-# Rebuild `sqlite3` only when cross-building (BUILDPLATFORM != TARGETPLATFORM) so same-arch builds can use prebuilt binaries.
-ARG FORCE_SQLITE_REBUILD=false
-
-# Cache mounts have stable ids so BuildKit/GHA can persist them across runs.
+# No compiler toolchain needed: scripts are skipped and @libsql ships prebuilt binaries.
 RUN --mount=type=cache,id=npm,target=/root/.npm \
-    --mount=type=cache,id=node-gyp,target=/root/.cache/node-gyp \
     npm ci --no-audit --no-fund --ignore-scripts
 
 # Copy the rest of the source (server build only in this stage)
@@ -69,16 +59,17 @@ FROM node:26-trixie-slim AS bot
 ENV NODE_ENV=production
 WORKDIR /home/node/app
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/drizzle ./drizzle
-COPY entrypoint-bot.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh && \
-    addgroup --system app && \
+RUN addgroup --system app && \
     adduser --system --ingroup app app && \
     chmod 0755 /home/node && \
-    chown -R app:app /home/node/app
+    chown app:app /home/node/app
+
+# --chown on COPY avoids a `chown -R` layer that duplicates all of node_modules
+COPY --from=builder --chown=app:app /app/dist ./dist
+COPY --from=builder --chown=app:app /app/node_modules ./node_modules
+COPY --from=builder --chown=app:app /app/package.json ./package.json
+COPY --from=builder --chown=app:app /app/drizzle ./drizzle
+COPY --chmod=0755 entrypoint-bot.sh /usr/local/bin/entrypoint.sh
 USER app
 VOLUME ["/home/node/app/data"]
 EXPOSE 3001
@@ -91,18 +82,18 @@ ENV NODE_ENV=production
 WORKDIR /home/node/app
 
 # Web needs its own node_modules and the built .next output — copy from web-builder
-COPY --from=web-builder /app/apps/web/.next ./apps/web/.next
-COPY --from=web-builder /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=web-builder /app/apps/web/package.json ./apps/web/package.json
-COPY --from=web-builder /app/apps/web/public ./apps/web/public
-COPY changelog.md ./changelog.md
-COPY privacy.md ./privacy.md
-COPY terms.md ./terms.md
-
 RUN addgroup --system app && \
     adduser --system --ingroup app app && \
     chmod 0755 /home/node && \
-    chown -R app:app /home/node/app
+    chown app:app /home/node/app
+
+COPY --from=web-builder --chown=app:app /app/apps/web/.next ./apps/web/.next
+COPY --from=web-builder --chown=app:app /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=web-builder --chown=app:app /app/apps/web/package.json ./apps/web/package.json
+COPY --from=web-builder --chown=app:app /app/apps/web/public ./apps/web/public
+COPY --chown=app:app changelog.md ./changelog.md
+COPY --chown=app:app privacy.md ./privacy.md
+COPY --chown=app:app terms.md ./terms.md
 USER app
 EXPOSE 3000
 WORKDIR /home/node/app/apps/web

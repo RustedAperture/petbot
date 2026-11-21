@@ -11,20 +11,97 @@ permissions:
   packages: write
   id-token: write
 
+concurrency:
+  group: publish-ghcr-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-bot:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    concurrency:
-      group: publish-ghcr-${{ github.ref }}-bot
-      cancel-in-progress: true
+  # Each arch builds on its own native runner (no QEMU), pushed by digest only.
+  # `merge` then stitches the digests into one multi-arch tag per image.
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        target: [bot, web]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4.4.0
+      - name: Set image name
+        # GHCR image names must be lowercase.
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-${{ matrix.target }}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest — ${{ matrix.target }} (${{ matrix.arch }})
+        id: build
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          # One scope per target+arch, otherwise each build's export overwrites the others' cache.
+          cache-from: type=gha,scope=${{ matrix.target }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}-${{ matrix.arch }}
+
+      - name: Smoke test — runtime files
+        env:
+          IMAGE_REF: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+        run: |
+          case "${{ matrix.target }}" in
+            bot) check='test -r /home/node/app/dist/src/index.js' ;;
+            web) check='test -r /home/node/app/apps/web/package.json && test -r /home/node/app/apps/web/.next/BUILD_ID' ;;
+          esac
+          docker run --rm --pull always --entrypoint sh "$IMAGE_REF" -c "$check"
+
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: digests-${{ matrix.target }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: build
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        target: [bot, web]
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8.0.2
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-${{ matrix.target }}-*
+          merge-multiple: true
+
+      - name: Set image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-${{ matrix.target }}" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4.4.1
@@ -37,10 +114,10 @@ jobs:
           password: ${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags)
-        id: meta-bot
+        id: meta
         uses: docker/metadata-action@v6.2.0
         with:
-          images: ghcr.io/${{ github.repository }}-bot
+          images: ${{ env.IMAGE }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -48,107 +125,18 @@ jobs:
             type=semver,pattern=v?(.+)
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push — bot (multi-arch)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          target: bot
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta-bot.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test — bot runtime files
+      - name: Create multi-arch manifest and push
+        working-directory: ${{ runner.temp }}/digests
         run: |
-          docker run --rm --pull always \
-            --platform linux/amd64 \
-            --entrypoint sh \
-            "${{ fromJSON(steps.meta-bot.outputs.json).tags[0] }}" \
-            -c 'test -r /home/node/app/dist/src/index.js'
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "$IMAGE@sha256:%s " *)
 
-  build-web:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    concurrency:
-      group: publish-ghcr-${{ github.ref }}-web
-      cancel-in-progress: true
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4.4.0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.4.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version: "24"
-          cache: "npm"
-
-      - name: Setup npm
-        run: npm install -g npm@11.16.0
-
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Restore Next.js build cache
-        uses: actions/cache@v6.1.0
-        with:
-          path: apps/web/.next
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json', 'apps/web/package.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-
-
-      - name: Prebuild frontend (apps/web)
-        run: npm --prefix apps/web run build
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4.8.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags)
-        id: meta-web
-        uses: docker/metadata-action@v6.2.0
-        with:
-          images: ghcr.io/${{ github.repository }}-web
-          tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=sha
-            type=semver,pattern=v?(.+)
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push — web (multi-arch)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          target: web
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta-web.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test — web runtime files
-        run: |
-          docker run --rm --pull always \
-            --platform linux/amd64 \
-            --entrypoint sh \
-            "${{ fromJSON(steps.meta-web.outputs.json).tags[0] }}" \
-            -c 'test -r /home/node/app/apps/web/package.json && test -r /home/node/app/apps/web/.next/BUILD_ID'
+      - name: Inspect image
+        run: docker buildx imagetools inspect "${{ fromJSON(steps.meta.outputs.json).tags[0] }}"
 
   create-release:
-    needs: [build-bot, build-web]
+    needs: merge
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
