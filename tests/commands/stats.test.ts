@@ -64,7 +64,7 @@ describe("/stats command", () => {
 });
 
 describe("/stats acknowledgement", () => {
-  it("defers before resolving and answers an unavailable action privately", async () => {
+  it("defers ephemerally without the components flag, then answers an unavailable action", async () => {
     const order: string[] = [];
     const { listSettableActionNames } = await import(
       "../../src/utilities/customActions/resolver.js"
@@ -83,12 +83,11 @@ describe("/stats acknowledgement", () => {
     await command.execute(interaction as any);
 
     expect(order).toEqual(["defer", "lookup"]);
-    expect(interaction.__calls.deletedReplies).toBe(1);
-    expect(interaction.__calls.followUps).toEqual([
-      {
-        content: "That action isn't available here.",
-        flags: MessageFlags.Ephemeral,
-      },
+    expect(interaction.deferReply).toHaveBeenCalledWith({
+      flags: MessageFlags.Ephemeral,
+    });
+    expect(interaction.__calls.editedReplies).toEqual([
+      { content: "That action isn't available here." },
     ]);
     expect(getActionStatsContainer as any).not.toHaveBeenCalled();
   });

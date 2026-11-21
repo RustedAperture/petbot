@@ -17,23 +17,17 @@ vi.mock("../../src/utilities/check_user.js", () => ({
 
 const { testDb, store } = vi.hoisted(() => ({
   testDb: { current: null as unknown as TestDb },
-  store: { forceGuildListing: false, onList: null as null | (() => void) },
+  store: { forceGuildListing: false },
 }));
 
 vi.mock("../../src/utilities/customActions/store.js", async (importOriginal) => {
   const original = await importOriginal<typeof import("../../src/utilities/customActions/store.js")>();
   return {
     ...original,
-    listCustomActionsForOwners: async (...args: Parameters<typeof original.listCustomActionsForOwners>) => {
-      store.onList?.();
-      return original.listCustomActionsForOwners(...args);
-    },
-    listCustomActions: async (scope: "guild" | "user", ownerId: string) => {
-      store.onList?.();
-      return store.forceGuildListing && scope === "guild"
+    listCustomActions: async (scope: "guild" | "user", ownerId: string) =>
+      store.forceGuildListing && scope === "guild"
         ? [{ name: "boop", scope, ownerId }]
-        : original.listCustomActions(scope, ownerId);
-    },
+        : original.listCustomActions(scope, ownerId),
   };
 });
 
@@ -98,18 +92,9 @@ function buildInteraction(opts: {
   return interaction;
 }
 
-function expectPrivateUnavailable(interaction: any) {
-  expect(interaction.__calls.deletedReplies).toBe(1);
-  expect(interaction.__calls.replies).toEqual([]);
-  expect(interaction.__calls.followUps).toEqual([
-    { content: "That action isn't available here.", flags: MessageFlags.Ephemeral },
-  ]);
-}
-
 beforeEach(async () => {
   vi.clearAllMocks();
   store.forceGuildListing = false;
-  store.onList = null;
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(botData);
   (performAction as any).mockResolvedValue("container");
@@ -193,41 +178,51 @@ describe("/action execute", () => {
     expect(interaction.__calls.editedReplies).toHaveLength(1);
   });
 
-  it("rejects a removed action ephemerally without performing", async () => {
-    const interaction = buildInteraction({ actionName: "boop" });
-
-    await command.execute(interaction as any);
-
-    expect(performAction).not.toHaveBeenCalled();
-    expectPrivateUnavailable(interaction);
-  });
-
-  it("defers publicly before any store lookup", async () => {
+  it("defers publicly and then performs an available action", async () => {
     await seed("guild", "guild-1", "boop");
     const order: string[] = [];
-    store.onList = () => order.push("list");
     const interaction = buildInteraction({ actionName: "boop" });
     interaction.deferReply = vi.fn(async () => {
       order.push("defer");
     });
+    (performAction as any).mockImplementation(async () => {
+      order.push("perform");
+      return "container";
+    });
 
     await command.execute(interaction as any);
 
-    expect(order[0]).toBe("defer");
-    expect(order).toContain("list");
+    expect(order).toEqual(["defer", "perform"]);
     expect(interaction.deferReply).toHaveBeenCalledWith();
   });
 
-  it("deletes the reply and follows up privately when the target opted out", async () => {
+  it("replies once ephemerally, with no defer, when the target opted out", async () => {
     (isOptedOut as any).mockResolvedValueOnce(true);
     await seed("guild", "guild-1", "boop");
     const interaction = buildInteraction({ actionName: "boop" });
+    interaction.deferReply = vi.fn();
 
     await command.execute(interaction as any);
 
+    expect(interaction.deferReply).not.toHaveBeenCalled();
     expect(performAction).not.toHaveBeenCalled();
-    expect(interaction.__calls.deletedReplies).toBe(1);
-    expect(interaction.__calls.followUps[0].flags).toBe(MessageFlags.Ephemeral);
+    expect(interaction.__calls.replies).toHaveLength(1);
+    expect(interaction.__calls.replies[0].flags).toBe(MessageFlags.Ephemeral);
+  });
+
+  it("rejects a removed action ephemerally without performing", async () => {
+    const interaction = buildInteraction({ actionName: "boop" });
+    interaction.deferReply = vi.fn();
+
+    await command.execute(interaction as any);
+
+    expect(interaction.deferReply).not.toHaveBeenCalled();
+
+    expect(performAction).not.toHaveBeenCalled();
+    expect(interaction.__calls.replies[0]).toMatchObject({
+      content: "That action isn't available here.",
+    });
+    expect(interaction.__calls.replies[0].flags).toBe(MessageFlags.Ephemeral);
   });
 
   it("rejects a personal-only action in a restricted guild", async () => {
@@ -243,7 +238,10 @@ describe("/action execute", () => {
     await command.execute(interaction as any);
 
     expect(performAction).not.toHaveBeenCalled();
-    expectPrivateUnavailable(interaction);
+    expect(interaction.__calls.replies[0]).toEqual({
+      content: "That action isn't available here.",
+      flags: MessageFlags.Ephemeral,
+    });
   });
 });
 
@@ -264,31 +262,20 @@ describe("executeCustomGuildCommand", () => {
     expect(await executeCustomGuildCommand(interaction as any)).toBe(true);
 
     expect(performAction).not.toHaveBeenCalled();
-    expectPrivateUnavailable(interaction);
-  });
-
-  it("defers before looking up the guild's actions and answers privately when none match", async () => {
-    await seed("user", "user-1", "boop");
-    const order: string[] = [];
-    store.onList = () => order.push("list");
-    const interaction = buildInteraction({ commandName: "boop" });
-    interaction.deferReply = vi.fn(async () => {
-      order.push("defer");
+    expect(interaction.__calls.replies[0]).toEqual({
+      content: "That action isn't available here.",
+      flags: MessageFlags.Ephemeral,
     });
-
-    expect(await executeCustomGuildCommand(interaction as any)).toBe(true);
-
-    expect(order[0]).toBe("defer");
-    expect(performAction).not.toHaveBeenCalled();
-    expectPrivateUnavailable(interaction);
   });
 
-  it("returns false without deferring when there is no guild", async () => {
-    const interaction = buildInteraction({ commandName: "boop" });
-    interaction.guildId = null;
-    interaction.deferReply = vi.fn();
+  it.each([
+    ["no guild action has that name", "boop", "guild-1"],
+    ["there is no guild", "boop", null],
+  ])("returns false when %s", async (_label, commandName, guildId) => {
+    await seed("user", "user-1", "boop");
+    const interaction = buildInteraction({ commandName, guildId });
 
     expect(await executeCustomGuildCommand(interaction as any)).toBe(false);
-    expect(interaction.deferReply).not.toHaveBeenCalled();
+    expect(performAction).not.toHaveBeenCalled();
   });
 });

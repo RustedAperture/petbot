@@ -10,13 +10,12 @@ const ALL_OPTED_MSG =
  *
  * The method deduplicates by user ID before hitting the database, then
  * performs a parallel `isOptedOut` check.  It will automatically send an
- * ephemeral reply (or call `onAllOptedOut` with the message) and return `allOptedOut:true` if every unique user is
+ * ephemeral reply and return `allOptedOut:true` if every unique user is
  * opted out.
  */
 export async function checkOptOuts(
   interaction: any,
   users: Array<User | null | undefined>,
-  onAllOptedOut?: (message: string) => Promise<unknown>,
 ): Promise<{ optedOutIds: Set<string>; allOptedOut: boolean }> {
   const unique = [
     ...new Map(
@@ -31,14 +30,10 @@ export async function checkOptOuts(
 
   const allOptedOut = optedOutIds.size === unique.length && unique.length > 0;
   if (allOptedOut) {
-    if (onAllOptedOut) {
-      await onAllOptedOut(ALL_OPTED_MSG);
-    } else {
-      await interaction.reply({
-        content: ALL_OPTED_MSG,
-        flags: MessageFlags.Ephemeral,
-      });
-    }
+    await interaction.reply({
+      content: ALL_OPTED_MSG,
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
   return { optedOutIds, allOptedOut };

@@ -4,18 +4,16 @@ import { resolveAction } from "../utilities/customActions/resolver.js";
 import { buildActionContext } from "./actionAutocomplete.js";
 import { executeResolvedAction, replyUnavailable } from "./slash/action.js";
 
-/** Runs a guild's native custom command; defers before any lookup, so it answers every guild interaction itself and returns false only outside a guild. */
+/** Runs a guild's native custom command; returns false when the guild has no action with that name. */
 export async function executeCustomGuildCommand(
   interaction: ChatInputCommandInteraction,
 ): Promise<boolean> {
   if (!interaction.guildId) {
     return false;
   }
-  await interaction.deferReply();
   const guildActions = await listCustomActions("guild", interaction.guildId);
   if (!guildActions.some((a) => a.name === interaction.commandName)) {
-    await replyUnavailable(interaction);
-    return true;
+    return false;
   }
   const ctx = await buildActionContext(interaction);
   const action = await resolveAction(interaction.commandName, ctx);

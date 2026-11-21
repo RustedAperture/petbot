@@ -15,36 +15,27 @@ import { autocompleteActions, buildActionContext } from "../actionAutocomplete.j
 
 export const UNAVAILABLE_MESSAGE = "That action isn't available here.";
 
-/** Replaces an already-deferred public reply with a private message. */
-export async function replyPrivately(
-  interaction: ChatInputCommandInteraction,
-  content: string,
-): Promise<void> {
-  await interaction.deleteReply();
-  await interaction.followUp({ content, flags: MessageFlags.Ephemeral });
-}
-
 export async function replyUnavailable(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-  await replyPrivately(interaction, UNAVAILABLE_MESSAGE);
+  await interaction.reply({
+    content: UNAVAILABLE_MESSAGE,
+    flags: MessageFlags.Ephemeral,
+  });
 }
 
-/** Runs an already-resolved action against the `target` option; the caller must have deferred the reply. Shared by `/action` and native guild commands. */
+/** Runs an already-resolved action against the `target` option; shared by `/action` and native guild commands. */
 export async function executeResolvedAction(
   interaction: ChatInputCommandInteraction,
   action: ResolvedAction,
   ctx: ActionContext,
 ): Promise<void> {
   const rawTarget = interaction.options.getUser("target", true);
-  const { optedOutIds, allOptedOut } = await checkOptOuts(
-    interaction,
-    [rawTarget],
-    (message) => replyPrivately(interaction, message),
-  );
+  const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [rawTarget]);
   if (allOptedOut) {
     return;
   }
+  await interaction.deferReply();
 
   let target: GuildMember | User | null;
   let author: GuildMember | User;
@@ -106,7 +97,6 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
     const ctx = await buildActionContext(interaction);
     const action = await resolveAction(interaction.options.getString("action", true), ctx);
     if (!action) {
