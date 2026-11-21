@@ -81,13 +81,16 @@ export default function AdminGuildPageContent({
           guildIconUrl={guildIconUrl}
         />
       )}
-      {!pageLoading && !isMembershipLoading && (
+      {/* Admins already see the settings form's "Bot not in server" alert, so the
+          card is only kept without the bot for actions-only users, who have no form. */}
+      {!pageLoading &&
+        !isMembershipLoading &&
+        (isBotMember || isActionsOnly) && (
         <Card>
           <CardHeader>
             <CardTitle>Server actions</CardTitle>
             <CardDescription>
-              Custom actions everyone in this server can use with
-              /action.
+                Custom actions everyone in this server can use with /action.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -96,7 +99,7 @@ export default function AdminGuildPageContent({
             ) : (
               <Alert>
                 <AlertDescription>
-                  Add PetBot to this server to create server actions.
+                    Add PetBot to this server to create server actions.
                 </AlertDescription>
               </Alert>
             )}

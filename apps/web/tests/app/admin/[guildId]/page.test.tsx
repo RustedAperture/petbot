@@ -281,7 +281,9 @@ describe("Admin guild page", () => {
     const { container, unmount } = render(<AdminGuildPage />);
     expect(container.textContent).toContain("Test Guild");
     expect(container.textContent).toContain("Server actions");
-    expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
+    expect(
+      container.querySelector("[data-testid=custom-actions]"),
+    ).toBeTruthy();
     unmount();
   });
 
@@ -295,25 +297,43 @@ describe("Admin guild page", () => {
     );
 
     expect(container.textContent).toContain("Server actions");
-    expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
+    expect(
+      container.querySelector("[data-testid=custom-actions]"),
+    ).toBeTruthy();
     expect(container.querySelector("form")).toBeNull();
     expect(container.textContent).not.toContain("Guild ID");
     unmount();
   });
 
-  it("shows an add-PetBot note instead of the manager when the bot is absent", () => {
-    botMembershipState = { isBotMember: false, isLoading: false };
+  it.each([
+    ["an admin", "8", false],
+    ["a Manage Server user", "32", true],
+  ])(
+    "with the bot absent, %s sees the add-PetBot note: %s",
+    (_who, permissions, isNoteShown) => {
+      botMembershipState = { isBotMember: false, isLoading: false };
+      sessionState.session.guilds = [
+        { id: "guild1", name: "Test Guild", icon: "abc", permissions },
+      ];
 
-    const { container, unmount } = render(
-      <AdminGuildPageContent guildId="guild1" />,
-    );
+      const { container, unmount } = render(
+        <AdminGuildPageContent guildId="guild1" />,
+      );
 
-    expect(container.textContent).toContain(
-      "Add PetBot to this server to create server actions.",
-    );
-    expect(container.querySelector("[data-testid=custom-actions]")).toBeNull();
-    unmount();
-  });
+      expect(
+        container.textContent?.includes(
+          "Add PetBot to this server to create server actions.",
+        ),
+      ).toBe(isNoteShown);
+      expect(container.textContent?.includes("Server actions")).toBe(
+        isNoteShown,
+      );
+      expect(
+        container.querySelector("[data-testid=custom-actions]"),
+      ).toBeNull();
+      unmount();
+    },
+  );
 
   it("shows neither the manager nor the note while membership loads", () => {
     botMembershipState = { isBotMember: false, isLoading: true };
