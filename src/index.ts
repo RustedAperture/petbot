@@ -10,6 +10,7 @@ import { readiness } from "./http/readiness.js";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { drizzleDb } from "./db/connector.js";
 import { startActionEventPruning } from "./utilities/actionEvents.js";
+import { syncAllGuildCommands } from "./utilities/customActions/guildCommandSync.js";
 import { bootstrapDb } from "./db/bootstrap.js";
 // Static commands manifest (prevents runtime file-path imports flagged by scanners)
 import { slashCommands, contextCommands } from "./commands/index.js";
@@ -45,6 +46,9 @@ startHttpServer(Number(process.env.HTTP_PORT) || 3001, undefined, client);
 client.once(Events.ClientReady, () => {
   logger.info("Discord client ready");
   readiness.botReady = true;
+  syncAllGuildCommands(client).catch((error) =>
+    logger.error({ err: error }, "Guild command sync failed"),
+  );
 });
 
 client.on("error", logger.error);
