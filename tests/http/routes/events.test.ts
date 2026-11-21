@@ -160,6 +160,37 @@ describe("/api/events", () => {
     }
   });
 
+  it("delivers a built-in event published while the initial name lookup is pending", async () => {
+    listGuildActions.mockReturnValue(new Promise(() => {}));
+    server = createApp().listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/events/stream?locationId=1`, {
+        signal: controller.signal,
+      });
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      expect(decoder.decode((await reader.read()).value)).toBe(": connected\n\n");
+      publishActionEvent({ ...rowAt(300, "1"), actionType: "boop", phraseSource: "guild" });
+      publishActionEvent(rowAt(301, "1"));
+      let received = "";
+      while (!received.includes("id: 301\n")) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        received += decoder.decode(value);
+      }
+      expect(received).not.toContain("id: 300\n");
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
+  });
+
   it("a burst of built-in events triggers no name lookups after connecting", async () => {
     listGuildActions.mockResolvedValue([]);
     server = createApp().listen(0);

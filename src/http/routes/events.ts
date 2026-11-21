@@ -74,28 +74,23 @@ router.get("/recent", async (req: Request, res: Response) => {
 /**
  * GET /api/events/stream — server-sent stream of new action events.
  */
-router.get("/stream", async (req: Request, res: Response) => {
+router.get("/stream", (req: Request, res: Response) => {
   const parsed = parseFilter(req);
   if (!parsed) {
     res.status(400).json({ error: "invalid_param" });
     return;
   }
 
-  // A guild feed checks custom events against a cached set of the guild's
-  // action names, so the listener stays synchronous.
+  // A guild feed checks each custom event against the guild's current action
+  // names; the global feed has an empty set, so it passes built-ins only.
   const nameCache =
     !isUnrestricted(parsed) && parsed.locationId !== undefined
       ? createGuildNameCache(parsed.locationId)
       : null;
-  const filter: ActionEventFilter = isUnrestricted(parsed)
-    ? parsed
-    : { ...parsed, visibility: { customNames: nameCache?.names ?? new Set() } };
-  if (nameCache) {
-    await nameCache.refresh();
-    if (res.destroyed) {
-      return;
-    }
-  }
+  const filter: ActionEventFilter =
+    isUnrestricted(parsed) || nameCache
+      ? parsed
+      : { ...parsed, visibility: { customNames: new Set() } };
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -128,18 +123,30 @@ router.get("/stream", async (req: Request, res: Response) => {
   };
 
   unsubscribe = subscribeActionEvents((row) => {
-    if (!Object.hasOwn(ACTIONS, row.actionType)) {
-      nameCache?.refreshIfStale();
-    }
     if (!matchesActionEventFilter(row, filter)) {
       return;
     }
-    write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
+    const send = () =>
+      write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
+    if (!nameCache || Object.hasOwn(ACTIONS, row.actionType)) {
+      send();
+      return;
+    }
+    if (row.phraseSource !== "guild") {
+      return;
+    }
+    const isCurrent = nameCache.hasName(row.actionType);
+    if (isCurrent === true) {
+      send();
+    } else if (isCurrent !== false) {
+      void isCurrent.then((isNow) => isNow && send());
+    }
   });
   const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
   // Downstream proxies only flush headers with the first body chunk; without
   // this the client's onopen waits for the first event or ping.
   write(": connected\n\n");
+  nameCache?.prefetch();
 
   // Tied to the response: a GET body consumed by express.json fires the
   // request's "close" while the stream is still open.
