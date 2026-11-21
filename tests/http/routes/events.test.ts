@@ -50,6 +50,7 @@ describe("/api/events", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    listGuildActions.mockResolvedValue([]);
     delete process.env.INTERNAL_API_SECRET;
   });
 
@@ -82,40 +83,35 @@ describe("/api/events", () => {
     });
   });
 
-  it("global recent omits custom-action events", async () => {
-    listRecent.mockResolvedValue([
-      { ...rowAt(1, "1"), actionType: "boop" },
-      rowAt(2, "1"),
-    ]);
-    const res = await supertest(createApp()).get("/api/events/recent").expect(200);
-    expect(res.body.events.map((e: { id: number }) => e.id)).toEqual([2]);
+  it("global recent asks for built-ins only", async () => {
+    listRecent.mockResolvedValue([]);
+    await supertest(createApp()).get("/api/events/recent").expect(200);
+    expect(listRecent).toHaveBeenCalledWith({ visibility: { customNames: new Set() } });
   });
 
-  it("guild recent includes built-ins and the guild's own actions only", async () => {
+  it("guild recent asks for built-ins plus the guild's current actions", async () => {
     listGuildActions.mockResolvedValue([{ name: "boop" }]);
-    listRecent.mockResolvedValue([
-      { ...rowAt(1, "1"), actionType: "boop" },
-      { ...rowAt(2, "1"), actionType: "zap" },
-      rowAt(3, "1"),
-    ]);
-    const res = await supertest(createApp()).get("/api/events/recent?locationId=1").expect(200);
-    expect(res.body.events.map((e: { id: number }) => e.id)).toEqual([1, 3]);
+    listRecent.mockResolvedValue([]);
+    await supertest(createApp()).get("/api/events/recent?locationId=1").expect(200);
     expect(listGuildActions).toHaveBeenCalledWith("guild", "1");
+    expect(listRecent).toHaveBeenCalledWith({
+      locationId: "1",
+      visibility: { customNames: new Set(["boop"]) },
+    });
   });
 
-  it("user recent is unscoped", async () => {
-    listRecent.mockResolvedValue([{ ...rowAt(1, "1"), actionType: "zap" }]);
-    const res = await supertest(createApp()).get("/api/events/recent?userId=2").expect(200);
-    expect(res.body.events).toHaveLength(1);
-  });
-
-  it("stream drops custom-action events from the global feed and other guilds' actions from a guild feed", async () => {
+  it("stream filters custom events by provenance and uses the cached name set", async () => {
     listGuildActions.mockResolvedValue([{ name: "boop" }]);
     server = createApp().listen(0);
     await new Promise((resolve) => server!.once("listening", resolve));
     const { port } = server.address() as AddressInfo;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
+    const custom = (id: number, actionType: string, phraseSource: "guild" | "user") => ({
+      ...rowAt(id, "1"),
+      actionType,
+      phraseSource,
+    });
     try {
       const collect = async (query: string, rows: ActionEventRow[], stopAt: string) => {
         const res = await fetch(`http://127.0.0.1:${port}/api/events/stream${query}`, {
@@ -138,19 +134,51 @@ describe("/api/events", () => {
       };
       const global = await collect(
         "",
-        [{ ...rowAt(30, "1"), actionType: "boop" }, rowAt(31, "1")],
+        [custom(30, "boop", "guild"), rowAt(31, "1")],
         "id: 31\n",
       );
       expect(global).not.toContain("id: 30\n");
+
+      listGuildActions.mockClear();
       const guild = await collect(
         "?locationId=1",
         [
-          { ...rowAt(40, "1"), actionType: "zap" },
-          { ...rowAt(41, "1"), actionType: "boop" },
+          custom(40, "boop", "user"),
+          custom(41, "zap", "guild"),
+          ...Array.from({ length: 100 }, (_, n) => rowAt(100 + n, "1")),
+          custom(42, "boop", "guild"),
         ],
-        "id: 41\n",
+        "id: 42\n",
       );
       expect(guild).not.toContain("id: 40\n");
+      expect(guild).not.toContain("id: 41\n");
+      expect(guild).toContain("id: 100\n");
+      expect(listGuildActions).toHaveBeenCalledTimes(1);
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
+  });
+
+  it("a burst of built-in events triggers no name lookups after connecting", async () => {
+    listGuildActions.mockResolvedValue([]);
+    server = createApp().listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/events/stream?locationId=1`, {
+        signal: controller.signal,
+      });
+      const reader = res.body!.getReader();
+      await reader.read();
+      expect(listGuildActions).toHaveBeenCalledTimes(1);
+      for (let n = 0; n < 100; n++) {
+        publishActionEvent(rowAt(200 + n, "1"));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(listGuildActions).toHaveBeenCalledTimes(1);
     } finally {
       clearTimeout(timeout);
       controller.abort();

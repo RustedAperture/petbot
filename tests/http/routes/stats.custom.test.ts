@@ -83,6 +83,41 @@ describe("custom actions in /api/stats", () => {
     expect(res.body.totalsByAction.pet.totalHasPerformed).toBe(1);
   });
 
+  it("custom-only activity elsewhere does not change the global headline numbers", async () => {
+    const before = (await supertest(app).get("/api/stats").expect(200)).body;
+    await testDb.current.db.insert(actionData).values(rowFor("u7", "g7", "boop", 9));
+    const after = (await supertest(app).get("/api/stats").expect(200)).body;
+    expect(after.totalUniqueUsers).toBe(before.totalUniqueUsers);
+    expect(after.totalLocations).toBe(before.totalLocations);
+  });
+
+  it("guild headline counts ignore performers whose rows are personal or removed actions", async () => {
+    await testDb.current.db.insert(actionData).values([
+      rowFor("u2", "g1", "zap", 4),
+      rowFor("u3", "g1", "gone", 4),
+    ]);
+    const res = await supertest(app).get("/api/stats/guild/g1").expect(200);
+    expect(res.body.totalUniqueUsers).toBe(1);
+  });
+
+  it("a guild with only personal rows reports no locations", async () => {
+    await testDb.current.db.insert(actionData).values(rowFor("u2", "g5", "zap", 4));
+    const res = await supertest(app).get("/api/stats/guild/g5").expect(200);
+    expect(res.body.totalLocations).toBe(0);
+  });
+
+  it("a new guild action named constructor shows zero counts", async () => {
+    await testDb.current.db
+      .insert(customActions)
+      .values(action({ name: "constructor", image: null }));
+    const res = await supertest(app).get("/api/stats/guild/g1").expect(200);
+    expect(res.body.totalsByAction.constructor).toMatchObject({
+      totalHasPerformed: 0,
+      totalHasReceived: 0,
+      totalUsers: 0,
+    });
+  });
+
   it("user stats scope custom names to rows the user has", async () => {
     const res = await supertest(app).get("/api/stats/user/u2").expect(200);
     expect(Object.keys(res.body.totalsByAction)).toHaveLength(6);

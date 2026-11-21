@@ -2,8 +2,8 @@ import type {
   AutocompleteInteraction,
   ChatInputCommandInteraction,
 } from "discord.js";
-import { getBotData } from "../db/functions.js";
 import { ACTIONS } from "../types/constants.js";
+import { buildActionContextFor } from "../utilities/customActions/context.js";
 import { listCustomActions } from "../utilities/customActions/store.js";
 import {
   resolveAvailableActions,
@@ -14,28 +14,6 @@ import {
 const MAX_CHOICES = 25;
 
 type ActionInteraction = ChatInputCommandInteraction | AutocompleteInteraction;
-
-type ActionContextInput = {
-  guildId: string | null;
-  channelId: string | null;
-  authorId: string;
-  targetId?: string | null;
-};
-
-/** Builds the resolver context for any interaction type, loading the guild's restricted flag. */
-export async function buildActionContextFor(
-  input: ActionContextInput,
-): Promise<ActionContext> {
-  const { guildId } = input;
-  const settings = guildId ? await getBotData(guildId) : null;
-  return {
-    guildId,
-    locationId: guildId ?? input.channelId!,
-    authorId: input.authorId,
-    targetId: input.targetId ?? null,
-    isRestricted: Boolean(settings?.restricted),
-  };
-}
 
 /** Builds the resolver context; works for chat-input and autocomplete, where the target may be unset. */
 export async function buildActionContext(

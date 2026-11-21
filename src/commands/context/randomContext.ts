@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
 import { resolveAvailableActions } from "../../utilities/customActions/resolver.js";
-import { buildActionContextFor } from "../actionAutocomplete.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
 import { isOptedOut } from "../../utilities/check_user.js";
 
 export const command = {

@@ -1,11 +1,23 @@
-import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, or, type SQL } from "drizzle-orm";
+import { ACTIONS } from "../types/constants.js";
 import { drizzleDb } from "../db/connector.js";
 import { actionEvents } from "../db/schema.js";
 import logger from "../logger.js";
 import { hashUserId, secureEqual } from "./crypto.js";
 import { publishActionEvent, type ActionEventRow } from "./actionEventBus.js";
 
-export type ActionEventFilter = { locationId?: string; userId?: string };
+/**
+ * Which custom events a feed may show. Built-ins always pass; a custom event
+ * passes only when it carries the guild's own phrase and its name is in
+ * `customNames`. An empty set is the global feed: built-ins only.
+ */
+export type ActionEventVisibility = { customNames: ReadonlySet<string> };
+
+export type ActionEventFilter = {
+  locationId?: string;
+  userId?: string;
+  visibility?: ActionEventVisibility;
+};
 
 export type PublicActionEvent = {
   id: number;
@@ -17,6 +29,33 @@ export type PublicActionEvent = {
 
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const PRUNE_INTERVAL_MS = 60 * 60 * 1000;
+
+const BUILT_IN_NAMES = Object.keys(ACTIONS);
+
+function visibilityCondition(visibility: ActionEventVisibility): SQL {
+  const builtIn = inArray(actionEvents.actionType, BUILT_IN_NAMES);
+  if (visibility.customNames.size === 0) {
+    return builtIn;
+  }
+  return or(
+    builtIn,
+    and(
+      eq(actionEvents.phraseSource, "guild"),
+      inArray(actionEvents.actionType, [...visibility.customNames]),
+    ),
+  ) as SQL;
+}
+
+/** Whether a row may appear in a feed with this visibility. */
+export function isActionEventVisible(
+  row: ActionEventRow,
+  visibility: ActionEventVisibility,
+): boolean {
+  return (
+    Object.hasOwn(ACTIONS, row.actionType) ||
+    (row.phraseSource === "guild" && visibility.customNames.has(row.actionType))
+  );
+}
 
 function userCondition(userId: string): SQL | undefined {
   const hash = hashUserId(userId);
@@ -33,6 +72,7 @@ export async function recordActionEvent(input: {
   targetId: string;
   locationId: string | null;
   phrase?: string;
+  phraseSource?: "guild" | "user";
 }): Promise<ActionEventRow> {
   const [row] = await drizzleDb
     .insert(actionEvents)
@@ -42,6 +82,7 @@ export async function recordActionEvent(input: {
       targetHash: hashUserId(input.targetId),
       locationId: input.locationId,
       phrase: input.phrase ?? null,
+      phraseSource: input.phraseSource ?? null,
       createdAt: new Date().toISOString(),
     })
     .returning();
@@ -62,6 +103,9 @@ export async function listRecentActionEvents(
     if (condition) {
       conditions.push(condition);
     }
+  }
+  if (filter.visibility) {
+    conditions.push(visibilityCondition(filter.visibility));
   }
   return drizzleDb
     .select()
@@ -86,6 +130,9 @@ export function matchesActionEventFilter(
     ) {
       return false;
     }
+  }
+  if (filter.visibility && !isActionEventVisible(row, filter.visibility)) {
+    return false;
   }
   return true;
 }

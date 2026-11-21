@@ -31,7 +31,7 @@ vi.mock("../../../src/logger.js", () => ({
 vi.mock("../../../src/utilities/check_image.js", () => ({
   checkImage: checkImageMock,
 }));
-vi.mock("../../../src/commands/actionAutocomplete.js", () => ({
+vi.mock("../../../src/utilities/customActions/context.js", () => ({
   buildActionContextFor: vi.fn(async (input: unknown) => input),
 }));
 vi.mock("../../../src/utilities/customActions/resolver.js", () => ({

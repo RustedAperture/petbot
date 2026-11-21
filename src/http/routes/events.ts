@@ -10,6 +10,7 @@ import {
 } from "../../utilities/actionEvents.js";
 import { ACTIONS } from "../../types/constants.js";
 import { listCustomActions } from "../../utilities/customActions/store.js";
+import { createGuildNameCache } from "../../utilities/customActions/guildNameCache.js";
 import { subscribeActionEvents } from "../../utilities/actionEventBus.js";
 
 const PING_INTERVAL_MS = 25_000;
@@ -38,33 +39,8 @@ function parseFilter(req: Request): ActionEventFilter | null {
   return filter;
 }
 
-const isBuiltIn = (actionType: string) => Object.hasOwn(ACTIONS, actionType);
-
-/**
- * Global feeds show built-ins only; a guild feed adds that guild's current
- * actions. User-scoped feeds are unrestricted.
- */
-function visibilityWithoutLookup(
-  filter: ActionEventFilter,
-): ((actionType: string) => boolean) | null {
-  if (filter.userId !== undefined) {
-    return () => true;
-  }
-  return filter.locationId === undefined ? isBuiltIn : null;
-}
-
-async function createVisibility(
-  filter: ActionEventFilter,
-): Promise<(actionType: string) => boolean> {
-  const simple = visibilityWithoutLookup(filter);
-  if (simple) {
-    return simple;
-  }
-  const guildNames = new Set(
-    (await listCustomActions("guild", filter.locationId as string)).map((a) => a.name),
-  );
-  return (actionType) => isBuiltIn(actionType) || guildNames.has(actionType);
-}
+/** User-scoped feeds are unrestricted; the global feed shows built-ins only (empty set). */
+const isUnrestricted = (filter: ActionEventFilter) => filter.userId !== undefined;
 
 /**
  * GET /api/events/recent — latest anonymised action events.
@@ -77,14 +53,17 @@ router.get("/recent", async (req: Request, res: Response) => {
   }
 
   try {
-    const [rows, isVisible] = await Promise.all([
-      listRecentActionEvents(filter),
-      createVisibility(filter),
-    ]);
+    const customNames =
+      filter.locationId !== undefined && !isUnrestricted(filter)
+        ? (await listCustomActions("guild", filter.locationId)).map((a) => a.name)
+        : [];
+    const rows = await listRecentActionEvents(
+      isUnrestricted(filter)
+        ? filter
+        : { ...filter, visibility: { customNames: new Set(customNames) } },
+    );
     res.json({
-      events: rows
-        .filter((row) => isVisible(row.actionType))
-        .map((row) => toPublicActionEvent(row, filter.userId)),
+      events: rows.map((row) => toPublicActionEvent(row, filter.userId)),
     });
   } catch (err) {
     logger.error({ err }, "events recent error");
@@ -95,11 +74,27 @@ router.get("/recent", async (req: Request, res: Response) => {
 /**
  * GET /api/events/stream — server-sent stream of new action events.
  */
-router.get("/stream", (req: Request, res: Response) => {
-  const filter = parseFilter(req);
-  if (!filter) {
+router.get("/stream", async (req: Request, res: Response) => {
+  const parsed = parseFilter(req);
+  if (!parsed) {
     res.status(400).json({ error: "invalid_param" });
     return;
+  }
+
+  // A guild feed checks custom events against a cached set of the guild's
+  // action names, so the listener stays synchronous.
+  const nameCache =
+    !isUnrestricted(parsed) && parsed.locationId !== undefined
+      ? createGuildNameCache(parsed.locationId)
+      : null;
+  const filter: ActionEventFilter = isUnrestricted(parsed)
+    ? parsed
+    : { ...parsed, visibility: { customNames: nameCache?.names ?? new Set() } };
+  if (nameCache) {
+    await nameCache.refresh();
+    if (res.destroyed) {
+      return;
+    }
   }
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -132,30 +127,14 @@ router.get("/stream", (req: Request, res: Response) => {
     }
   };
 
-  // Guild feeds need a lookup per event; chaining keeps events in order. The
-  // other feeds stay synchronous so a backpressured write stops them at once.
-  const simpleVisibility = visibilityWithoutLookup(filter);
-  let pending: Promise<void> = Promise.resolve();
   unsubscribe = subscribeActionEvents((row) => {
+    if (!Object.hasOwn(ACTIONS, row.actionType)) {
+      nameCache?.refreshIfStale();
+    }
     if (!matchesActionEventFilter(row, filter)) {
       return;
     }
-    if (simpleVisibility) {
-      if (simpleVisibility(row.actionType)) {
-        write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
-      }
-      return;
-    }
-    pending = pending.then(async () => {
-      try {
-        const isVisible = await createVisibility(filter);
-        if (isVisible(row.actionType)) {
-          write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
-        }
-      } catch (err) {
-        logger.error({ err }, "events stream error");
-      }
-    });
+    write(formatSseEvent(toPublicActionEvent(row, filter.userId)));
   });
   const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
   // Downstream proxies only flush headers with the first body chunk; without

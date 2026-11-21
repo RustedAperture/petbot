@@ -86,6 +86,7 @@ export const actionEvents = sqliteTable(
     targetHash: text("target_hash").notNull(),
     locationId: text("location_id"),
     phrase: text("phrase"),
+    phraseSource: text("phrase_source").$type<"guild" | "user">(),
     createdAt: text("created_at").notNull(),
   },
   (table) => [

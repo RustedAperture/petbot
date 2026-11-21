@@ -97,7 +97,11 @@ describe("actionHelpers", () => {
     });
   });
 
-  it("custom action replies with its phrase and the target image, and records the phrase", async () => {
+  it.each([
+    [["guild"], "guild"],
+    [["guild", "user"], "guild"],
+    [["user"], "user"],
+  ] as const)("custom action with sources %j replies with its phrase and the target image, and records the phrase and %s source", async (sources, phraseSource) => {
     arrangePerform();
     (drizzleDb as any).select.mockReset();
     const rows = [
@@ -121,7 +125,7 @@ describe("actionHelpers", () => {
       name: "boop",
       phrase: "booped",
       isBuiltIn: false,
-      sources: ["guild" as const],
+      sources: [...sources],
       imageSource: "custom" as const,
       definitionImages: { guild: "g.png" },
     };
@@ -140,6 +144,7 @@ describe("actionHelpers", () => {
       targetId: "t",
       locationId: "g1",
       phrase: "booped",
+      phraseSource,
     });
   });
 

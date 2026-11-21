@@ -12,7 +12,7 @@ import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
 import { ACTIONS } from "../../types/constants.js";
 import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
-import { buildActionContextFor } from "../actionAutocomplete.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
 
 const CARDS_PER_MESSAGE = 6;
 const MAX_MESSAGES = 6;

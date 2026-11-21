@@ -1,0 +1,1 @@
+ALTER TABLE `action_events` ADD `phrase_source` text;

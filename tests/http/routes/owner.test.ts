@@ -53,28 +53,36 @@ describe("owner routes", () => {
     await testDb.current.db.insert(customActions).values([
       row({ name: "boop" }),
       row({ name: "zap", ownerId: "u2" }),
-      row({ name: "boop", scope: "guild", ownerId: "g1" }),
+      row({ name: "boop", scope: "guild", ownerId: "111" }),
     ]);
     const all = await supertest(app).get("/api/owner/customActions").expect(200);
     expect(all.body.actions).toHaveLength(3);
     const filtered = await supertest(app)
-      .get("/api/owner/customActions?name=boop&scope=guild&ownerId=g1")
+      .get("/api/owner/customActions?name=boop&scope=guild&ownerId=111")
       .expect(200);
     expect(filtered.body.actions).toHaveLength(1);
-    expect(filtered.body.actions[0].ownerId).toBe("g1");
+    expect(filtered.body.actions[0].ownerId).toBe("111");
   });
 
-  it("rejects an invalid scope filter", async () => {
-    await supertest(app).get("/api/owner/customActions?scope=bad").expect(400);
+  it.each([
+    "scope=bad",
+    "scope=user&scope=guild",
+    "name=a&name=b",
+    "ownerId=abc",
+    "ownerId=1&ownerId=2",
+  ])("rejects malformed filter %s", async (query) => {
+    await supertest(app)
+      .get(`/api/owner/customActions?${query}`)
+      .expect(400, { error: "invalid_filter" });
   });
 
   it("deleting a guild action syncs that guild", async () => {
     const [inserted] = await testDb.current.db
       .insert(customActions)
-      .values(row({ scope: "guild", ownerId: "g1" }))
+      .values(row({ scope: "guild", ownerId: "111" }))
       .returning();
     await supertest(app).delete(`/api/owner/customActions/${inserted.id}`).expect(200, { ok: true });
-    expect(syncMock).toHaveBeenCalledWith(client, "g1");
+    expect(syncMock).toHaveBeenCalledWith(client, "111");
   });
 
   it("deleting a user action does not sync", async () => {

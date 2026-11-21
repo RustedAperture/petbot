@@ -2,10 +2,17 @@ import type { Request, Response } from "express";
 import { drizzleDb } from "../../db/connector.js";
 import { actionData, botData } from "../../db/schema.js";
 import { ACTIONS } from "../../types/constants.js";
-import { sql, eq, and } from "drizzle-orm";
+import { sql, eq, and, inArray } from "drizzle-orm";
 import logger from "../../logger.js";
 import { listCustomActions, listCustomActionsForOwners } from "../../utilities/customActions/store.js";
 import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
+
+/** Own-property lookup so a custom action named like an Object.prototype member isn't shadowed. */
+function builtInImage(name: string): string | undefined {
+  return Object.hasOwn(ACTIONS, name)
+    ? ACTIONS[name as keyof typeof ACTIONS].defaultImage
+    : undefined;
+}
 
 type ActionAggregate = {
   actionType: string;
@@ -40,7 +47,7 @@ async function getActionAggregates(
       totalUsers: Number(row.totalUsers ?? 0),
     };
     return acc;
-  }, {});
+  }, Object.create(null));
 }
 
 /**
@@ -136,7 +143,7 @@ export default async function statsHandler(
           totalHasPerformed: number;
           totalHasReceived: number;
           totalUsers: number;
-          imageUrl?: string;
+          imageUrl?: string | null;
           images?: string[];
         }
       > = {};
@@ -145,7 +152,7 @@ export default async function statsHandler(
       // To avoid N queries we perform a single DB call selecting actionType+
       // images for all relevant kinds and then group the results so the
       // response includes carousel data.
-      const imagesByAction: Record<string, string[]> = {};
+      const imagesByAction: Record<string, string[]> = Object.create(null);
       if (effectiveUserId && guildId) {
         // fetch all rows for this user+location and bucket by actionType
         const rows: any[] = await drizzleDb
@@ -167,7 +174,7 @@ export default async function statsHandler(
         for (const k of scopedKinds) {
           if (!imagesByAction[k]) {
             const defaultImage =
-              ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ??
+              builtInImage(k) ??
               custom.imageByName.get(k);
             imagesByAction[k] = defaultImage ? [defaultImage] : [];
           }
@@ -185,7 +192,7 @@ export default async function statsHandler(
           totalHasReceived: aggregate.totalHasReceived,
           totalUsers: aggregate.totalUsers,
           imageUrl:
-            ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ??
+            builtInImage(k) ??
             custom.imageByName.get(k) ??
             null,
           ...(imagesByAction[k] ? { images: imagesByAction[k] } : {}),
@@ -199,6 +206,7 @@ export default async function statsHandler(
 
       // total unique users and total locations should reflect whether this is a
       // user-scoped request (userId present) or a guild-scoped request.
+      const guildAllowedTypes = [...actionKinds, ...custom.names];
       let totalUniqueUsers = 0;
       if (effectiveUserId) {
         // user-scoped: check presence for the user (optionally restricted to a guild)
@@ -222,6 +230,7 @@ export default async function statsHandler(
           .where(
             and(
               eq(actionData.locationId, guildId),
+              inArray(actionData.actionType, guildAllowedTypes),
               sql`${actionData.hasPerformed} > 0`,
             ),
           );
@@ -256,7 +265,12 @@ export default async function statsHandler(
         const r: any = await drizzleDb
           .select({ c: sql`COUNT(*)` })
           .from(actionData)
-          .where(eq(actionData.locationId, guildId));
+          .where(
+            and(
+              eq(actionData.locationId, guildId),
+              inArray(actionData.actionType, guildAllowedTypes),
+            ),
+          );
         totalLocations = Number(r?.[0]?.c ?? 0) > 0 ? 1 : 0;
       }
 
@@ -277,7 +291,8 @@ export default async function statsHandler(
 
     const rl: any = await drizzleDb
       .select({ cnt: sql`COUNT(DISTINCT ${actionData.locationId})` })
-      .from(actionData);
+      .from(actionData)
+      .where(inArray(actionData.actionType, actionKinds));
     const totalLocations = Number(rl?.[0]?.cnt ?? 0);
 
     const gc: any = await drizzleDb
@@ -288,7 +303,12 @@ export default async function statsHandler(
     const ru: any = await drizzleDb
       .select({ cnt: sql`COUNT(DISTINCT ${actionData.userId})` })
       .from(actionData)
-      .where(sql`${actionData.hasPerformed} > 0`);
+      .where(
+        and(
+          inArray(actionData.actionType, actionKinds),
+          sql`${actionData.hasPerformed} > 0`,
+        ),
+      );
     const totalUniqueUsers = Number(ru?.[0]?.cnt ?? 0);
 
     const totalsByAction: Record<
@@ -297,7 +317,7 @@ export default async function statsHandler(
         totalHasPerformed: number;
         totalHasReceived: number;
         totalUsers: number;
-        imageUrl?: string;
+        imageUrl?: string | null;
         images?: string[];
       }
     > = {};
@@ -312,7 +332,7 @@ export default async function statsHandler(
         totalHasPerformed: aggregate.totalHasPerformed,
         totalHasReceived: aggregate.totalHasReceived,
         totalUsers: aggregate.totalUsers,
-        imageUrl: ACTIONS[k as keyof typeof ACTIONS]?.defaultImage ?? null,
+        imageUrl: builtInImage(k) ?? null,
       };
     });
 

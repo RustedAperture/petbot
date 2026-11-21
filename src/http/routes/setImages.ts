@@ -3,7 +3,7 @@ import { drizzleDb } from "../../db/connector.js";
 import { actionData } from "../../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { ACTIONS } from "../../types/constants.js";
-import { buildActionContextFor } from "../../commands/actionAutocomplete.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
 import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
 import logger from "../../logger.js";
 import { checkImage } from "../../utilities/check_image.js";

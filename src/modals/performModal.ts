@@ -58,7 +58,7 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
   let ctx: ActionContext | null = null;
   if (action && author?.id) {
     const { buildActionContextFor } = await import(
-      "../commands/actionAutocomplete.js"
+      "../utilities/customActions/context.js"
     );
     const { resolveAction } = await import(
       "../utilities/customActions/resolver.js"

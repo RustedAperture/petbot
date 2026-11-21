@@ -11,8 +11,14 @@ import {
 } from "../../utilities/customActions/store.js";
 import { syncGuildCommands } from "../../utilities/customActions/guildCommandSync.js";
 
-function queryString(value: unknown): string | undefined {
-  return typeof value === "string" && value !== "" ? value : undefined;
+const NUMERIC_ID = /^\d+$/;
+
+/** Absent or empty is fine; anything but a single string is malformed (null). */
+function singleString(value: unknown): string | undefined | null {
+  if (value === undefined || value === "") {
+    return undefined;
+  }
+  return typeof value === "string" ? value : null;
 }
 
 /** The website enforces the owner check before calling these routes. */
@@ -20,16 +26,24 @@ export default function ownerRouter(client: Client<boolean>): Router {
   const router = Router();
 
   router.get("/customActions", async (req: Request, res: Response) => {
-    const scope = queryString(req.query.scope);
-    if (scope !== undefined && scope !== "guild" && scope !== "user") {
-      res.status(400).json({ error: "invalid_scope" });
+    const name = singleString(req.query.name);
+    const scope = singleString(req.query.scope);
+    const ownerId = singleString(req.query.ownerId);
+    const isValid =
+      name !== null &&
+      scope !== null &&
+      ownerId !== null &&
+      (scope === undefined || scope === "guild" || scope === "user") &&
+      (ownerId === undefined || NUMERIC_ID.test(ownerId));
+    if (!isValid) {
+      res.status(400).json({ error: "invalid_filter" });
       return;
     }
     res.json({
       actions: await listAllCustomActions({
-        name: queryString(req.query.name),
+        name,
         scope: scope as CustomActionScope | undefined,
-        ownerId: queryString(req.query.ownerId),
+        ownerId,
       }),
     });
   });

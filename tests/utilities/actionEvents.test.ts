@@ -53,6 +53,7 @@ const sampleRow: ActionEventRow = {
   targetHash: hashUserId("B"),
   locationId: "g1",
   phrase: null,
+  phraseSource: null,
   createdAt: "2026-11-21T00:00:00.000Z",
 };
 
@@ -77,7 +78,7 @@ async function seed(
 // one is built from the action_events migration plus the one that adds its phrase column.
 beforeAll(async () => {
   const migrationsFolder = mkdtempSync(join(tmpdir(), "action-events-"));
-  for (const suffix of ["_action_events", "_custom_actions"]) {
+  for (const suffix of ["_action_events", "_custom_actions", "_event_phrase_source"]) {
     const name = readdirSync("drizzle").find((d) => d.endsWith(suffix));
     cpSync(join("drizzle", name!), join(migrationsFolder, name!), {
       recursive: true,
@@ -92,6 +93,63 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("listRecentActionEvents visibility", () => {
+  const insert = (
+    actionType: string,
+    phraseSource: "guild" | "user" | null,
+    createdAt: string,
+    locationId = "g1",
+  ) =>
+    testDb().insert(actionEvents).values({
+      actionType,
+      performerHash: hashUserId("A"),
+      targetHash: hashUserId("B"),
+      locationId,
+      phrase: phraseSource ? "booped" : null,
+      phraseSource,
+      createdAt,
+    });
+
+  it("global feed returns built-ins only", async () => {
+    await insert("boop", "guild", "2026-01-02");
+    await insert("pet", null, "2026-01-01");
+    const rows = await listRecentActionEvents({ visibility: { customNames: new Set() } });
+    expect(rows.map((r) => r.actionType)).toEqual(["pet"]);
+  });
+
+  it("guild feed excludes personal-phrase events and names the guild no longer defines", async () => {
+    await insert("boop", "user", "2026-01-04");
+    await insert("zap", "guild", "2026-01-03");
+    await insert("boop", "guild", "2026-01-02");
+    await insert("pet", null, "2026-01-01");
+    const rows = await listRecentActionEvents({
+      locationId: "g1",
+      visibility: { customNames: new Set(["boop"]) },
+    });
+    expect(rows.map((r) => [r.actionType, r.phraseSource])).toEqual([
+      ["boop", "guild"],
+      ["pet", null],
+    ]);
+  });
+
+  it("applies visibility before the limit", async () => {
+    for (let i = 0; i < 50; i++) {
+      await insert("boop", "user", `2026-02-01T00:00:${String(i).padStart(2, "0")}Z`);
+    }
+    await insert("pet", null, "2026-01-01");
+    const rows = await listRecentActionEvents({ visibility: { customNames: new Set() } });
+    expect(rows.map((r) => r.actionType)).toEqual(["pet"]);
+  });
+
+  it("matchesActionEventFilter applies the same rule", () => {
+    const row = { ...sampleRow, actionType: "boop", phraseSource: "user" as const };
+    const visibility = { customNames: new Set(["boop"]) };
+    expect(matchesActionEventFilter(row, { visibility })).toBe(false);
+    expect(matchesActionEventFilter({ ...row, phraseSource: "guild" }, { visibility })).toBe(true);
+    expect(matchesActionEventFilter({ ...row, actionType: "pet" }, { visibility: { customNames: new Set() } })).toBe(true);
+  });
 });
 
 describe("recordActionEvent", () => {

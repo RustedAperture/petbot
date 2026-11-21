@@ -156,7 +156,12 @@ export async function performAction(
     performerId: author.id,
     targetId: target.id,
     locationId: guild,
-    ...(action.isBuiltIn ? {} : { phrase: action.phrase }),
+    ...(action.isBuiltIn
+      ? {}
+      : {
+        phrase: action.phrase,
+        phraseSource: action.sources.includes("guild") ? "guild" : "user",
+      }),
   }).catch((error) => {
     logger.error({ err: error }, "Failed to record action event");
   });
