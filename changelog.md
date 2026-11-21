@@ -1,4 +1,4 @@
-## v8.10.0 - Nov 21, 2026
+## v9.0.0 - Nov 21, 2026
 
 ### What You'll Notice
 
