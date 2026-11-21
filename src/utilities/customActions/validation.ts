@@ -20,7 +20,7 @@ export const RESERVED_ACTION_NAMES: readonly string[] = [
 ];
 
 const NAME_PATTERN = /^[a-z]{1,20}$/;
-const FORBIDDEN_PHRASE_PATTERN = /[@<>`*_~|#]|https?:|:\/\/|discord\.gg/i;
+const FORBIDDEN_PHRASE_PATTERN = /[\r\n@<>`*_~|#]|https?:|:\/\/|discord\.gg/i;
 const MAX_PHRASE_LENGTH = 32;
 
 export function validateCustomActionInput(input: {

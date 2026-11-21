@@ -10,7 +10,7 @@ vi.mock("../../src/utilities/check_image.js", () => ({
   checkImage: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../../src/utilities/helper.js", () => ({
-  isGuildAdmin: vi.fn().mockResolvedValue(true),
+  canManageServerActions: vi.fn().mockResolvedValue(true),
 }));
 vi.mock("../../src/utilities/customActions/guildCommandSync.js", () => ({
   syncGuildCommands: vi.fn().mockResolvedValue(true),
@@ -27,7 +27,7 @@ vi.mock("../../src/db/connector.js", async () => {
 });
 
 import { checkImage } from "../../src/utilities/check_image.js";
-import { isGuildAdmin } from "../../src/utilities/helper.js";
+import { canManageServerActions } from "../../src/utilities/helper.js";
 import { syncGuildCommands } from "../../src/utilities/customActions/guildCommandSync.js";
 import { command } from "../../src/commands/slash/customAction.js";
 import { listCustomActions } from "../../src/utilities/customActions/store.js";
@@ -37,7 +37,7 @@ afterAll(() => testDb.current.cleanup());
 beforeEach(async () => {
   vi.clearAllMocks();
   vi.mocked(checkImage).mockResolvedValue(true);
-  vi.mocked(isGuildAdmin).mockResolvedValue(true);
+  vi.mocked(canManageServerActions).mockResolvedValue(true);
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(customActionBans);
 });
@@ -114,7 +114,7 @@ describe("/custom-action add", () => {
   });
 
   it("rejects a server action from a non-admin", async () => {
-    vi.mocked(isGuildAdmin).mockResolvedValue(false);
+    vi.mocked(canManageServerActions).mockResolvedValue(false);
     const interaction = run("add", { ...addOpts, for: "server" });
     await command.execute(interaction);
 
@@ -134,7 +134,7 @@ describe("/custom-action add", () => {
     expect(interaction.__calls.editedReplies[0].content).toBe(
       "Add PetBot to this server to create server actions.",
     );
-    expect(isGuildAdmin).not.toHaveBeenCalled();
+    expect(canManageServerActions).not.toHaveBeenCalled();
   });
 
   it("rejects an invalid image", async () => {
@@ -202,7 +202,7 @@ describe("/custom-action remove", () => {
   });
 
   it("rejects a non-admin removing a server action", async () => {
-    vi.mocked(isGuildAdmin).mockResolvedValue(false);
+    vi.mocked(canManageServerActions).mockResolvedValue(false);
     await seed("guild", "guild-1", "boop");
     const interaction = run("remove", { name: "boop", for: "server" });
     await command.execute(interaction);
@@ -233,11 +233,62 @@ describe("/custom-action list", () => {
   });
 
   it("lets non-admins list server actions", async () => {
-    vi.mocked(isGuildAdmin).mockResolvedValue(false);
+    vi.mocked(canManageServerActions).mockResolvedValue(false);
     await seed("guild", "guild-1", "boop");
     const interaction = run("list", { for: "server" });
     await command.execute(interaction);
 
     expect(interaction.__calls.editedReplies[0].content).toBe("boop — booped");
+  });
+});
+
+describe("/custom-action remove name validation", () => {
+  it("does not echo an invalid name", async () => {
+    const interaction = run("remove", { name: "@everyone", for: "me" });
+    await command.execute(interaction);
+
+    expect(interaction.__calls.editedReplies[0].content).toBe(
+      "There's no such action to remove.",
+    );
+  });
+});
+
+describe("/custom-action remove autocomplete", () => {
+  async function complete(
+    scope: "me" | "server",
+    overrides: { guildId?: string | null; isBotInGuild?: boolean } = {},
+  ) {
+    const guildId = overrides.guildId === undefined ? "guild-1" : overrides.guildId;
+    const respond = vi.fn();
+    await command.autocomplete({
+      guildId,
+      user: { id: "user-1" },
+      client: { guilds: { cache: { has: () => overrides.isBotInGuild ?? true } } },
+      options: {
+        getString: (k: string) => (k === "for" ? scope : null),
+        getFocused: () => "",
+        get: () => null,
+      },
+      respond,
+    } as any);
+    return respond.mock.calls[0][0];
+  }
+
+  it("suggests personal actions", async () => {
+    await seed("user", "user-1", "boop");
+    expect(await complete("me")).toEqual([{ name: "boop", value: "boop" }]);
+  });
+
+  it("suggests server actions when the bot is in the guild", async () => {
+    await seed("guild", "guild-1", "wave");
+    expect(await complete("server")).toEqual([{ name: "wave", value: "wave" }]);
+  });
+
+  it.each([
+    ["the bot is not in the guild", "guild-1", false],
+    ["outside a guild", null, true],
+  ])("suggests nothing for server when %s", async (_l, guildId, isBotInGuild) => {
+    await seed("guild", "guild-1", "wave");
+    expect(await complete("server", { guildId, isBotInGuild })).toEqual([]);
   });
 });

@@ -16,6 +16,7 @@ import {
   fetchGlobalStats,
   fetchStatsForLocation,
   isGuildAdmin,
+  canManageServerActions,
 } from "../../src/utilities/helper.js";
 import type { ActionUser } from "../../src/types/user.js";
 import { drizzleDb } from "../../src/db/connector.js";
@@ -242,5 +243,33 @@ describe("helper util", () => {
     await expect(isGuildAdmin(client, "guild-99", "owner-1")).resolves.toBe(
       true,
     );
+  });
+});
+
+describe("canManageServerActions", () => {
+  function clientWith(ownerId: string, perms: string[] | null) {
+    const member = perms
+      ? { permissions: { has: (p: any) => [p].flat().some((x) => perms.includes(String(x))) } }
+      : null;
+    return {
+      guilds: {
+        fetch: async () => ({
+          ownerId,
+          members: { fetch: async () => member ?? Promise.reject(new Error("x")) },
+        }),
+      },
+    } as unknown as Client;
+  }
+  const MANAGE_GUILD = String(32n);
+  const ADMINISTRATOR = String(8n);
+
+  it.each([
+    ["the owner", "u1", null, true],
+    ["Manage Server only", "owner", [MANAGE_GUILD], true],
+    ["Administrator only", "owner", [ADMINISTRATOR], true],
+    ["neither permission", "owner", [], false],
+    ["a non-member", "owner", null, false],
+  ])("%s", async (_label, ownerId, perms, expected) => {
+    expect(await canManageServerActions(clientWith(ownerId, perms), "g", "u1")).toBe(expected);
   });
 });

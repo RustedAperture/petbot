@@ -32,6 +32,11 @@ describe("validateCustomActionInput", () => {
       "see https://x",
       { error: "Phrases can't contain mentions, links or formatting." },
     ],
+    [
+      "boop",
+      "two\nlines",
+      { error: "Phrases can't contain mentions, links or formatting." },
+    ],
     ["boop", "a".repeat(33), { error: "Phrases must be 1–32 characters." }],
     ["boop", "   ", { error: "Phrases must be 1–32 characters." }],
   ])("validateCustomActionInput(%j, %j)", (name, phrase, expected) => {

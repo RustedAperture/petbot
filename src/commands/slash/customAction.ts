@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { checkImage } from "../../utilities/check_image.js";
 import { normalizeUrl } from "../../utilities/normalizeUrl.js";
-import { isGuildAdmin } from "../../utilities/helper.js";
+import { canManageServerActions } from "../../utilities/helper.js";
 import { validateCustomActionInput } from "../../utilities/customActions/validation.js";
 import {
   listCustomActions,
@@ -21,6 +21,7 @@ import { respondWithActions } from "../actionAutocomplete.js";
 
 const NO_GUILD_MESSAGE = "Add PetBot to this server to create server actions.";
 const NOT_ADMIN_MESSAGE = "You need Manage Server to manage server actions.";
+const NAME_PATTERN = /^[a-z]{1,20}$/;
 
 type Scope = { scope: CustomActionScope; ownerId: string };
 
@@ -50,7 +51,7 @@ async function resolveScope(
   }
   if (
     isAdminRequired &&
-    !(await isGuildAdmin(interaction.client, guildId, interaction.user.id))
+    !(await canManageServerActions(interaction.client, guildId, interaction.user.id))
   ) {
     return { error: NOT_ADMIN_MESSAGE };
   }
@@ -95,6 +96,9 @@ async function handleRemove(interaction: ChatInputCommandInteraction) {
     return target.error;
   }
   const name = interaction.options.getString("name", true);
+  if (!NAME_PATTERN.test(name)) {
+    return "There's no such action to remove.";
+  }
   const isRemoved = await removeCustomAction(target.scope, target.ownerId, name);
   if (!isRemoved) {
     return `There's no **${name}** to remove.`;
@@ -184,8 +188,11 @@ export const command = {
   async autocomplete(interaction: AutocompleteInteraction) {
     const scope = interaction.options.getString("for");
     const guildId = interaction.guildId;
+    const isServerUnavailable =
+      scope === "server" &&
+      (!guildId || !interaction.client.guilds.cache.has(guildId));
     const ownerId = scope === "server" ? guildId : interaction.user.id;
-    if (!scope || !ownerId) {
+    if (!scope || !ownerId || isServerUnavailable) {
       await interaction.respond([]);
       return;
     }

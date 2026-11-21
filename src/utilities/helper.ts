@@ -179,3 +179,23 @@ export async function isGuildAdmin(
 
   return false;
 }
+
+/** Guild owner, Administrator or Manage Server may manage a server's custom actions. */
+export async function canManageServerActions(
+  client: Client<boolean>,
+  guildId: string,
+  userId: string,
+): Promise<boolean> {
+  const guild = await client.guilds.fetch(guildId).catch(() => null);
+  if (!guild) {
+    return false;
+  }
+  if (guild.ownerId === userId) {
+    return true;
+  }
+  const member = await guild.members.fetch(userId).catch(() => null);
+  return Boolean(
+    member?.permissions.has([PermissionsBitField.Flags.ManageGuild], true) ||
+      member?.permissions.has(PermissionsBitField.Flags.Administrator),
+  );
+}
