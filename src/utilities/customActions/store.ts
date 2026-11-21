@@ -1,6 +1,7 @@
 import { and, eq, inArray, or, type SQL } from "drizzle-orm";
 import { drizzleDb } from "../../db/connector.js";
 import { customActionBans, customActions } from "../../db/schema.js";
+import { emitGuildActionsChanged } from "./changeEvents.js";
 
 export type CustomAction = typeof customActions.$inferSelect;
 export type CustomActionScope = "guild" | "user";
@@ -77,7 +78,13 @@ type UpsertInput = {
 export async function upsertCustomAction(
   input: UpsertInput,
 ): Promise<{ action: CustomAction } | { error: string }> {
-  return serialised(() => upsertRow(input));
+  return serialised(async () => {
+    const result = await upsertRow(input);
+    if ("action" in result && input.scope === "guild") {
+      emitGuildActionsChanged(input.ownerId);
+    }
+    return result;
+  });
 }
 
 // Every definition mutation (upsert, remove, image, deletes) is queued
@@ -148,6 +155,9 @@ export function removeCustomAction(
       .delete(customActions)
       .where(actionCondition(scope, ownerId, name))
       .returning({ id: customActions.id });
+    if (rows.length > 0 && scope === "guild") {
+      emitGuildActionsChanged(ownerId);
+    }
     return rows.length > 0;
   });
 }
@@ -164,6 +174,9 @@ export function setCustomActionImage(
       .set({ image, updatedAt: new Date().toISOString() })
       .where(actionCondition(scope, ownerId, name))
       .returning({ id: customActions.id });
+    if (rows.length > 0 && scope === "guild") {
+      emitGuildActionsChanged(ownerId);
+    }
     return rows.length > 0;
   });
 }
@@ -198,6 +211,9 @@ export function deleteCustomActionById(
       .delete(customActions)
       .where(eq(customActions.id, id))
       .returning();
+    if (row?.scope === "guild") {
+      emitGuildActionsChanged(row.ownerId);
+    }
     return row ?? null;
   });
 }
@@ -239,6 +255,15 @@ export function deleteUserCustomActionData(
 }
 
 async function deleteUserRows(userId: string): Promise<void> {
+  const touchedGuilds = await drizzleDb
+    .selectDistinct({ ownerId: customActions.ownerId })
+    .from(customActions)
+    .where(
+      and(
+        eq(customActions.scope, "guild"),
+        eq(customActions.createdBy, userId),
+      ),
+    );
   await drizzleDb.batch([
     drizzleDb.delete(customActions).where(ownerCondition("user", userId)),
     drizzleDb
@@ -251,4 +276,7 @@ async function deleteUserRows(userId: string): Promise<void> {
         ),
       ),
   ]);
+  for (const { ownerId } of touchedGuilds) {
+    emitGuildActionsChanged(ownerId);
+  }
 }

@@ -55,6 +55,10 @@ import {
   type ActionEventRow,
 } from "../../../src/utilities/actionEventBus.js";
 import { hashUserId } from "../../../src/utilities/crypto.js";
+import {
+  emitGuildActionsChanged,
+  guildActionListenerCount,
+} from "../../../src/utilities/customActions/changeEvents.js";
 
 const rowAt = (id: number, locationId: string): ActionEventRow => ({
   id,
@@ -173,8 +177,7 @@ describe("/api/events", () => {
       expect(guild).not.toContain("id: 40\n");
       expect(guild).not.toContain("id: 41\n");
       expect(guild).toContain("id: 100\n");
-      // The prefetch plus one forced refresh for the unknown "zap".
-      expect(listGuildActions).toHaveBeenCalledTimes(2);
+      expect(listGuildActions).toHaveBeenCalledTimes(1);
     } finally {
       clearTimeout(timeout);
       controller.abort();
@@ -292,10 +295,11 @@ describe("/api/events", () => {
       phraseSource: "guild" as const,
     });
 
-    it("delivers a name created after the cache warmed, after one refresh", async () => {
+    it("delivers the first event of an action created after the cache warmed", async () => {
       listGuildActions.mockResolvedValueOnce([]).mockResolvedValue([{ name: "boop" }]);
       const { reader, controller } = await connectWarm();
       try {
+        emitGuildActionsChanged("1");
         publishActionEvent(guildEvent(700, "boop"));
         const received = await readUntil(reader, "id: 700\n");
         expect(received).toContain("id: 700\n");
@@ -305,32 +309,42 @@ describe("/api/events", () => {
       }
     });
 
-    it("still drops a genuinely unknown name", async () => {
+    it("drops an unknown name without refreshing", async () => {
       const { reader, controller } = await connectWarm();
       try {
-        publishActionEvent(guildEvent(710, "zap"));
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        publishActionEvent(rowAt(711, "1"));
-        const received = await readUntil(reader, "id: 711\n");
+        for (let n = 0; n < 20; n++) {
+          publishActionEvent(guildEvent(710 + n, `zap${n}`));
+        }
+        publishActionEvent(rowAt(799, "1"));
+        const received = await readUntil(reader, "id: 799\n");
         expect(received).not.toContain("id: 710\n");
+        expect(listGuildActions).toHaveBeenCalledTimes(1);
       } finally {
         controller.abort();
       }
     });
 
-    it("refreshes at most once a second for a burst of unknown names", async () => {
+    it("stops delivering an action's later events once it is removed", async () => {
+      listGuildActions.mockResolvedValueOnce([{ name: "boop" }]).mockResolvedValue([]);
       const { reader, controller } = await connectWarm();
       try {
-        for (let n = 0; n < 20; n++) {
-          publishActionEvent(guildEvent(720 + n, `zap${n}`));
-        }
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        publishActionEvent(rowAt(799, "1"));
-        await readUntil(reader, "id: 799\n");
-        expect(listGuildActions).toHaveBeenCalledTimes(2);
+        publishActionEvent(guildEvent(800, "boop"));
+        await readUntil(reader, "id: 800\n");
+        emitGuildActionsChanged("1");
+        publishActionEvent(guildEvent(801, "boop"));
+        publishActionEvent(rowAt(802, "1"));
+        const received = await readUntil(reader, "id: 802\n");
+        expect(received).not.toContain("id: 801\n");
       } finally {
         controller.abort();
       }
+    });
+
+    it("removes its change listener on disconnect", async () => {
+      const { controller } = await connectWarm();
+      expect(guildActionListenerCount("1")).toBe(1);
+      controller.abort();
+      await vi.waitFor(() => expect(guildActionListenerCount("1")).toBe(0));
     });
   });
 

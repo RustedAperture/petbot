@@ -15,7 +15,6 @@ import { subscribeActionEvents } from "../../utilities/actionEventBus.js";
 
 const PING_INTERVAL_MS = 25_000;
 const MAX_PENDING_CUSTOM_EVENTS = 100;
-const MIN_FORCED_REFRESH_INTERVAL_MS = 1000;
 const NUMERIC_ID = /^\d+$/;
 
 const router = Router();
@@ -101,7 +100,6 @@ router.get("/stream", (req: Request, res: Response) => {
 
   let isStopped = false;
   let pendingCustomEvents = 0;
-  let lastForcedRefreshAt = 0;
   let unsubscribe = () => {};
 
   const stop = () => {
@@ -111,6 +109,7 @@ router.get("/stream", (req: Request, res: Response) => {
     isStopped = true;
     pendingCustomEvents = 0;
     unsubscribe();
+    nameCache?.dispose();
     clearInterval(pingTimer);
   };
 
@@ -148,30 +147,7 @@ router.get("/stream", (req: Request, res: Response) => {
     const isCurrent = nameCache.hasName(row.actionType);
     if (isCurrent === true) {
       send();
-    } else if (isCurrent === false) {
-      // The cache can predate a just-created action, so an unknown name gets
-      // one forced refresh and a re-check, at most once a second per subscriber.
-      const now = Date.now();
-      if (now - lastForcedRefreshAt < MIN_FORCED_REFRESH_INTERVAL_MS) {
-        return;
-      }
-      lastForcedRefreshAt = now;
-      pendingCustomEvents += 1;
-      void nameCache.refresh().then(
-        () => {
-          if (isStopped) {
-            return;
-          }
-          pendingCustomEvents -= 1;
-          if (nameCache.hasName(row.actionType) === true) {
-            send();
-          }
-        },
-        () => {
-          pendingCustomEvents = Math.max(0, pendingCustomEvents - 1);
-        },
-      );
-    } else {
+    } else if (isCurrent !== false) {
       pendingCustomEvents += 1;
       void isCurrent.then(
         (isNow) => {
