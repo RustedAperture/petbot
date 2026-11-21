@@ -21,14 +21,17 @@ logged:
   or display them later.
 - **Activity Log:** Every action performed through the bot, including by
   users who have opted out, is logged anonymously for 30 days (action
-  type, time, location, and hashed user IDs) to power the live activity
-  feed. These entries are removed when you delete your data via the web
-  interface.
-- **Custom Actions:** Each custom action stores its name, phrase, image
-  URL, and the Discord ID of the person who created it. These are kept
-  until the action is deleted. Deleting your data via the web interface
-  removes your personal actions and clears your ID from server actions
-  you created. Moderation bans are kept.
+  type, time, location, hashed user IDs, and the custom phrase used, if
+  any) to power the live activity
+  feed. These entries, including any custom phrase, are removed when you
+  delete your data via the web interface, and otherwise after 30 days
+  even if the action itself has been deleted.
+- **Custom Actions:** Each custom action stores its name, phrase, and
+  image URL. Personal actions also store your Discord ID and are deleted
+  when you delete your data via the web interface. Server actions belong
+  to the server and survive "Delete my data"; your Discord ID is cleared
+  from the ones you created. Moderation bans keep the banned user's
+  Discord ID.
 
 No personally identifiable information (such as usernames, email
 addresses, or real names) is collected or stored by PetBot.
@@ -38,8 +41,9 @@ addresses, or real names) is collected or stored by PetBot.
 The collected data are used solely to power the bot's features, keep
 track of user statistics, and maintain operational integrity. Data are
 retained indefinitely unless a user chooses to delete their information
-via the web interface. The one exception is the activity log, which is
-automatically removed after 30 days. Removing the bot from a server or uninstalling it
+via the web interface. Server custom actions and moderation bans are
+retained as described above. The activity log is automatically removed
+after 30 days. Removing the bot from a server or uninstalling it
 from your Discord applications does **not** automatically erase any
 stored data; you must explicitly request deletion through the web
 interface.

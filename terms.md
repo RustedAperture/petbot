@@ -8,7 +8,7 @@ These Terms of Service ("Terms") govern your use of PetBot, a Discord bot provid
 
 ## Custom Actions
 
-- You are responsible for the custom actions you create, including their names, phrases, and images. Do not create custom actions that are unlawful, hateful, harassing, or that break Discord's Terms of Service.
+- You are responsible for the custom actions you create, including their names, phrases, and images.
 - The bot's operator may remove any custom action and block people from creating them, at any time and without notice.
 
 ## Data and Privacy

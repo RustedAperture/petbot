@@ -9,7 +9,7 @@
 
 - **Custom Actions:** Make your own actions with `/custom-action add`, then use them with `/action target action`. Autocomplete shows the actions available for that person and server.
 - Server actions also appear as their own slash commands in that server, such as `/boop`.
-- `/custom-action add`, `remove`, and `list` work for `me` (personal) or `server`. Server actions need Manage Server, and PetBot must be added to the server.
+- `/custom-action add`, `remove`, and `list` work for `me` (personal) or `server`. PetBot must be added to the server for any `for:server` use. Manage Server is needed to add or remove server actions, and anyone can list them.
 - Each person can have 5 personal actions, and each server can have 5. Names are lowercase letters, 1 to 20 characters. Phrases are up to 32 characters, with no mentions, links, formatting, or line breaks. Each action has one image, which goes through the same image check as `/set`.
 - Personal actions work anywhere, both when you use them and when they are used on you. A server in restricted mode hides personal actions.
 - Autocomplete now includes custom actions in `/set`, `/reset`, `/server-set`, `/stats`, and `/leaderboard`. The right-click Perform, random, and stats menus include them too. `/server-set` replaces a server action's image.
@@ -23,7 +23,7 @@
 ### Privacy
 
 - PetBot now keeps an anonymous activity log for the live feed: the action type, time, location, and hashed user IDs. Entries are deleted automatically after 30 days, and "Delete my data" removes yours right away. The privacy policy has been updated.
-- Custom actions store their name, phrase, image URL, and the creator's Discord ID until deleted. "Delete my data" removes your personal actions and clears your ID from server actions you created. Moderation bans are kept.
+- Custom actions store their name, phrase, and image URL. "Delete my data" deletes your personal actions. Server actions belong to the server and survive it, but your Discord ID is cleared from the ones you created. Moderation bans keep the banned user's Discord ID. The activity log also stores the custom phrase used, and keeps it for 30 days even if the action is deleted.
 
 ### Under the Hood
 
