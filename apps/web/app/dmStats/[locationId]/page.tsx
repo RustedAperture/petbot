@@ -217,7 +217,7 @@ export default function DmStatsLocationPage({
   >;
 
   return (
-    <main>
+    <main className="w-full">
       <div className="grid gap-4 grid-cols-4">
         {/* Left: stats */}
         <div className="flex-1 min-w-0 col-span-4 xl:col-span-3">
