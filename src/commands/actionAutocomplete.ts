@@ -29,19 +29,23 @@ export async function buildActionContext(
   };
 }
 
-function labelFor(action: ResolvedAction, targetName: string | null): string {
+function labelFor(
+  action: ResolvedAction,
+  authorId: string,
+  targetId: string | null,
+  targetName: string | null,
+): string {
   if (action.isBuiltIn) {
     return action.name;
   }
   if (action.sources.includes("guild")) {
     return `${action.name} · server`;
   }
-  return `${action.name} · ${targetName ? `@${targetName}` : "personal"}`;
-}
-
-function targetDisplayName(interaction: AutocompleteInteraction): string | null {
-  const option = interaction.options.get("target");
-  return option?.user?.displayName ?? null;
+  if (action.personalOwnerIds.includes(authorId)) {
+    return `${action.name} · yours`;
+  }
+  const isTargetOwned = targetId !== null && action.personalOwnerIds.includes(targetId);
+  return `${action.name} · ${isTargetOwned && targetName ? `@${targetName}` : "personal"}`;
 }
 
 export async function respondWithActions(
@@ -49,12 +53,17 @@ export async function respondWithActions(
   actions: ResolvedAction[] | string[],
 ): Promise<void> {
   const focused = interaction.options.getFocused().toLowerCase();
-  const targetName = targetDisplayName(interaction);
+  const authorId = interaction.user.id;
+  const rawTarget = interaction.options.get("target")?.value;
+  const targetId = typeof rawTarget === "string" ? rawTarget : null;
+  // Autocomplete options are raw IDs, so the name only comes from the client cache.
+  const cachedTarget = targetId ? interaction.client.users.cache.get(targetId) : undefined;
+  const targetName = cachedTarget?.displayName ?? cachedTarget?.username ?? null;
   const choices = actions
     .map((a) =>
       typeof a === "string"
         ? { name: a, value: a }
-        : { name: labelFor(a, targetName), value: a.name },
+        : { name: labelFor(a, authorId, targetId, targetName), value: a.name },
     )
     .filter((c) => c.value.toLowerCase().startsWith(focused))
     .slice(0, MAX_CHOICES);

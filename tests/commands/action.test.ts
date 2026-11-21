@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TestDb } from "../helpers/testDb.js";
 import { mockInteraction } from "../helpers/mockInteraction.js";
+import { MessageFlags } from "discord.js";
 import { botData, customActions } from "../../src/db/schema.js";
 
 vi.mock("../../src/logger.js", () => ({
@@ -14,9 +15,21 @@ vi.mock("../../src/utilities/check_user.js", () => ({
   isOptedOut: vi.fn().mockResolvedValue(false),
 }));
 
-const { testDb } = vi.hoisted(() => ({
+const { testDb, store } = vi.hoisted(() => ({
   testDb: { current: null as unknown as TestDb },
+  store: { forceGuildListing: false },
 }));
+
+vi.mock("../../src/utilities/customActions/store.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/utilities/customActions/store.js")>();
+  return {
+    ...original,
+    listCustomActions: async (scope: "guild" | "user", ownerId: string) =>
+      store.forceGuildListing && scope === "guild"
+        ? [{ name: "boop", scope, ownerId }]
+        : original.listCustomActions(scope, ownerId),
+  };
+});
 
 vi.mock("../../src/db/connector.js", async () => {
   const { createTestDb } = await import("../helpers/testDb.js");
@@ -52,6 +65,7 @@ function buildInteraction(opts: {
   targetId?: string | null;
   commandName?: string;
   guildId?: string | null;
+  cachedUsers?: Record<string, any>;
 }) {
   const target = { id: "target-1", fetch: vi.fn().mockResolvedValue(true) };
   const interaction = mockInteraction({
@@ -71,11 +85,15 @@ function buildInteraction(opts: {
       ? { value: opts.targetId ?? "target-1" }
       : null;
   interaction.respond = vi.fn();
+  interaction.client = {
+    users: { cache: { get: (id: string) => opts.cachedUsers?.[id] } },
+  };
   return interaction;
 }
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  store.forceGuildListing = false;
   await testDb.current.db.delete(customActions);
   await testDb.current.db.delete(botData);
   (performAction as any).mockResolvedValue("container");
@@ -124,26 +142,26 @@ describe("/action autocomplete", () => {
     expect(filtered.respond).toHaveBeenCalledWith([{ name: "pet", value: "pet" }]);
   });
 
-  it("labels personal actions with the target's display name when known", async () => {
-    const interaction = buildInteraction({});
-    interaction.options.get = () => ({
-      value: "target-1",
-      user: { displayName: "Sam" },
-    });
-    await respondWithActions(interaction as any, [
-      {
-        name: "wave",
-        phrase: "waved",
-        isBuiltIn: false,
-        sources: ["user"],
-        imageSource: "custom",
-        definitionImages: {},
-      },
-    ]);
+  const personal = (ownerIds: string[]) => ({
+    name: "wave",
+    phrase: "waved",
+    isBuiltIn: false,
+    sources: ["user" as const],
+    imageSource: "custom" as const,
+    definitionImages: {},
+    personalOwnerIds: ownerIds,
+  });
 
-    expect(interaction.respond).toHaveBeenCalledWith([
-      { name: "wave · @Sam", value: "wave" },
-    ]);
+  it.each([
+    ["author-owned", ["user-1"], {}, "wave · yours"],
+    ["target-owned with a cached user", ["target-1"], { "target-1": { displayName: "Sam", username: "sam" } }, "wave · @Sam"],
+    ["target-owned with a cached user lacking a display name", ["target-1"], { "target-1": { username: "sam" } }, "wave · @sam"],
+    ["target-owned with an uncached user", ["target-1"], {}, "wave · personal"],
+  ])("labels %s personal actions from an ID-only target option", async (_l, owners, cachedUsers, expected) => {
+    const interaction = buildInteraction({ cachedUsers });
+    await respondWithActions(interaction as any, [personal(owners)]);
+
+    expect(interaction.respond).toHaveBeenCalledWith([{ name: expected, value: "wave" }]);
   });
 });
 
@@ -168,7 +186,7 @@ describe("/action execute", () => {
     expect(interaction.__calls.replies[0]).toMatchObject({
       content: "That action isn't available here.",
     });
-    expect(interaction.__calls.replies[0].flags).toBeDefined();
+    expect(interaction.__calls.replies[0].flags).toBe(MessageFlags.Ephemeral);
   });
 
   it("rejects a personal-only action in a restricted guild", async () => {
@@ -184,9 +202,10 @@ describe("/action execute", () => {
     await command.execute(interaction as any);
 
     expect(performAction).not.toHaveBeenCalled();
-    expect(interaction.__calls.replies[0].content).toBe(
-      "That action isn't available here.",
-    );
+    expect(interaction.__calls.replies[0]).toEqual({
+      content: "That action isn't available here.",
+      flags: MessageFlags.Ephemeral,
+    });
   });
 });
 
@@ -197,6 +216,20 @@ describe("executeCustomGuildCommand", () => {
 
     expect(await executeCustomGuildCommand(interaction as any)).toBe(true);
     expect((performAction as any).mock.calls[0][0].name).toBe("boop");
+  });
+
+  it("does not run a same-named personal action when the guild definition is gone", async () => {
+    store.forceGuildListing = true;
+    await seed("user", "user-1", "boop");
+    const interaction = buildInteraction({ commandName: "boop" });
+
+    expect(await executeCustomGuildCommand(interaction as any)).toBe(true);
+
+    expect(performAction).not.toHaveBeenCalled();
+    expect(interaction.__calls.replies[0]).toEqual({
+      content: "That action isn't available here.",
+      flags: MessageFlags.Ephemeral,
+    });
   });
 
   it.each([

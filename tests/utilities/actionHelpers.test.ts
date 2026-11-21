@@ -170,6 +170,7 @@ describe("actionHelpers", () => {
       sources: ["guild" as const],
       imageSource: "custom" as const,
       definitionImages: {},
+      personalOwnerIds: [],
     };
     await performAction(custom, { id: "t" } as any, { id: "a" } as any, "g1");
     expect((buildActionReply as any).mock.calls[0][4]).toBe("t.png");

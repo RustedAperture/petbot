@@ -3,6 +3,9 @@ import {
   MessageFlags,
   type Interaction,
   type ButtonInteraction,
+  type ChatInputCommandInteraction,
+  type UserContextMenuCommandInteraction,
+  type MessageContextMenuCommandInteraction,
   type Client,
 } from "discord.js";
 import logger from "../logger.js";
@@ -34,6 +37,31 @@ function findCommandByAlias(
     }
   }
   return undefined;
+}
+
+async function replyWithCommandError(
+  interaction: ChatInputCommandInteraction | UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction,
+  error: unknown,
+): Promise<void> {
+  logger.error({ error, commandName: interaction.commandName }, "Command failed");
+  if (!interaction.replied && !interaction.deferred) {
+    try {
+      await interaction.reply({
+        content: "There was an error while executing this command!",
+        flags: MessageFlags.Ephemeral,
+      });
+    } catch (replyError) {
+      logger.error({ error: replyError }, "Failed to send error reply");
+    }
+  } else if (interaction.deferred) {
+    try {
+      await interaction.editReply({
+        content: "There was an error while executing this command!",
+      });
+    } catch (editError) {
+      logger.error({ error: editError }, "Failed to edit error reply");
+    }
+  }
 }
 
 const interactionCreate = {
@@ -83,7 +111,7 @@ const interactionCreate = {
               return;
             }
           } catch (error) {
-            logger.error({ error, commandName: interaction.commandName }, "Custom guild command failed");
+            await replyWithCommandError(interaction, error);
             return;
           }
         }
@@ -97,25 +125,7 @@ const interactionCreate = {
       try {
         await command.execute(interaction);
       } catch (error) {
-        logger.error({ error, commandName: interaction.commandName }, "Command failed");
-        if (!interaction.replied && !interaction.deferred) {
-          try {
-            await interaction.reply({
-              content: "There was an error while executing this command!",
-              flags: MessageFlags.Ephemeral,
-            });
-          } catch (replyError) {
-            logger.error({ error: replyError }, "Failed to send error reply");
-          }
-        } else if (interaction.deferred) {
-          try {
-            await interaction.editReply({
-              content: "There was an error while executing this command!",
-            });
-          } catch (editError) {
-            logger.error({ error: editError }, "Failed to edit error reply");
-          }
-        }
+        await replyWithCommandError(interaction, error);
       }
     } else if (interaction.isButton()) {
       const buttonInteraction = interaction as ButtonInteraction;

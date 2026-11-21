@@ -19,6 +19,7 @@ export type ResolvedAction = {
   sources: Array<"builtin" | "guild" | "user">;
   imageSource: "author" | "target" | "custom";
   definitionImages: { guild?: string; target?: string; author?: string };
+  personalOwnerIds: string[];
   builtInDefaultImage?: string;
 };
 
@@ -33,6 +34,7 @@ export function resolveBuiltIn(name: ActionType): ResolvedAction {
     sources: ["builtin"],
     imageSource: config.imageSource,
     definitionImages: {},
+    personalOwnerIds: [],
     builtInDefaultImage: config.defaultImage,
   };
 }
@@ -73,6 +75,7 @@ function mergeDefinitions(
     sources: [...(guild ? ["guild" as const] : []), ...(target || author ? ["user" as const] : [])],
     imageSource: "custom",
     definitionImages,
+    personalOwnerIds: defs.filter((d) => d.scope === "user").map((d) => d.ownerId),
   };
 }
 

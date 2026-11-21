@@ -8,28 +8,28 @@ import {
   type User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
-import { resolveAction } from "../../utilities/customActions/resolver.js";
+import { resolveAction, type ActionContext, type ResolvedAction } from "../../utilities/customActions/resolver.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { checkOptOuts } from "../../utilities/optOutHelper.js";
 import { autocompleteActions, buildActionContext } from "../actionAutocomplete.js";
 
 export const UNAVAILABLE_MESSAGE = "That action isn't available here.";
 
-/** Runs a named action against the `target` option; shared by `/action` and native guild commands. */
-export async function executeNamedAction(
+export async function replyUnavailable(
   interaction: ChatInputCommandInteraction,
-  actionName: string,
 ): Promise<void> {
-  const ctx = await buildActionContext(interaction);
-  const action = await resolveAction(actionName, ctx);
-  if (!action) {
-    await interaction.reply({
-      content: UNAVAILABLE_MESSAGE,
-      flags: MessageFlags.Ephemeral,
-    });
-    return;
-  }
+  await interaction.reply({
+    content: UNAVAILABLE_MESSAGE,
+    flags: MessageFlags.Ephemeral,
+  });
+}
 
+/** Runs an already-resolved action against the `target` option; shared by `/action` and native guild commands. */
+export async function executeResolvedAction(
+  interaction: ChatInputCommandInteraction,
+  action: ResolvedAction,
+  ctx: ActionContext,
+): Promise<void> {
   const rawTarget = interaction.options.getUser("target", true);
   const { optedOutIds, allOptedOut } = await checkOptOuts(interaction, [rawTarget]);
   if (allOptedOut) {
@@ -97,7 +97,13 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
   async execute(interaction: ChatInputCommandInteraction) {
-    await executeNamedAction(interaction, interaction.options.getString("action", true));
+    const ctx = await buildActionContext(interaction);
+    const action = await resolveAction(interaction.options.getString("action", true), ctx);
+    if (!action) {
+      await replyUnavailable(interaction);
+      return;
+    }
+    await executeResolvedAction(interaction, action, ctx);
   },
   autocomplete: autocompleteActions,
 };

@@ -195,6 +195,22 @@ describe("interactionCreate routing for custom actions", () => {
     );
   });
 
+  it("edits the deferred reply when a native guild command fails", async () => {
+    vi.mocked(executeCustomGuildCommand).mockRejectedValue(new Error("performAction failed"));
+    const interaction = chatInteraction({
+      guildId: "g1",
+      replied: false,
+      deferred: true,
+      editReply: vi.fn(),
+    });
+
+    await interactionCreate.execute(interaction);
+
+    expect(interaction.editReply).toHaveBeenCalledWith({
+      content: "There was an error while executing this command!",
+    });
+  });
+
   it("calls autocomplete and swallows its errors", async () => {
     const autocomplete = vi.fn().mockRejectedValue(new Error("boom"));
     const interaction = chatInteraction({
