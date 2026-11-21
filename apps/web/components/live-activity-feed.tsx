@@ -1,0 +1,150 @@
+"use client";
+
+import { useEffect, useState, type CSSProperties } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  ArrowDownToLine,
+  Cookie,
+  Flame,
+  Hammer,
+  Hand,
+  Heart,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Item, ItemActions, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { actionPhrase, formatRelativeTime } from "@/lib/live-events";
+import { cn } from "@/lib/utils";
+import type { LiveActionEvent } from "@/types/live";
+
+const TICK_INTERVAL_MS = 10_000;
+const SKELETON_ROW_COUNT = 6;
+
+const ACTION_STYLES: Record<string, { icon: LucideIcon; color: string }> = {
+  pet: { icon: Hand, color: "var(--chart-2)" },
+  hug: { icon: Heart, color: "var(--chart-1)" },
+  bonk: { icon: Hammer, color: "var(--chart-3)" },
+  bite: { icon: Cookie, color: "var(--chart-4)" },
+  squish: { icon: ArrowDownToLine, color: "var(--chart-5)" },
+  explode: { icon: Flame, color: "var(--destructive)" },
+};
+const OTHER_STYLE = { icon: Sparkles, color: "var(--muted-foreground)" };
+
+function actionStyle(actionType: string) {
+  return Object.hasOwn(ACTION_STYLES, actionType) ? ACTION_STYLES[actionType] : OTHER_STYLE;
+}
+
+interface LiveActivityFeedProps {
+  /** Events ordered newest first. */
+  events: LiveActionEvent[];
+  status: "connecting" | "live" | "reconnecting";
+  isLoading: boolean;
+  className?: string;
+}
+
+/** Presentational card listing anonymous live action events with a connection status badge. */
+export default function LiveActivityFeed({
+  events,
+  status,
+  isLoading,
+  className,
+}: LiveActivityFeedProps) {
+  const isReducedMotion = useReducedMotion();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), TICK_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isReconnecting = status === "reconnecting";
+
+  return (
+    <Card className={className}>
+      <CardHeader className="flex items-center justify-between">
+        <CardTitle>Live activity</CardTitle>
+        {isReconnecting ? (
+          <Badge
+            variant="secondary"
+            className="bg-amber-500/15 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+          >
+            Reconnecting
+          </Badge>
+        ) : (
+          <Badge
+            variant="secondary"
+            className="bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300"
+          >
+            <span className="relative flex size-1.5">
+              {status === "live" && (
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-75" />
+              )}
+              <span className="relative inline-flex size-1.5 rounded-full bg-current" />
+            </span>
+            Live
+          </Badge>
+        )}
+      </CardHeader>
+      <ScrollArea className="h-72">
+        {isLoading ? (
+          <div className="flex flex-col gap-2 px-4">
+            {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+              <Skeleton key={index} className="h-14 w-full rounded-2xl" />
+            ))}
+          </div>
+        ) : events.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>It&apos;s quiet in here</EmptyTitle>
+              <EmptyDescription>
+                Run `/pet` on someone in Discord and it shows up here straight away.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="flex flex-col gap-1 px-2">
+            <AnimatePresence initial={false}>
+              {events.map((event, index) => {
+                const { icon: Icon, color } = actionStyle(event.actionType);
+                return (
+                  <motion.li
+                    key={event.id}
+                    initial={isReducedMotion ? false : { y: -8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                    style={{ "--act": color } as CSSProperties}
+                  >
+                    <Item
+                      size="sm"
+                      className={cn(
+                        index === 0 && "bg-[color-mix(in_oklab,var(--act)_10%,transparent)]",
+                      )}
+                    >
+                      <ItemMedia
+                        variant="icon"
+                        className="bg-[color-mix(in_oklab,var(--act)_18%,transparent)] text-[var(--act)]"
+                      >
+                        <Icon />
+                      </ItemMedia>
+                      <ItemTitle>{actionPhrase(event.actionType)}</ItemTitle>
+                      <ItemActions className="ml-auto text-xs text-muted-foreground">
+                        <time dateTime={event.createdAt}>
+                          {formatRelativeTime(event.createdAt, now)}
+                        </time>
+                      </ItemActions>
+                    </Item>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
+          </ul>
+        )}
+      </ScrollArea>
+    </Card>
+  );
+}
