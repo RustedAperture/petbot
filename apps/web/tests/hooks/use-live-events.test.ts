@@ -180,16 +180,32 @@ describe("useLiveEvents", () => {
   it("refetches recent history after a reopen and merges it in order", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ events: [ev(2), ev(1)] }))
+      .mockResolvedValueOnce(json({ events: [ev(2), ev(1)] }))
       .mockResolvedValueOnce(json({ events: [ev(5), ev(4), ev(3), ev(2)] }));
     const r = renderHook(() => useLiveEvents(global));
     await flush();
     FakeEventSource.last.open();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     FakeEventSource.last.fail();
     FakeEventSource.last.open();
     await flush();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(r.result.current.events.map((e) => e.id)).toEqual([5, 4, 3, 2, 1]);
+    r.unmount();
+  });
+
+  it("fills an event recorded between the initial backfill and the first open", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ events: [ev(1)] }))
+      .mockResolvedValueOnce(json({ events: [ev(2), ev(1)] }));
+    const onEvent = vi.fn();
+    const r = renderHook(() => useLiveEvents(global, { onEvent }));
+    await flush();
+    FakeEventSource.last.open();
+    await flush();
+    expect(r.result.current.events.map((e) => e.id)).toEqual([2, 1]);
+    expect(onEvent).not.toHaveBeenCalled();
     r.unmount();
   });
 
@@ -307,7 +323,7 @@ describe("useLiveEvents", () => {
       latestLiveEvent: null,
     });
     expect(old.closed).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(FakeEventSource.instances).toHaveLength(1);
     r.unmount();
   });

@@ -2,7 +2,7 @@ import { and, desc, eq, lt, or, type SQL } from "drizzle-orm";
 import { drizzleDb } from "../db/connector.js";
 import { actionEvents } from "../db/schema.js";
 import logger from "../logger.js";
-import { hashUserId } from "./crypto.js";
+import { hashUserId, secureEqual } from "./crypto.js";
 import { publishActionEvent, type ActionEventRow } from "./actionEventBus.js";
 
 export type ActionEventFilter = { locationId?: string; userId?: string };
@@ -77,7 +77,10 @@ export function matchesActionEventFilter(
   }
   if (filter.userId !== undefined) {
     const hash = hashUserId(filter.userId);
-    if (row.performerHash !== hash && row.targetHash !== hash) {
+    if (
+      !secureEqual(row.performerHash, hash) &&
+      !secureEqual(row.targetHash, hash)
+    ) {
       return false;
     }
   }
@@ -98,8 +101,8 @@ export function toPublicActionEvent(
     return event;
   }
   const hash = hashUserId(userId);
-  const isPerformer = row.performerHash === hash;
-  const isTarget = row.targetHash === hash;
+  const isPerformer = secureEqual(row.performerHash, hash);
+  const isTarget = secureEqual(row.targetHash, hash);
   if (isPerformer && isTarget) {
     event.role = "both";
   } else if (isPerformer) {

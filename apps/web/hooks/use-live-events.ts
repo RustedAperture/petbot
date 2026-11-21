@@ -111,8 +111,10 @@ export function useLiveEvents(
         if (isReconnecting) {
           isReconnecting = false;
           onReconnectRef.current?.();
-          void backfill();
         }
+        // Refetch on every open: events recorded after the initial backfill but
+        // before the stream subscribed would otherwise be missing from both.
+        void backfill();
       };
       source.onerror = () => {
         isReconnecting = true;

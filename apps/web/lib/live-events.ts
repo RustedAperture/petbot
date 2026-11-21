@@ -46,12 +46,16 @@ export function applyLiveEvent(
   event: LiveActionEvent,
   mode: LiveCountMode,
 ): GlobalStats {
-  const isPerformed = mode === "location" || countsAsPerformed(event);
-  const isReceived =
-    mode === "user" && (event.role === "received" || event.role === "both");
   const current = Object.hasOwn(stats.totalsByAction, event.actionType)
     ? stats.totalsByAction[event.actionType]
     : undefined;
+  const isPerformed = mode === "location" || countsAsPerformed(event);
+  // Location-wide totals count both sides of every action, but only where the
+  // stats payload carries received counts at all.
+  const isReceived =
+    mode === "location"
+      ? current?.totalHasReceived !== undefined
+      : event.role === "received" || event.role === "both";
 
   const totalsByAction = { ...stats.totalsByAction };
   if (current) {

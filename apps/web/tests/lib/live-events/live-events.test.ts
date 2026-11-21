@@ -31,8 +31,8 @@ describe("live-events", () => {
   });
 
   it.each([
-    ["location", undefined, 1, 1, 0],
-    ["location", "received", 1, 1, 0],
+    ["location", undefined, 1, 1, 1],
+    ["location", "received", 1, 1, 1],
     ["user", "performed", 1, 1, 0],
     ["user", "received", 0, 0, 1],
     ["user", "both", 1, 1, 1],
@@ -68,15 +68,18 @@ describe("live-events", () => {
     },
   );
 
-  it("applyLiveEvent leaves an absent received count absent when the event is not received", () => {
+  it.each([
+    ["user", "performed"],
+    ["location", undefined],
+  ])("applyLiveEvent leaves an absent received count absent (%s/%s)", (mode, role) => {
     const bare: GlobalStats = {
       ...stats,
       totalsByAction: { pet: { totalHasPerformed: 1, totalUsers: 1, imageUrl: "" } },
     };
     const next = applyLiveEvent(
       bare,
-      { id: 1, actionType: "pet", createdAt: "t", role: "performed" },
-      "user",
+      { id: 1, actionType: "pet", createdAt: "t", role } as LiveActionEvent,
+      mode as LiveCountMode,
     );
     expect(next.totalsByAction.pet.totalHasPerformed).toBe(2);
     expect("totalHasReceived" in next.totalsByAction.pet).toBe(false);
