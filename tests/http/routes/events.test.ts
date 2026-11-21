@@ -192,6 +192,50 @@ describe("/api/events", () => {
     }
   });
 
+  it("caps custom events waiting on a pending name refresh at 100 per subscriber", async () => {
+    let resolveNames!: (names: Array<{ name: string }>) => void;
+    listGuildActions.mockReturnValue(
+      new Promise((resolve) => {
+        resolveNames = resolve;
+      }),
+    );
+    server = createApp().listen(0);
+    await new Promise((resolve) => server!.once("listening", resolve));
+    const { port } = server.address() as AddressInfo;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/events/stream?locationId=1`, {
+        signal: controller.signal,
+      });
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      await reader.read();
+      for (let n = 0; n < 150; n++) {
+        publishActionEvent({ ...rowAt(500 + n, "1"), actionType: "boop", phraseSource: "guild" });
+      }
+      resolveNames([{ name: "boop" }]);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      publishActionEvent(rowAt(900, "1"));
+      let received = "";
+      while (!received.includes("id: 900\n")) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        received += decoder.decode(value);
+      }
+      const customIds = [...received.matchAll(/^id: (\d+)$/gm)]
+        .map((m) => Number(m[1]))
+        .filter((id) => id < 900);
+      expect(customIds).toHaveLength(100);
+      expect(customIds[0]).toBe(500);
+    } finally {
+      clearTimeout(timeout);
+      controller.abort();
+    }
+  });
+
   it("a burst of built-in events triggers no name lookups after connecting", async () => {
     listGuildActions.mockResolvedValue([]);
     server = createApp().listen(0);

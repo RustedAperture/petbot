@@ -14,6 +14,7 @@ import { createGuildNameCache } from "../../utilities/customActions/guildNameCac
 import { subscribeActionEvents } from "../../utilities/actionEventBus.js";
 
 const PING_INTERVAL_MS = 25_000;
+const MAX_PENDING_CUSTOM_EVENTS = 100;
 const NUMERIC_ID = /^\d+$/;
 
 const router = Router();
@@ -98,6 +99,7 @@ router.get("/stream", (req: Request, res: Response) => {
   res.flushHeaders();
 
   let isStopped = false;
+  let pendingCustomEvents = 0;
   let unsubscribe = () => {};
 
   const stop = () => {
@@ -105,6 +107,7 @@ router.get("/stream", (req: Request, res: Response) => {
       return;
     }
     isStopped = true;
+    pendingCustomEvents = 0;
     unsubscribe();
     clearInterval(pingTimer);
   };
@@ -139,7 +142,26 @@ router.get("/stream", (req: Request, res: Response) => {
     if (isCurrent === true) {
       send();
     } else if (isCurrent !== false) {
-      void isCurrent.then((isNow) => isNow && send());
+      // Each waiting event holds a closure until the refresh settles, so past
+      // the cap new custom events are dropped.
+      if (pendingCustomEvents >= MAX_PENDING_CUSTOM_EVENTS) {
+        return;
+      }
+      pendingCustomEvents += 1;
+      void isCurrent.then(
+        (isNow) => {
+          if (isStopped) {
+            return;
+          }
+          pendingCustomEvents -= 1;
+          if (isNow) {
+            send();
+          }
+        },
+        () => {
+          pendingCustomEvents = Math.max(0, pendingCustomEvents - 1);
+        },
+      );
     }
   });
   const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
