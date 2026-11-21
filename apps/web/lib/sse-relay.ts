@@ -11,11 +11,21 @@ export type EventsScope =
   | { guildId: string; userId?: never; locationId?: never }
   | { guildId?: never; userId: string; locationId?: string };
 
+const SSE_HEADERS = {
+  "content-type": "text/event-stream",
+  "cache-control": "no-cache, no-transform",
+  "x-accel-buffering": "no",
+};
+
 /** Pipes the bot's SSE stream to the browser; aborts upstream when the client disconnects. */
 export async function relayEventStream(
   req: Request,
   botPath: string,
 ): Promise<Response> {
+  // Next runs GET for HEAD and never aborts req.signal, which would leave the upstream stream open.
+  if (req.method === "HEAD") {
+    return new Response(null, { headers: SSE_HEADERS });
+  }
   let upstream: Response;
   try {
     upstream = await fetch(`${getInternalApiBase()}${botPath}`, {
@@ -29,11 +39,7 @@ export async function relayEventStream(
     return apiError(503, "upstream_unavailable");
   }
   return new Response(upstream.body, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache, no-transform",
-      "x-accel-buffering": "no",
-    },
+    headers: SSE_HEADERS,
   });
 }
 

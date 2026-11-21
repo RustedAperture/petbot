@@ -43,6 +43,15 @@ describe("global scope", () => {
     expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/api\/events\/stream$/);
   });
 
+  it("stream answers HEAD with SSE headers and never calls upstream", async () => {
+    const res = await globalStreamGet(
+      new Request("http://localhost/api/events/stream", { method: "HEAD" }),
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("stream returns 503 when the bot is unreachable", async () => {
     fetchMock.mockRejectedValue(new Error("ECONNREFUSED"));
     const res = await globalStreamGet(

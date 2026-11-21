@@ -108,11 +108,14 @@ describe("/api/events", () => {
       expect(res.headers.get("content-type")).toContain("text/event-stream");
       expect(actionEventListenerCount()).toBe(1);
 
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      const first = await reader.read();
+      expect(decoder.decode(first.value)).toBe(": connected\n\n");
+
       publishActionEvent(rowAt(10, "2"));
       publishActionEvent(rowAt(11, "1"));
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
       let received = "";
       while (!received.includes("event: action")) {
         const { value, done } = await reader.read();
@@ -175,7 +178,7 @@ describe("/api/events", () => {
   });
 
   it("stream stops its producers and never writes again once a write is backpressured", async () => {
-    const writeSpy = vi.fn(() => false);
+    const writeSpy = vi.fn().mockReturnValueOnce(true).mockReturnValue(false);
     const app = express();
     app.use((_req, res, next) => {
       res.write = writeSpy as unknown as typeof res.write;
@@ -204,7 +207,7 @@ describe("/api/events", () => {
       }).not.toThrow();
 
       expect(actionEventListenerCount()).toBe(0);
-      expect(writeSpy).toHaveBeenCalledTimes(1);
+      expect(writeSpy).toHaveBeenCalledTimes(2);
     } finally {
       clearTimeout(timeout);
       req.destroy();

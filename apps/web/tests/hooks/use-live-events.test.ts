@@ -94,10 +94,12 @@ describe("useLiveEvents", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("EventSource", FakeEventSource);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
@@ -172,6 +174,34 @@ describe("useLiveEvents", () => {
     FakeEventSource.last.open();
     expect(onReconnect).toHaveBeenCalledTimes(1);
     expect(r.result.current.status).toBe("live");
+    r.unmount();
+  });
+
+  it("refetches recent history after a reopen and merges it in order", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ events: [ev(2), ev(1)] }))
+      .mockResolvedValueOnce(json({ events: [ev(5), ev(4), ev(3), ev(2)] }));
+    const r = renderHook(() => useLiveEvents(global));
+    await flush();
+    FakeEventSource.last.open();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    FakeEventSource.last.fail();
+    FakeEventSource.last.open();
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(r.result.current.events.map((e) => e.id)).toEqual([5, 4, 3, 2, 1]);
+    r.unmount();
+  });
+
+  it("keeps only the newest 50 events as stream events accumulate", async () => {
+    fetchMock.mockResolvedValue(json({ events: [] }));
+    const r = renderHook(() => useLiveEvents(global));
+    await flush();
+    for (let id = 1; id <= 60; id++) {
+      FakeEventSource.last.emit("action", ev(id));
+    }
+    expect(r.result.current.events).toHaveLength(50);
+    expect(r.result.current.events[49].id).toBe(11);
     r.unmount();
   });
 

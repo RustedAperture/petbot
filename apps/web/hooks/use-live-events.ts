@@ -33,7 +33,8 @@ const IDLE_RESULT: UseLiveEventsResult = {
  * - Events are newest first, deduped by id, capped at 50.
  * - `onEvent` fires only for new stream events, never the backfill.
  * - A source the browser gave up on (non-200) is recreated with backoff.
- * - `onReconnect` fires on each open that follows a drop, so callers can resync.
+ * - `onReconnect` fires on each open that follows a drop, so callers can resync;
+ *   the recent history is refetched then to fill feed gaps.
  */
 export function useLiveEvents(
   scope: LiveScope | null,
@@ -63,7 +64,7 @@ export function useLiveEvents(
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let backoffMs = INITIAL_BACKOFF_MS;
     let isReconnecting = false;
-    const seenIds = new Set<number>();
+    let retained: LiveActionEvent[] = [];
 
     /* eslint-disable react-hooks/set-state-in-effect */
     setEvents([]);
@@ -72,6 +73,21 @@ export function useLiveEvents(
     setIsLoading(true);
     /* eslint-enable react-hooks/set-state-in-effect */
 
+    // Dedupes against the retained window only, so memory stays bounded. Ids are
+    // monotonic, so id order is recency order.
+    const merge = (incoming: LiveActionEvent[]): LiveActionEvent[] => {
+      const fresh = incoming.filter(
+        (event) => !retained.some((kept) => kept.id === event.id),
+      );
+      if (fresh.length > 0) {
+        retained = [...retained, ...fresh]
+          .sort((a, b) => b.id - a.id)
+          .slice(0, MAX_EVENTS);
+        setEvents(retained);
+      }
+      return fresh;
+    };
+
     const handleAction = (message: MessageEvent) => {
       let event: LiveActionEvent;
       try {
@@ -79,11 +95,9 @@ export function useLiveEvents(
       } catch {
         return;
       }
-      if (seenIds.has(event.id)) {
+      if (merge([event]).length === 0) {
         return;
       }
-      seenIds.add(event.id);
-      setEvents((prev) => [event, ...prev].slice(0, MAX_EVENTS));
       setLatestLiveEvent(event);
       onEventRef.current?.(event);
     };
@@ -97,6 +111,7 @@ export function useLiveEvents(
         if (isReconnecting) {
           isReconnecting = false;
           onReconnectRef.current?.();
+          void backfill();
         }
       };
       source.onerror = () => {
@@ -104,7 +119,7 @@ export function useLiveEvents(
         setStatus("reconnecting");
         if (source.readyState === EventSource.CLOSED) {
           source.close();
-          retryTimer = setTimeout(connect, backoffMs);
+          retryTimer = setTimeout(connect, backoffMs * (0.5 + Math.random()));
           backoffMs = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
         }
       };
@@ -121,13 +136,7 @@ export function useLiveEvents(
         if (!isActive) {
           return;
         }
-        const backfilled = (body.events ?? []).slice(0, MAX_EVENTS);
-        const fresh = backfilled.filter((event) => !seenIds.has(event.id));
-        fresh.forEach((event) => seenIds.add(event.id));
-        // Stream events may have arrived first; ids are monotonic, so id order is recency order.
-        setEvents((prev) =>
-          [...prev, ...fresh].sort((a, b) => b.id - a.id).slice(0, MAX_EVENTS),
-        );
+        merge((body.events ?? []).slice(0, MAX_EVENTS));
       } catch {
         // The stream still works without a backfill.
       } finally {

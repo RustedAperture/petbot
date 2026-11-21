@@ -103,6 +103,9 @@ router.get("/stream", (req: Request, res: Response) => {
     }
   });
   const pingTimer = setInterval(() => write(": ping\n\n"), PING_INTERVAL_MS);
+  // Downstream proxies only flush headers with the first body chunk; without
+  // this the client's onopen waits for the first event or ping.
+  write(": connected\n\n");
 
   // Tied to the response: a GET body consumed by express.json fires the
   // request's "close" while the stream is still open.
