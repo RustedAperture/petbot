@@ -72,7 +72,10 @@ vi.mock("@/components/custom-actions-manager", () => ({
   default: () => createElement("div", { "data-testid": "custom-actions" }),
 }));
 
-let botMembershipState = { isBotMember: true, isLoading: false };
+let botMembershipState: {
+  isBotMember: boolean | null;
+  isLoading: boolean;
+} = { isBotMember: true, isLoading: false };
 vi.mock("@/hooks/use-bot-membership", () => ({
   useBotMembership: () => botMembershipState,
 }));
@@ -328,6 +331,18 @@ describe("Admin guild page", () => {
       unmount();
     },
   );
+
+  it("shows no Server actions card while membership is unknown", () => {
+    botMembershipState = { isBotMember: null, isLoading: false };
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.textContent).not.toContain("Server actions");
+    expect(container.textContent).not.toContain("Add PetBot");
+    unmount();
+  });
 
   it("shows neither the manager nor the note while membership loads", () => {
     botMembershipState = { isBotMember: false, isLoading: true };

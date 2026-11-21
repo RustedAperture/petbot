@@ -76,7 +76,7 @@ export default function AdminGuildPageContent({
         guildIconUrl={guildIconUrl}
       />
       {/* Without the bot, the settings form's "Bot not in server" alert is the only notice. */}
-      {!pageLoading && !isMembershipLoading && isBotMember && (
+      {!pageLoading && !isMembershipLoading && isBotMember === true && (
         <Card>
           <CardHeader>
             <CardTitle>Server actions</CardTitle>

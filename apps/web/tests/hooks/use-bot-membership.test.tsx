@@ -36,20 +36,62 @@ describe("useBotMembership", () => {
     unmount();
   });
 
-  it("treats a failed lookup as not a member", async () => {
-    fetchMock.mockResolvedValue(new Response("{}", { status: 503 }));
+  it("treats a failed lookup as unknown, not absent, and retries to success", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fetchMock
+      .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+      .mockResolvedValue(Response.json({ isBotGuild: true, isBotMember: true }));
     const { result, unmount } = renderHook(() => useBotMembership("456"));
 
-    await vi.waitFor(() => expect(result.current.isLoading).toBe(false));
+    await vi.waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(result.current.isBotMember).not.toBe(false);
+    expect(result.current.isBotMember).toBeNull();
 
-    expect(result.current.isBotMember).toBe(false);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    await vi.waitFor(() => expect(result.current.isBotMember).toBe(true));
+    expect(result.current.error).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     unmount();
+    vi.useRealTimers();
+  });
+
+  it("backs off and stops retrying after unmount", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fetchMock.mockResolvedValue(new Response("{}", { status: 503 }));
+    const { unmount } = renderHook(() => useBotMembership("456"));
+
+    const advance = (ms: number) =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+
+    await advance(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await advance(999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await advance(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await advance(1999);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await advance(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    unmount();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
   });
 
   it("does not fetch without a guild id", () => {
     const { result, unmount } = renderHook(() => useBotMembership(null));
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(result.current).toEqual({ isBotMember: false, isLoading: false });
+    expect(result.current).toEqual({
+      isBotMember: false,
+      isLoading: false,
+      error: null,
+    });
     unmount();
   });
 });
