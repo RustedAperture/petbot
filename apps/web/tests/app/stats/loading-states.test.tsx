@@ -19,6 +19,7 @@ const stats = {
   totalLocations: 2,
 };
 const refresh = vi.fn();
+const applyLiveEvent = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -59,6 +60,7 @@ for (const [name, Page] of [
         isLoading: true,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
@@ -71,6 +73,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: new Error("Failed to fetch stats (500)"),
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByRole("alert")).toHaveTextContent(/couldn't load/i);
@@ -85,6 +88,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText(/no stats available yet/i)).toBeInTheDocument();
@@ -102,6 +106,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText(/no stats available yet/i)).toBeInTheDocument();
@@ -114,6 +119,7 @@ for (const [name, Page] of [
         isLoading: true,
         error: null,
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText("Total Actions Performed")).toBeInTheDocument();
@@ -129,6 +135,7 @@ for (const [name, Page] of [
         isLoading: false,
         error: new Error("Network error"),
         refresh,
+        applyLiveEvent,
       });
       renderPage();
       expect(screen.getByText("Total Actions Performed")).toBeInTheDocument();

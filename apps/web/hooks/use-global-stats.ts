@@ -1,5 +1,7 @@
 import * as React from "react";
 import type { GlobalStats } from "@/types/stats";
+import type { LiveActionEvent, LiveCountMode } from "@/types/live";
+import { applyLiveEvent as applyLiveEventToStats } from "@/lib/live-events";
 
 type UseGlobalStatsOptions = {
   /** poll interval in ms; omit or 0 to disable */
@@ -25,6 +27,7 @@ type UseGlobalStatsResult = {
   isLoading: boolean;
   error: Error | null;
   refresh: () => void;
+  applyLiveEvent: (event: LiveActionEvent, mode: LiveCountMode) => void;
 };
 /**
  * Fetches `/api/stats` (proxied to the bot on :3001 in dev) and returns loading / error state + a refresh function.
@@ -114,5 +117,11 @@ export function useGlobalStats({
     return () => clearInterval(id);
   }, [refreshIntervalMs, refresh]);
 
-  return { data, isLoading, error, refresh };
+  const applyLiveEvent = React.useCallback(
+    (event: LiveActionEvent, mode: LiveCountMode) =>
+      setData((prev) => (prev ? applyLiveEventToStats(prev, event, mode) : prev)),
+    [],
+  );
+
+  return { data, isLoading, error, refresh, applyLiveEvent };
 }
