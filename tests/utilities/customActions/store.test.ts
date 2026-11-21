@@ -145,6 +145,24 @@ describe("upsertCustomAction", () => {
     expect(await testDb.current.db.select().from(actionData)).toHaveLength(8);
   });
 
+  it("runs an owner delete queued behind an in-flight upsert-update after it", async () => {
+    const created = await upsertCustomAction(input());
+    const id = "action" in created ? created.action.id : -1;
+
+    const [upserted, deleted] = await Promise.all([
+      upsertCustomAction(input({ phrase: "changed" })),
+      deleteCustomActionById(id),
+    ]);
+
+    expect("action" in upserted && upserted.action.phrase).toBe("changed");
+    expect(deleted?.phrase).toBe("changed");
+    expect(await listCustomActions("user", "u1")).toHaveLength(0);
+  });
+
+  it("reports unavailable when an image update finds the action gone", async () => {
+    expect(await setCustomActionImage("user", "u1", "gone", "https://i/x")).toBe(false);
+  });
+
   it("rejects a banned creator", async () => {
     await banCreator("u1");
     expect(await upsertCustomAction(input())).toEqual({

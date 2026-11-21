@@ -7,6 +7,8 @@ export type CustomActionScope = "guild" | "user";
 
 export const CUSTOM_ACTION_LIMIT = 5;
 
+const UNAVAILABLE_ERROR = "That action isn't available here.";
+
 const LIMIT_ERRORS: Record<CustomActionScope, string> = {
   user: `You've reached the limit of ${CUSTOM_ACTION_LIMIT} custom actions.`,
   guild: `This server has reached the limit of ${CUSTOM_ACTION_LIMIT} custom actions.`,
@@ -78,7 +80,9 @@ export async function upsertCustomAction(
   return serialised(() => upsertRow(input));
 }
 
-// Upserts are queued in-process instead of wrapped in a transaction: libSQL
+// Every definition mutation (upsert, remove, image, deletes) is queued
+// in-process so a delete can't interleave with an upsert's read and write; no
+// transaction is used because libSQL
 // opens a fresh connection per transaction with no busy timeout, so an
 // IMMEDIATE transaction would make concurrent built-in writes fail with
 // SQLITE_BUSY. The unique (scope, owner_id, name) index still prevents duplicates.
@@ -108,7 +112,7 @@ async function upsertRow(input: UpsertInput) {
       .set({ phrase, image, updatedAt: now })
       .where(eq(customActions.id, existing.id))
       .returning();
-    return { action };
+    return action ? { action } : { error: UNAVAILABLE_ERROR };
   }
 
   const owned = await drizzleDb
@@ -134,30 +138,34 @@ async function upsertRow(input: UpsertInput) {
   return { action };
 }
 
-export async function removeCustomAction(
+export function removeCustomAction(
   scope: CustomActionScope,
   ownerId: string,
   name: string,
 ): Promise<boolean> {
-  const rows = await drizzleDb
-    .delete(customActions)
-    .where(actionCondition(scope, ownerId, name))
-    .returning({ id: customActions.id });
-  return rows.length > 0;
+  return serialised(async () => {
+    const rows = await drizzleDb
+      .delete(customActions)
+      .where(actionCondition(scope, ownerId, name))
+      .returning({ id: customActions.id });
+    return rows.length > 0;
+  });
 }
 
-export async function setCustomActionImage(
+export function setCustomActionImage(
   scope: CustomActionScope,
   ownerId: string,
   name: string,
   image: string | null,
 ): Promise<boolean> {
-  const rows = await drizzleDb
-    .update(customActions)
-    .set({ image, updatedAt: new Date().toISOString() })
-    .where(actionCondition(scope, ownerId, name))
-    .returning({ id: customActions.id });
-  return rows.length > 0;
+  return serialised(async () => {
+    const rows = await drizzleDb
+      .update(customActions)
+      .set({ image, updatedAt: new Date().toISOString() })
+      .where(actionCondition(scope, ownerId, name))
+      .returning({ id: customActions.id });
+    return rows.length > 0;
+  });
 }
 
 export async function listAllCustomActions(filter: {
@@ -182,14 +190,16 @@ export async function listAllCustomActions(filter: {
     .orderBy(customActions.id);
 }
 
-export async function deleteCustomActionById(
+export function deleteCustomActionById(
   id: number,
 ): Promise<CustomAction | null> {
-  const [row] = await drizzleDb
-    .delete(customActions)
-    .where(eq(customActions.id, id))
-    .returning();
-  return row ?? null;
+  return serialised(async () => {
+    const [row] = await drizzleDb
+      .delete(customActions)
+      .where(eq(customActions.id, id))
+      .returning();
+    return row ?? null;
+  });
 }
 
 export async function isCreatorBanned(userId: string): Promise<boolean> {
@@ -220,9 +230,15 @@ export async function listBannedCreators(): Promise<
 }
 
 /** Keeps the ban row so deleting your data doesn't lift a ban. */
-export async function deleteUserCustomActionData(
+export function deleteUserCustomActionData(
   userId: string,
 ): Promise<void> {
+  return serialised(async () => {
+    await deleteUserRows(userId);
+  });
+}
+
+async function deleteUserRows(userId: string): Promise<void> {
   await drizzleDb.batch([
     drizzleDb.delete(customActions).where(ownerCondition("user", userId)),
     drizzleDb
