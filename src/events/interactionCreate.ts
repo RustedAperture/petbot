@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import logger from "../logger.js";
 import { executeCustomGuildCommand } from "../commands/customGuildCommand.js";
+import { UNAVAILABLE_MESSAGE } from "../commands/slash/action.js";
 
 interface Executable {
   name: string;
@@ -114,6 +115,19 @@ const interactionCreate = {
             await replyWithCommandError(interaction, error);
             return;
           }
+          logger.error(
+            { commandName: interaction.commandName },
+            "No command matching interaction was found.",
+          );
+          try {
+            await interaction.reply({
+              content: UNAVAILABLE_MESSAGE,
+              flags: MessageFlags.Ephemeral,
+            });
+          } catch (replyError) {
+            logger.error({ error: replyError }, "Failed to send unavailable reply");
+          }
+          return;
         }
         logger.error(
           { commandName: interaction.commandName },

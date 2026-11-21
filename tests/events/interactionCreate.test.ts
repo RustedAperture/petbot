@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { MessageFlags } from "discord.js";
 
 vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
 vi.mock("../../src/logger.js", () => ({
@@ -184,10 +185,22 @@ describe("interactionCreate routing for custom actions", () => {
     );
   });
 
+  it("replies ephemerally when a stale guild command has no match", async () => {
+    vi.mocked(executeCustomGuildCommand).mockResolvedValue(false);
+    const interaction = chatInteraction({ guildId: "g1", reply: vi.fn() });
+
+    await interactionCreate.execute(interaction);
+
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: "That action isn't available here.",
+      flags: MessageFlags.Ephemeral,
+    });
+  });
+
   it("logs when the guild has no matching custom command", async () => {
     vi.mocked(executeCustomGuildCommand).mockResolvedValue(false);
 
-    await interactionCreate.execute(chatInteraction({ guildId: "g1" }));
+    await interactionCreate.execute(chatInteraction({ guildId: "g1", reply: vi.fn() }));
 
     expect(logger.error).toHaveBeenCalledWith(
       { commandName: "boop" },
