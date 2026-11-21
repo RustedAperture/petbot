@@ -184,6 +184,7 @@ describe("/api/events", () => {
         }
         received += decoder.decode(value);
       }
+      expect(received).toContain("id: 301\n");
       expect(received).not.toContain("id: 300\n");
     } finally {
       clearTimeout(timeout);

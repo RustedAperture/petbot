@@ -144,6 +144,21 @@ describe("resolveAvailableActions", () => {
     expect(names).toEqual([...BUILT_INS, "boop", "zap"]);
   });
 
+  it("lists a name once when the guild and the target both define it", async () => {
+    await seed("guild", "G", "boop", "booped by the guild");
+    await seed("user", "T", "boop", "booped");
+    const names = (
+      await resolveAvailableActions({
+        guildId: "G",
+        locationId: "G",
+        authorId: "A",
+        targetId: "T",
+        isRestricted: false,
+      })
+    ).map((a) => a.name);
+    expect(names.filter((n) => n === "boop")).toHaveLength(1);
+  });
+
   it("in a DM, offers the author's and the target's personal actions", async () => {
     await seed("user", "A", "zap", "zapped");
     await seed("user", "T", "boop", "booped");

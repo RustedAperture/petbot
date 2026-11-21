@@ -177,7 +177,12 @@ describe("actionHelpers", () => {
       definitionImages: {},
       personalOwnerIds: [],
     };
-    await performAction(custom, { id: "t" } as any, { id: "a" } as any, "g1");
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      await performAction(custom, { id: "t" } as any, { id: "a" } as any, "g1");
+    } finally {
+      randomSpy.mockRestore();
+    }
     expect((buildActionReply as any).mock.calls[0][4]).toBe("t.png");
   });
 

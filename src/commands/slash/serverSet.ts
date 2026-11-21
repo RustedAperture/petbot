@@ -4,6 +4,7 @@ import {
   EmbedBuilder,
   MessageFlags,
   type AutocompleteInteraction,
+  type InteractionEditReplyOptions,
 } from "discord.js";
 import logger from "../../logger.js";
 import { ACTIONS } from "../../types/constants.js";
@@ -68,8 +69,11 @@ export const command = {
 
     const isBuiltIn = Object.hasOwn(ACTIONS, action);
     // checkImage can outlast Discord's 3s acknowledgement window, so acknowledge first.
-    const respond = (payload: any) =>
-      isBuiltIn ? interaction.reply(payload) : interaction.editReply(payload);
+    // The custom branch's deferReply is already ephemeral, and edits don't accept flags.
+    const respond = (payload: InteractionEditReplyOptions) =>
+      isBuiltIn
+        ? interaction.reply({ ...payload, flags: MessageFlags.Ephemeral })
+        : interaction.editReply(payload);
     if (!isBuiltIn) {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       url = normalizeUrl(url);
@@ -157,12 +161,10 @@ export const command = {
 
       await respond({
         content: "Updated Configs. This has been logged.",
-        flags: MessageFlags.Ephemeral,
       });
     } else {
       await respond({
         embeds: [setupEmbed],
-        flags: MessageFlags.Ephemeral,
       });
     }
   },
