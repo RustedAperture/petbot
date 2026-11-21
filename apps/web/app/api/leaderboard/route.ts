@@ -5,6 +5,22 @@ import {
 } from "../../../lib/internal-api";
 import { apiError } from "../../../lib/errors";
 
+/** Guild IDs the bot is in; null when the bot cannot be reached. */
+async function fetchBotGuildIds(): Promise<Set<string> | null> {
+  try {
+    const res = await fetch(`${getInternalApiBase()}/api/guilds`, {
+      headers: internalApiHeadersOptional(),
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const json = (await res.json()) as { guildIds?: string[] };
+    return new Set(json.guildIds ?? []);
+  } catch {
+    return null;
+  }
+}
+
 /** A non-guild location is only visible to users who have activity in it. */
 async function isDmParticipant(
   userId: string,
@@ -63,10 +79,13 @@ export async function GET(req: Request) {
       const guilds = await resolveGuilds(session);
       const isGuildMember = guilds.some((g) => g.id === locationId);
       if (!isGuildMember) {
-        const isParticipant =
-          scope !== "guild" &&
-          (await isDmParticipant(session.user!.id!, locationId));
-        if (!isParticipant) {
+        // The client's scope label never decides the location type: a guild
+        // the bot is in stays closed to non-members whatever activity they have.
+        const botGuildIds = await fetchBotGuildIds();
+        const isBotGuild = !botGuildIds || botGuildIds.has(locationId);
+        const isAllowed =
+          !isBotGuild && (await isDmParticipant(session.user!.id!, locationId));
+        if (!isAllowed) {
           throw apiError(403, "forbidden");
         }
       }

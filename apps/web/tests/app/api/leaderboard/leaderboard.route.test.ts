@@ -79,9 +79,13 @@ it("preserves personalization for authenticated global results", async () => {
 });
 
 it("still rejects guild results for non-members", async () => {
+  upstream.mockImplementation(async (url: string) =>
+    String(url).includes("/api/guilds")
+      ? Response.json({ guildIds: ["456"] })
+      : Response.json({ totalsByAction: {} }),
+  );
   const response = await GET(signedRequest("?locationId=456&scope=guild"));
   expect(response.status).toBe(403);
-  expect(upstream).not.toHaveBeenCalled();
 });
 
 function memberRequest(query: string, guilds: Array<{ id: string }>) {
@@ -91,12 +95,17 @@ function memberRequest(query: string, guilds: Array<{ id: string }>) {
   });
 }
 
-function routeUpstream(stats: unknown) {
-  upstream.mockImplementation(async (url: string) =>
-    String(url).includes("/api/stats/user/")
-      ? Response.json(stats)
-      : Response.json({ locationId: "456", actionType: null, entries: [] }),
-  );
+function routeUpstream(stats: unknown, botGuildIds: string[] = []) {
+  upstream.mockImplementation(async (url: string) => {
+    const path = String(url);
+    if (path.includes("/api/stats/user/")) {
+      return Response.json(stats);
+    }
+    if (path.includes("/api/guilds")) {
+      return Response.json({ guildIds: botGuildIds });
+    }
+    return Response.json({ locationId: "456", actionType: null, entries: [] });
+  });
 }
 
 const noActivity = { totalsByAction: {} };
@@ -104,19 +113,29 @@ const someActivity = {
   totalsByAction: { pet: { totalHasPerformed: 2, totalUsers: 1 } },
 };
 
-it("rejects a non-member guild location sent with a DM label", async () => {
-  routeUpstream(noActivity);
+const readsLeaderboard = () =>
+  upstream.mock.calls.some(([u]) => String(u).includes("/api/leaderboard"));
+
+it.each(["", "&scope=guild"])(
+  "rejects a former member with activity at a bot guild (%s)",
+  async (extra) => {
+    routeUpstream(someActivity, ["456"]);
+    const response = await GET(memberRequest(`?locationId=456${extra}`, []));
+    expect(response.status).toBe(403);
+    expect(readsLeaderboard()).toBe(false);
+  },
+);
+
+it("rejects a non-member of a bot guild without activity", async () => {
+  routeUpstream(noActivity, ["456"]);
   const response = await GET(memberRequest("?locationId=456", []));
   expect(response.status).toBe(403);
-  expect(
-    upstream.mock.calls.some(([u]) => String(u).includes("/api/leaderboard")),
-  ).toBe(false);
 });
 
 it.each(["", "&scope=guild"])(
   "allows a guild member to read their guild (%s)",
   async (extra) => {
-    routeUpstream(noActivity);
+    routeUpstream(noActivity, ["456"]);
     const response = await GET(
       memberRequest(`?locationId=456${extra}`, [{ id: "456" }]),
     );
@@ -124,14 +143,31 @@ it.each(["", "&scope=guild"])(
   },
 );
 
-it("allows a DM participant", async () => {
-  routeUpstream(someActivity);
-  const response = await GET(memberRequest("?locationId=456", []));
-  expect(response.status).toBe(200);
-});
+it.each(["", "&scope=guild"])(
+  "allows a DM participant whatever the scope label (%s)",
+  async (extra) => {
+    routeUpstream(someActivity, ["999"]);
+    const response = await GET(memberRequest(`?locationId=456${extra}`, []));
+    expect(response.status).toBe(200);
+  },
+);
 
-it("rejects a DM label that claims guild scope for a DM location", async () => {
-  routeUpstream(someActivity);
-  const response = await GET(memberRequest("?locationId=456&scope=guild", []));
+it.each(["", "&scope=guild"])(
+  "rejects a DM without activity (%s)",
+  async (extra) => {
+    routeUpstream(noActivity, ["999"]);
+    const response = await GET(memberRequest(`?locationId=456${extra}`, []));
+    expect(response.status).toBe(403);
+    expect(readsLeaderboard()).toBe(false);
+  },
+);
+
+it("fails closed when the bot guild list is unavailable", async () => {
+  upstream.mockImplementation(async (url: string) =>
+    String(url).includes("/api/guilds")
+      ? new Response("{}", { status: 500 })
+      : Response.json(someActivity),
+  );
+  const response = await GET(memberRequest("?locationId=456", []));
   expect(response.status).toBe(403);
 });
