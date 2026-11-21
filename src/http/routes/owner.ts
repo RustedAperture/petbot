@@ -9,6 +9,7 @@ import {
   unbanCreator,
   type CustomActionScope,
 } from "../../utilities/customActions/store.js";
+import logger from "../../logger.js";
 import { syncGuildCommands } from "../../utilities/customActions/guildCommandSync.js";
 
 const NUMERIC_ID = /^\d+$/;
@@ -56,7 +57,9 @@ export default function ownerRouter(client: Client<boolean>): Router {
       return;
     }
     if (deleted.scope === "guild") {
-      await syncGuildCommands(client, deleted.ownerId);
+      void syncGuildCommands(client, deleted.ownerId).catch((err) =>
+        logger.error({ err, guildId: deleted.ownerId }, "Guild command sync failed"),
+      );
     }
     res.json({ ok: true });
   });

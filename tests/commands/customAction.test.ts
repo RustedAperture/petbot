@@ -183,6 +183,25 @@ describe("/custom-action remove", () => {
     expect(syncGuildCommands).toHaveBeenCalledTimes(1);
   });
 
+  it("does not wait for a guild sync that never resolves", async () => {
+    vi.mocked(syncGuildCommands).mockReturnValueOnce(new Promise(() => {}));
+    await seed("guild", "guild-1", "boop");
+    const interaction = run("remove", { name: "boop", for: "server" });
+    await command.execute(interaction);
+
+    expect(interaction.__calls.editedReplies[0].content).toBe("Removed **boop**.");
+  });
+
+  it("does not wait for a guild sync when adding", async () => {
+    vi.mocked(syncGuildCommands).mockReturnValueOnce(new Promise(() => {}));
+    const interaction = run("add", { ...addOpts, for: "server" });
+    await command.execute(interaction);
+
+    expect(interaction.__calls.editedReplies[0].content).toBe(
+      'Saved **boop** — "booped".',
+    );
+  });
+
   it("removes a personal action without syncing", async () => {
     await seed("user", "user-1", "boop");
     const interaction = run("remove", { name: "boop", for: "me" });

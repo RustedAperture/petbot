@@ -167,6 +167,12 @@ describe("guild custom action routes", () => {
     await supertest(app).delete("/api/customActions/guild/g1/user/u9/boop").expect(404, { error: "not_found" });
   });
 
+  it("does not wait for a sync that never resolves", async () => {
+    syncMock.mockReturnValue(new Promise(() => {}));
+    await put().expect(200);
+    await supertest(app).delete("/api/customActions/guild/g1/user/u9/boop").expect(200, { ok: true });
+  });
+
   it("a failed sync does not change the response", async () => {
     syncMock.mockResolvedValue(false);
     await put().expect(200);

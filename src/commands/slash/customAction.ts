@@ -16,6 +16,7 @@ import {
   upsertCustomAction,
   type CustomActionScope,
 } from "../../utilities/customActions/store.js";
+import logger from "../../logger.js";
 import { syncGuildCommands } from "../../utilities/customActions/guildCommandSync.js";
 import { respondWithActions } from "../actionAutocomplete.js";
 
@@ -85,7 +86,9 @@ async function handleAdd(interaction: ChatInputCommandInteraction) {
     return result.error;
   }
   if (target.scope === "guild") {
-    await syncGuildCommands(interaction.client, target.ownerId);
+    void syncGuildCommands(interaction.client, target.ownerId).catch((err) =>
+      logger.error({ err, guildId: target.ownerId }, "Guild command sync failed"),
+    );
   }
   return `Saved **${validated.name}** — "${validated.phrase}".`;
 }
@@ -104,7 +107,9 @@ async function handleRemove(interaction: ChatInputCommandInteraction) {
     return `There's no **${name}** to remove.`;
   }
   if (target.scope === "guild") {
-    await syncGuildCommands(interaction.client, target.ownerId);
+    void syncGuildCommands(interaction.client, target.ownerId).catch((err) =>
+      logger.error({ err, guildId: target.ownerId }, "Guild command sync failed"),
+    );
   }
   return `Removed **${name}**.`;
 }

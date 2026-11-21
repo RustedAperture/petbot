@@ -85,6 +85,15 @@ describe("owner routes", () => {
     expect(syncMock).toHaveBeenCalledWith(client, "111");
   });
 
+  it("does not wait for a sync that never resolves", async () => {
+    syncMock.mockReturnValue(new Promise(() => {}));
+    const [inserted] = await testDb.current.db
+      .insert(customActions)
+      .values(row({ scope: "guild", ownerId: "111" }))
+      .returning();
+    await supertest(app).delete(`/api/owner/customActions/${inserted.id}`).expect(200, { ok: true });
+  });
+
   it("deleting a user action does not sync", async () => {
     const [inserted] = await testDb.current.db.insert(customActions).values(row({})).returning();
     await supertest(app).delete(`/api/owner/customActions/${inserted.id}`).expect(200);

@@ -11,6 +11,7 @@ import {
   upsertCustomAction,
   type CustomActionScope,
 } from "../../utilities/customActions/store.js";
+import logger from "../../logger.js";
 import { syncGuildCommands } from "../../utilities/customActions/guildCommandSync.js";
 
 const NO_GUILD_ERROR = "Add PetBot to this server to create server actions.";
@@ -114,7 +115,9 @@ export default function customActionsRouter(client?: Client<boolean>): Router {
     const guildId = req.params.guildId as string;
     const result = await save(req.body, "guild", guildId, req.params.userId as string);
     if ("action" in result) {
-      await syncGuildCommands(client, guildId);
+      void syncGuildCommands(client, guildId).catch((err) =>
+        logger.error({ err, guildId }, "Guild command sync failed"),
+      );
     }
     reply(res, result);
   });
@@ -131,7 +134,9 @@ export default function customActionsRouter(client?: Client<boolean>): Router {
         res.status(404).json({ error: "not_found" });
         return;
       }
-      await syncGuildCommands(client, guildId);
+      void syncGuildCommands(client, guildId).catch((err) =>
+        logger.error({ err, guildId }, "Guild command sync failed"),
+      );
       res.json({ ok: true });
     },
   );
