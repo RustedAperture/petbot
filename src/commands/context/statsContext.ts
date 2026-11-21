@@ -5,17 +5,14 @@ import {
   InteractionContextType,
   MessageFlags,
   ContainerBuilder,
-  TextDisplayBuilder,
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
 import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
+import { groupStatsCards } from "../../utilities/statsMessages.js";
 import { ACTIONS } from "../../types/constants.js";
 import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
 import { buildActionContextFor } from "../../utilities/customActions/context.js";
-
-const CARDS_PER_MESSAGE = 6;
-const MAX_MESSAGES = 6;
 
 export const command = {
   data: new ContextMenuCommandBuilder()
@@ -68,22 +65,7 @@ export const command = {
       containers.push(stats);
     }
 
-    // Discord allows one reply plus five follow-ups, and a V2 message holds 40 components (5 per card).
-    const messages: Array<Array<ContainerBuilder | TextDisplayBuilder>> = [];
-    const maxCards = CARDS_PER_MESSAGE * MAX_MESSAGES;
-    const capped = containers.slice(0, maxCards);
-    for (let i = 0; i < capped.length; i += CARDS_PER_MESSAGE) {
-      messages.push(capped.slice(i, i + CARDS_PER_MESSAGE));
-    }
-    if (containers.length > maxCards) {
-      messages
-        .at(-1)!
-        .push(
-          new TextDisplayBuilder().setContent(
-            `Showing ${maxCards} of ${containers.length} actions.`,
-          ),
-        );
-    }
+    const messages = groupStatsCards(containers);
 
     for (let i = 0; i < messages.length; i++) {
       const options = {

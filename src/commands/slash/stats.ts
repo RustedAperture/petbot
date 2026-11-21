@@ -10,11 +10,24 @@ import {
   type AutocompleteInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
-import { listSettableActionNames } from "../../utilities/customActions/resolver.js";
+import { listCustomNamesWithRows } from "../../utilities/customActions/resolver.js";
 import { resolveStatsAction } from "../../utilities/customActions/statsAction.js";
 import { ACTIONS } from "../../types/constants.js";
-import { buildActionContext, respondWithActions } from "../actionAutocomplete.js";
+import { buildActionContextFor } from "../../utilities/customActions/context.js";
+import { groupStatsCards } from "../../utilities/statsMessages.js";
+import { respondWithActions } from "../actionAutocomplete.js";
 import { UNAVAILABLE_MESSAGE } from "./action.js";
+
+/** Built-ins plus the custom names the target has recorded rows for at this location. */
+async function listStatsNames(
+  targetId: string,
+  locationId: string,
+): Promise<string[]> {
+  return [
+    ...Object.keys(ACTIONS),
+    ...(await listCustomNamesWithRows(targetId, locationId)),
+  ];
+}
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -44,17 +57,22 @@ export const command = {
     ]),
   aliases: ["bite-stats", "pet-stats"],
   async autocomplete(interaction: AutocompleteInteraction) {
-    const ctx = await buildActionContext(interaction);
-    await respondWithActions(interaction, await listSettableActionNames(ctx));
+    const targetId =
+      interaction.options.get("target")?.value?.toString() ?? interaction.user.id;
+    const locationId = interaction.guildId ?? interaction.channelId;
+    await respondWithActions(
+      interaction,
+      await listStatsNames(targetId, locationId),
+    );
   },
   async execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const ctx = await buildActionContext(interaction);
+    const targetId =
+      interaction.options.getUser("target")?.id ?? interaction.user.id;
+    const locationId = interaction.guildId ?? interaction.channelId;
+    const names = await listStatsNames(targetId, locationId);
     const requested = interaction.options.getString("action");
-    if (
-      requested !== null &&
-      !(await listSettableActionNames(ctx)).includes(requested)
-    ) {
+    if (requested !== null && !names.includes(requested)) {
       await interaction.editReply({ content: UNAVAILABLE_MESSAGE });
       return;
     }
@@ -97,7 +115,12 @@ export const command = {
     await targetUser.fetch(true);
 
     const containers: ContainerBuilder[] = [];
-    const actionKinds = action !== null ? [action] : Object.keys(ACTIONS);
+    const ctx = await buildActionContextFor({
+      guildId: interaction.guildId,
+      channelId: interaction.channelId,
+      authorId: targetId,
+    });
+    const actionKinds = action !== null ? [action] : names;
 
     for (const kind of actionKinds) {
       const statsContainer = await getActionStatsContainer(
@@ -108,9 +131,10 @@ export const command = {
       containers.push(statsContainer);
     }
 
-    for (let i = 0; i < containers.length; i++) {
+    const messages = groupStatsCards(containers);
+    for (let i = 0; i < messages.length; i++) {
       const options = {
-        components: [containers[i]],
+        components: messages[i],
         flags: MessageFlags.Ephemeral | MessageFlags.IsComponentsV2,
       };
       if (i === 0) {

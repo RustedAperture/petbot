@@ -7,7 +7,11 @@ vi.mock("../../src/db/functions.js", () => ({
 }));
 vi.mock("../../src/utilities/customActions/resolver.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../src/utilities/customActions/resolver.js")>()),
-  listSettableActionNames: vi.fn(async () => Object.keys(ACTIONS)),
+  listCustomNamesWithRows: vi.fn(async () => []),
+}));
+
+vi.mock("../../src/utilities/customActions/statsAction.js", () => ({
+  resolveStatsAction: vi.fn(async (name: string) => ({ name })),
 }));
 
 vi.mock("../../src/utilities/actionHelpers", () => ({
@@ -15,45 +19,60 @@ vi.mock("../../src/utilities/actionHelpers", () => ({
 }));
 
 import { getActionStatsContainer } from "../../src/utilities/actionHelpers.js";
+import { listCustomNamesWithRows } from "../../src/utilities/customActions/resolver.js";
 import { ACTIONS } from "../../src/types/constants.js";
 import { command } from "../../src/commands/slash/stats.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(listCustomNamesWithRows).mockResolvedValue([]);
+  (getActionStatsContainer as any).mockResolvedValue({ container: "card" });
 });
 
-describe("/stats command", () => {
-  it("returns stats for all actions when action omitted", async () => {
-    (getActionStatsContainer as any).mockResolvedValue({ container: "pet" });
+function statsInteraction(actionName: string | null, user = { id: "u1" }) {
+  const target = { ...user, fetch: vi.fn().mockResolvedValue(true) };
+  return mockInteraction({
+    options: {
+      getMember: () => target,
+      getUser: () => target,
+      getString: () => actionName,
+    },
+  });
+}
 
-    const user = { id: "u1", fetch: vi.fn().mockResolvedValue(true) };
-    const interaction = mockInteraction({
-      options: {
-        getMember: (_k: string) => user,
-        getUser: (_k: string) => user,
-        getString: () => null,
-      },
-    });
+describe("/stats command", () => {
+  it("returns stats for all built-ins in one message when action omitted", async () => {
+    const interaction = statsInteraction(null);
 
     await command.execute(interaction as any);
 
-    const expected = Object.keys(ACTIONS).length;
-    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(expected);
+    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(
+      Object.keys(ACTIONS).length,
+    );
     expect(interaction.__calls.editedReplies.length).toBe(1);
-    expect(interaction.__calls.followUps.length).toBe(expected - 1);
+    expect(interaction.__calls.editedReplies[0].components).toHaveLength(
+      Object.keys(ACTIONS).length,
+    );
+    expect(interaction.__calls.followUps.length).toBe(0);
+  });
+
+  it("includes a custom name the target has rows for at this location", async () => {
+    vi.mocked(listCustomNamesWithRows).mockResolvedValue(["wave"]);
+    const interaction = statsInteraction(null);
+
+    await command.execute(interaction as any);
+
+    expect(listCustomNamesWithRows).toHaveBeenCalledWith("u1", "guild-1");
+    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(
+      Object.keys(ACTIONS).length + 1,
+    );
+    expect(
+      (getActionStatsContainer as any).mock.calls.map((c: any[]) => c[0].name),
+    ).toContain("wave");
   });
 
   it("returns only pet when action is 'pet'", async () => {
-    (getActionStatsContainer as any).mockResolvedValue({ container: "pet" });
-
-    const user = { id: "u1", fetch: vi.fn().mockResolvedValue(true) };
-    const interaction = mockInteraction({
-      options: {
-        getMember: (_k: string) => user,
-        getUser: (_k: string) => user,
-        getString: () => "pet",
-      },
-    });
+    const interaction = statsInteraction("pet");
 
     await command.execute(interaction as any);
 
@@ -61,21 +80,38 @@ describe("/stats command", () => {
     expect(interaction.__calls.editedReplies.length).toBe(1);
     expect(interaction.__calls.followUps.length).toBe(0);
   });
+
+  it("accepts an explicit custom action the target has rows for", async () => {
+    vi.mocked(listCustomNamesWithRows).mockResolvedValue(["wave"]);
+    const interaction = statsInteraction("wave", { id: "someone-else" });
+
+    await command.execute(interaction as any);
+
+    expect(listCustomNamesWithRows).toHaveBeenCalledWith("someone-else", "guild-1");
+    expect(getActionStatsContainer as any).toHaveBeenCalledTimes(1);
+    expect(interaction.__calls.editedReplies[0].components).toBeDefined();
+  });
+
+  it("rejects a name the target has no rows for", async () => {
+    const interaction = statsInteraction("wave");
+
+    await command.execute(interaction as any);
+
+    expect(getActionStatsContainer as any).not.toHaveBeenCalled();
+    expect(interaction.__calls.editedReplies).toEqual([
+      { content: "That action isn't available here." },
+    ]);
+  });
 });
 
 describe("/stats acknowledgement", () => {
-  it("defers ephemerally without the components flag, then answers an unavailable action", async () => {
+  it("defers ephemerally before any lookup, without the components flag", async () => {
     const order: string[] = [];
-    const { listSettableActionNames } = await import(
-      "../../src/utilities/customActions/resolver.js"
-    );
-    (listSettableActionNames as any).mockImplementationOnce(async () => {
+    vi.mocked(listCustomNamesWithRows).mockImplementationOnce(async () => {
       order.push("lookup");
       return [];
     });
-    const interaction = mockInteraction({
-      options: { getString: () => "gone" },
-    });
+    const interaction = statsInteraction("gone");
     interaction.deferReply = vi.fn(async () => {
       order.push("defer");
     });
@@ -89,6 +125,5 @@ describe("/stats acknowledgement", () => {
     expect(interaction.__calls.editedReplies).toEqual([
       { content: "That action isn't available here." },
     ]);
-    expect(getActionStatsContainer as any).not.toHaveBeenCalled();
   });
 });
