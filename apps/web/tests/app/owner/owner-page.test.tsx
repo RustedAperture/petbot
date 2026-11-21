@@ -15,7 +15,19 @@ const owner = { isOwner: true, isLoading: false };
 let ownerState = owner;
 vi.mock("@/hooks/use-is-owner", () => ({ useIsOwner: () => ownerState }));
 
+import { SWRConfig } from "swr";
 import OwnerPage from "@/app/owner/page";
+
+function renderPage() {
+  const ui = () => (
+    <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>
+      <OwnerPage />
+    </SWRConfig>
+  );
+  const view = render(ui());
+  return { ...view, rerender: () => view.rerender(ui()) };
+}
+let cache = new Map();
 
 const action = {
   id: 7,
@@ -34,6 +46,7 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status });
 }
 beforeEach(() => {
+  cache = new Map();
   ownerState = owner;
   mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
     if (url.startsWith("/api/owner/customActions") && !init?.method) {
@@ -51,7 +64,7 @@ afterEach(cleanup);
 describe("OwnerPage", () => {
   it("shows only the access message to a non-owner", () => {
     ownerState = { isOwner: false, isLoading: false };
-    render(<OwnerPage />);
+    renderPage();
     expect(
       screen.getByText("You don't have access to this page."),
     ).toBeTruthy();
@@ -60,14 +73,14 @@ describe("OwnerPage", () => {
   });
 
   it("lists actions and bans for the owner", async () => {
-    render(<OwnerPage />);
+    renderPage();
     expect(await screen.findByText("booped")).toBeTruthy();
     expect(screen.getByText("900")).toBeTruthy();
     expect(await screen.findByText("555")).toBeTruthy();
   });
 
   it("sends the filter as name", async () => {
-    render(<OwnerPage />);
+    renderPage();
     await screen.findByText("booped");
     fireEvent.change(screen.getByLabelText("Filter by name"), {
       target: { value: "boop" },
@@ -83,22 +96,85 @@ describe("OwnerPage", () => {
   });
 
   it("bans a user id", async () => {
-    render(<OwnerPage />);
+    renderPage();
     await screen.findByText("555");
     fireEvent.change(screen.getByLabelText("User ID"), {
-      target: { value: "777" },
+      target: { value: "777777777777777777" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Ban" }));
     await waitFor(() =>
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/owner/bans/777",
+        "/api/owner/bans/777777777777777777",
         expect.objectContaining({ method: "PUT" }),
       ),
     );
   });
 
+  it("rejects an invalid user id without a request", async () => {
+    renderPage();
+    await screen.findByText("555");
+    fireEvent.change(screen.getByLabelText("User ID"), {
+      target: { value: "777" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ban" }));
+    expect(
+      await screen.findByText("Enter a valid Discord user ID."),
+    ).toBeTruthy();
+    expect(mockFetch.mock.calls.some(([, i]) => i?.method === "PUT")).toBe(
+      false,
+    );
+  });
+
+  it("sends name, scope and owner filters", async () => {
+    renderPage();
+    await screen.findByText("booped");
+    fireEvent.change(screen.getByLabelText("Filter by name"), {
+      target: { value: "boop" },
+    });
+    fireEvent.change(screen.getByLabelText("Scope"), {
+      target: { value: "guild" },
+    });
+    fireEvent.change(screen.getByLabelText("Owner ID"), {
+      target: { value: "900" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Filter" }));
+    await waitFor(() =>
+      expect(
+        mockFetch.mock.calls.some(
+          ([u]) =>
+            String(u) ===
+            "/api/owner/customActions?name=boop&scope=guild&ownerId=900",
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it("hides the moderation view when the session ends", async () => {
+    const { rerender } = renderPage();
+    await screen.findByText("booped");
+    ownerState = { isOwner: false, isLoading: false };
+    rerender();
+    expect(screen.queryByText("booped")).toBeNull();
+    expect(
+      screen.getByText("You don't have access to this page."),
+    ).toBeTruthy();
+  });
+
+  it("sends one DELETE when the confirm is pressed twice", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Delete boop" }));
+    const confirm = await screen.findByRole("button", { name: "Delete" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    await waitFor(() =>
+      expect(
+        mockFetch.mock.calls.filter(([, i]) => i?.method === "DELETE"),
+      ).toHaveLength(1),
+    );
+  });
+
   it("unbans a user", async () => {
-    render(<OwnerPage />);
+    renderPage();
     fireEvent.click(await screen.findByRole("button", { name: "Unban 555" }));
     await waitFor(() =>
       expect(mockFetch).toHaveBeenCalledWith(
@@ -109,7 +185,7 @@ describe("OwnerPage", () => {
   });
 
   it("confirms before deleting an action", async () => {
-    render(<OwnerPage />);
+    renderPage();
     fireEvent.click(await screen.findByRole("button", { name: "Delete boop" }));
     expect(await screen.findByText(/This can't be undone/)).toBeTruthy();
     expect(
@@ -126,12 +202,14 @@ describe("OwnerPage", () => {
 
   it("shows API errors inline", async () => {
     mockFetch.mockImplementation(async (url: string, init?: RequestInit) =>
-      init?.method === "PUT" ? json({ error: "nope" }, 500) : json({ bans: [], actions: [] }),
+      init?.method === "PUT"
+        ? json({ error: "nope" }, 500)
+        : json({ bans: [], actions: [] }),
     );
-    render(<OwnerPage />);
+    renderPage();
     await screen.findByLabelText("User ID");
     fireEvent.change(screen.getByLabelText("User ID"), {
-      target: { value: "777" },
+      target: { value: "777777777777777777" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Ban" }));
     expect(await screen.findByText("nope")).toBeTruthy();

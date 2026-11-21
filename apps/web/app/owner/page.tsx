@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import useSWR from "swr";
+import { useEffect, useState, type FormEvent } from "react";
+import useSWR, { useSWRConfig } from "swr";
 import { ActionIcon } from "@/components/action-icon";
 import {
   AlertDialog,
@@ -21,6 +21,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 import {
   Item,
   ItemActions,
@@ -50,6 +54,7 @@ type OwnerAction = {
 
 type Ban = { userId: string; createdAt: string };
 
+const DISCORD_ID = /^\d{17,20}$/;
 const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
 async function readJson<T>(res: Response): Promise<T> {
@@ -68,6 +73,18 @@ const fetcher = async <T,>(url: string): Promise<T> =>
 /** Owner-only moderation of custom actions and banned creators. */
 export default function OwnerPage() {
   const { isOwner, isLoading } = useIsOwner();
+  const { mutate } = useSWRConfig();
+
+  useEffect(() => {
+    if (!isOwner && !isLoading) {
+      void mutate(
+        (key) => typeof key === "string" && key.startsWith("/api/owner/"),
+        undefined,
+        { revalidate: false },
+      );
+    }
+  }, [isOwner, isLoading, mutate]);
+
   if (isLoading) {
     return null;
   }
@@ -86,14 +103,16 @@ export default function OwnerPage() {
 
 function OwnerDashboard() {
   const [filterInput, setFilterInput] = useState("");
-  const [filter, setFilter] = useState("");
+  const [scopeInput, setScopeInput] = useState("");
+  const [ownerInput, setOwnerInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [banError, setBanError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [banInput, setBanInput] = useState("");
   const [pendingDelete, setPendingDelete] = useState<OwnerAction | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const actionsKey = `/api/owner/customActions${
-    filter ? `?name=${encodeURIComponent(filter)}` : ""
-  }`;
+  const actionsKey = `/api/owner/customActions${query}`;
   const actions = useSWR<{ actions: OwnerAction[] }>(actionsKey, fetcher);
   const bans = useSWR<{ bans: Ban[] }>("/api/owner/bans", fetcher);
 
@@ -110,18 +129,33 @@ function OwnerDashboard() {
 
   function handleFilter(event: FormEvent) {
     event.preventDefault();
-    setFilter(filterInput.trim().toLowerCase());
+    const params = new URLSearchParams();
+    const name = filterInput.trim().toLowerCase();
+    const ownerId = ownerInput.trim();
+    if (name) {
+      params.set("name", name);
+    }
+    if (scopeInput) {
+      params.set("scope", scopeInput);
+    }
+    if (ownerId) {
+      params.set("ownerId", ownerId);
+    }
+    setQuery(params.size > 0 ? `?${params}` : "");
   }
 
   async function confirmDelete() {
-    if (!pendingDelete) {
+    const target = pendingDelete;
+    if (!target || isDeleting) {
       return;
     }
+    setIsDeleting(true);
     const isDeleted = await send(
-      `/api/owner/customActions/${encodeURIComponent(pendingDelete.id)}`,
+      `/api/owner/customActions/${encodeURIComponent(target.id)}`,
       "DELETE",
     );
-    setPendingDelete(null);
+    setIsDeleting(false);
+    setPendingDelete((current) => (current?.id === target.id ? null : current));
     if (isDeleted) {
       await actions.mutate();
     }
@@ -130,9 +164,11 @@ function OwnerDashboard() {
   async function handleBan(event: FormEvent) {
     event.preventDefault();
     const userId = banInput.trim();
-    if (!userId) {
+    if (!DISCORD_ID.test(userId)) {
+      setBanError("Enter a valid Discord user ID.");
       return;
     }
+    setBanError(null);
     if (await send(`/api/owner/bans/${encodeURIComponent(userId)}`, "PUT")) {
       setBanInput("");
       await bans.mutate();
@@ -159,9 +195,26 @@ function OwnerDashboard() {
             value={filterInput}
             onChange={(e) => setFilterInput(e.target.value)}
           />
+          <NativeSelect
+            aria-label="Scope"
+            value={scopeInput}
+            onChange={(e) => setScopeInput(e.target.value)}
+          >
+            <NativeSelectOption value="">All</NativeSelectOption>
+            <NativeSelectOption value="guild">Server</NativeSelectOption>
+            <NativeSelectOption value="user">Personal</NativeSelectOption>
+          </NativeSelect>
+          <Input
+            aria-label="Owner ID"
+            placeholder="Owner ID"
+            value={ownerInput}
+            onChange={(e) => setOwnerInput(e.target.value)}
+          />
           <Button type="submit">Filter</Button>
         </form>
-        {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+        {actionError && (
+          <p className="text-sm text-destructive">{actionError}</p>
+        )}
         {actions.error ? (
           <p className="text-sm text-destructive">{actions.error.message}</p>
         ) : (
@@ -219,6 +272,7 @@ function OwnerDashboard() {
           />
           <Button type="submit">Ban</Button>
         </form>
+        {banError && <p className="text-sm text-destructive">{banError}</p>}
         {bans.error ? (
           <p className="text-sm text-destructive">{bans.error.message}</p>
         ) : (
@@ -265,6 +319,7 @@ function OwnerDashboard() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
+              disabled={isDeleting}
               onClick={() => void confirmDelete()}
             >
               Delete
