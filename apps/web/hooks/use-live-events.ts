@@ -20,6 +20,13 @@ type UseLiveEventsResult = {
   latestLiveEvent: LiveActionEvent | null;
 };
 
+const IDLE_RESULT: UseLiveEventsResult = {
+  events: [],
+  status: "connecting",
+  isLoading: false,
+  latestLiveEvent: null,
+};
+
 /**
  * Backfills recent actions for `scope` and keeps them current over SSE.
  * - `scope === null` does nothing (e.g. while the session loads).
@@ -139,6 +146,10 @@ export function useLiveEvents(
       es?.close();
     };
   }, [scopeKey]);
+
+  if (scopeKey === null) {
+    return IDLE_RESULT;
+  }
 
   return { events, status, isLoading, latestLiveEvent };
 }

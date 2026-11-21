@@ -245,4 +245,53 @@ describe("useLiveEvents", () => {
     });
     expect(FakeEventSource.instances).toHaveLength(1);
   });
+
+  it("returns an idle state and closes the source when the scope becomes null", async () => {
+    fetchMock.mockResolvedValue(json({ events: [ev(1)] }));
+    let scope: LiveScope | null = global;
+    const r = renderHook(() => useLiveEvents(scope));
+    await flush();
+    FakeEventSource.last.open();
+    expect(r.result.current.events).toHaveLength(1);
+    expect(r.result.current.status).toBe("live");
+    const old = FakeEventSource.last;
+
+    scope = null;
+    r.rerender();
+    expect(r.result.current).toEqual({
+      events: [],
+      status: "connecting",
+      isLoading: false,
+      latestLiveEvent: null,
+    });
+    expect(old.closed).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(FakeEventSource.instances).toHaveLength(1);
+    r.unmount();
+  });
+
+  it("drops a pending retry when the scope changes", async () => {
+    vi.useFakeTimers();
+    fetchMock.mockResolvedValue(json({ events: [] }));
+    let scope: LiveScope = global;
+    const r = renderHook(() => useLiveEvents(scope));
+    await flush();
+    FakeEventSource.last.fail(true);
+
+    scope = { kind: "guild", guildId: "g1" };
+    r.rerender();
+    await flush();
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+
+    expect(FakeEventSource.instances.map((s) => s.url)).toEqual([
+      "/api/events/stream",
+      "/api/events/guild/g1/stream",
+    ]);
+    FakeEventSource.last.open();
+    expect(r.result.current.status).toBe("live");
+    expect(FakeEventSource.last.closed).toBe(false);
+    r.unmount();
+  });
 });
