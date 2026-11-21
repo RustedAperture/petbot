@@ -64,7 +64,7 @@ export const command = {
     const result = await getLeaderboard({
       locationId,
       actionType,
-      actionTypes: interaction.guildId ? names : undefined,
+      actionTypes: names,
       limit: 10,
       discordClient: interaction.client,
     });
