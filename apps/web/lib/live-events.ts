@@ -34,10 +34,12 @@ export function applyLiveEvent(
   event: LiveActionEvent,
   mode: LiveCountMode,
 ): GlobalStats {
-  const isPerformed = countsAsPerformed(event);
+  const isPerformed = mode === "location" || countsAsPerformed(event);
   const isReceived =
     mode === "user" && (event.role === "received" || event.role === "both");
-  const current = stats.totalsByAction[event.actionType];
+  const current = Object.hasOwn(stats.totalsByAction, event.actionType)
+    ? stats.totalsByAction[event.actionType]
+    : undefined;
 
   return {
     ...stats,
@@ -56,9 +58,8 @@ export function applyLiveEvent(
 }
 
 export function actionPhrase(actionType: string): string {
-  const known = IRREGULAR_PHRASES[actionType];
-  if (known) {
-    return known;
+  if (Object.hasOwn(IRREGULAR_PHRASES, actionType)) {
+    return IRREGULAR_PHRASES[actionType];
   }
   return `Someone got ${actionType}${actionType.endsWith("e") ? "d" : "ed"}`;
 }

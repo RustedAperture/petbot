@@ -32,6 +32,7 @@ describe("live-events", () => {
 
   it.each([
     ["location", undefined, 1, 1, 0],
+    ["location", "received", 1, 1, 0],
     ["user", "performed", 1, 1, 0],
     ["user", "received", 0, 0, 1],
     ["user", "both", 1, 1, 1],
@@ -64,8 +65,15 @@ describe("live-events", () => {
     expect(next.totalsByAction).toEqual(stats.totalsByAction);
   });
 
+  it("applyLiveEvent with an inherited property name bumps the total only", () => {
+    const next = applyLiveEvent(stats, { id: 1, actionType: "constructor", createdAt: "t" }, "location");
+    expect(next.totalActionsPerformed).toBe(10);
+    expect(next.totalsByAction).toEqual(stats.totalsByAction);
+  });
+
   it.each([
     ["pet", "Someone got petted"],
+    ["constructor", "Someone got constructored"],
     ["hug", "Someone got hugged"],
     ["bonk", "Someone got bonked"],
     ["bite", "Someone got bitten"],
