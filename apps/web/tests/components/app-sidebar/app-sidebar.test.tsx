@@ -144,6 +144,7 @@ vi.mock("@/hooks/use-session", () => ({
         { id: "111", name: "Owner Server", owner: true },
         { id: "222", name: "Admin Server", permissions: "8" },
         { id: "333", name: "Member Server", permissions: "0" },
+        { id: "444", name: "Manager Server", permissions: "32" },
       ],
     },
     loading: false,
@@ -230,6 +231,9 @@ describe("AppSidebar mobile behaviour", () => {
     expect(adminLink).toBeTruthy();
     expect(adminLink?.textContent).toContain("Admin Server");
     expect(memberLink).toBeFalsy();
+    expect(container.querySelector("a[href='/admin/444']")?.textContent).toContain(
+      "Manager Server",
+    );
 
     unmount();
   });

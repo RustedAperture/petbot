@@ -3,7 +3,7 @@
 import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { useGuildSettings } from "@/hooks/use-guild-settings";
-import { getDiscordGuildIconUrl } from "@/lib/utils";
+import { getDiscordGuildIconUrl, isAdminOrOwnerGuild } from "@/lib/utils";
 import CustomActionsManager from "@/components/custom-actions-manager";
 import {
   Card,
@@ -20,18 +20,23 @@ export default function AdminGuildPageContent({
   guildId: string;
 }) {
   const { session, loading: sessionLoading } = useSession();
+  const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
+  // Manage Server users reach the page for custom actions only; the settings
+  // endpoints stay restricted to owners and Administrators.
+  const isActionsOnly = guild !== null && !isAdminOrOwnerGuild(guild);
+  const settingsUserId = isActionsOnly ? null : (session?.user?.id ?? null);
   const {
     settings,
     isLoading: isSettingsLoading,
     error: isSettingsError,
     update,
-  } = useGuildSettings({ guildId, userId: session?.user?.id ?? undefined });
+  } = useGuildSettings({ guildId, userId: settingsUserId });
 
   const {
     channels,
     isLoading: channelsLoading,
     error: channelsError,
-  } = useGuildChannels(guildId || null, session?.user?.id ?? null);
+  } = useGuildChannels(guildId || null, settingsUserId);
 
   const pageLoading =
     sessionLoading ||
@@ -52,24 +57,25 @@ export default function AdminGuildPageContent({
         },
       ];
 
-  const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
   const guildIconUrl = guild
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
   return (
     <div className="flex w-full flex-col gap-6">
-      <AdminGuildSettingsForm
-        guildId={guildId}
-        settings={settings}
-        isSettingsLoading={isSettingsLoading}
-        isSettingsError={isSettingsError}
-        update={update}
-        channelItems={channelItems}
-        channelsError={channelsError}
-        pageLoading={pageLoading}
-        guild={guild}
-        guildIconUrl={guildIconUrl}
-      />
+      {!isActionsOnly && (
+        <AdminGuildSettingsForm
+          guildId={guildId}
+          settings={settings}
+          isSettingsLoading={isSettingsLoading}
+          isSettingsError={isSettingsError}
+          update={update}
+          channelItems={channelItems}
+          channelsError={channelsError}
+          pageLoading={pageLoading}
+          guild={guild}
+          guildIconUrl={guildIconUrl}
+        />
+      )}
       {!pageLoading && (
         <Card>
           <CardHeader>

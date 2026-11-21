@@ -38,7 +38,9 @@ let params = { guildId: "guild1" };
 let sessionState = {
   session: {
     user: { id: "user1" },
-    guilds: [{ id: "guild1", name: "Test Guild", icon: "abc" }],
+    guilds: [
+      { id: "guild1", name: "Test Guild", icon: "abc", permissions: "8" },
+    ],
   },
   loading: false,
   refresh: vi.fn(),
@@ -229,7 +231,9 @@ describe("Admin guild page", () => {
     sessionState = {
       session: {
         user: { id: "user1" },
-        guilds: [{ id: "guild1", name: "Test Guild", icon: "abc" }],
+        guilds: [
+          { id: "guild1", name: "Test Guild", icon: "abc", permissions: "8" },
+        ],
       },
       loading: false,
       refresh: vi.fn(),
@@ -272,6 +276,22 @@ describe("Admin guild page", () => {
     expect(container.textContent).toContain("Test Guild");
     expect(container.textContent).toContain("Server actions");
     expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
+    unmount();
+  });
+
+  it("shows only Server actions to a Manage Server user", () => {
+    sessionState.session.guilds = [
+      { id: "guild1", name: "Test Guild", icon: "abc", permissions: "32" },
+    ];
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.textContent).toContain("Server actions");
+    expect(container.querySelector("[data-testid=custom-actions]")).toBeTruthy();
+    expect(container.querySelector("form")).toBeNull();
+    expect(container.textContent).not.toContain("Guild ID");
     unmount();
   });
 

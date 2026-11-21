@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  canManageServerActionsGuild,
   isAdminOrOwnerGuild,
   getDiscordGuildIconUrl,
 } from "@/lib/utils";
@@ -36,5 +37,19 @@ describe("isAdminOrOwnerGuild utility", () => {
     );
     expect(getDiscordGuildIconUrl("123", null)).toBeNull();
     expect(getDiscordGuildIconUrl("", "abc")).toBeNull();
+  });
+});
+
+describe("canManageServerActionsGuild utility", () => {
+  it.each([
+    [{ owner: true }, true],
+    [{ permissions: "8" }, true],
+    [{ permissions: "32" }, true],
+    [{ permissions: "1056" }, true],
+    [{ permissions: "2" }, false],
+    [{ permissions: null }, false],
+    [{ permissions: "not-numeric" }, false],
+  ])("%j -> %s", (guild, expected) => {
+    expect(canManageServerActionsGuild(guild)).toBe(expected);
   });
 });
