@@ -5,6 +5,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { collectUniqueUsers } from "../../utilities/targetCollection.js";
 import { checkOptOuts } from "../../utilities/optOutHelper.js";
@@ -92,7 +93,7 @@ export const command = {
         continue;
       }
       await target.fetch(true);
-      const container = await performAction("bite", target, author, guild);
+      const container = await performAction(resolveBuiltIn("bite"), target, author, guild);
       const replyOptions = {
         components: [container],
         flags: MessageFlags.IsComponentsV2,

@@ -10,15 +10,19 @@ import { buildStatsReply } from "../components/buildStatsReply.js";
 import { randomImage } from "./helper.js";
 import logger from "../logger.js";
 import { recordActionEvent } from "./actionEvents.js";
-import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
+import {
+  pickCustomActionImage,
+  type ResolvedAction,
+} from "./customActions/resolver.js";
 
 export async function performAction(
-  actionKind: ActionKind,
+  action: ResolvedAction,
   target: User | GuildMember,
   author: User | GuildMember,
   guild: string,
-  options?: { skipChecks?: boolean },
+  options?: { skipChecks?: boolean; isRestricted?: boolean },
 ): Promise<ContainerBuilder> {
+  const actionKind = action.name;
   if (!options?.skipChecks) {
     await checkUser(actionKind, target, guild);
     await checkUser(actionKind, author, guild);
@@ -53,26 +57,35 @@ export async function performAction(
   const authorRow = aRows?.[0] ?? null;
   const guildSettings = gsRows?.[0] ?? null;
 
-  const imageSource = ACTIONS[actionKind].imageSource;
-  const imageRow = imageSource === "author" ? authorRow : targetRow;
+  const imageRow = action.imageSource === "author" ? authorRow : targetRow;
+  const isRestricted =
+    options?.isRestricted ?? Boolean(guildSettings?.restricted);
 
-  const defaultImagesRaw = guildSettings?.defaultImages;
-  const guildDefaultImage =
-    defaultImagesRaw && typeof defaultImagesRaw === "object"
-      ? (defaultImagesRaw as Record<string, string>)[actionKind]
-      : undefined;
-  const defaultImage = guildDefaultImage ?? ACTIONS[actionKind].defaultImage;
-
-  const restrictedMode = Boolean(guildSettings?.restricted);
-
-  const rowImages = (imageRow?.images as string[]) ?? [];
   let images: string[];
-  if (restrictedMode) {
-    images = [defaultImage];
-  } else if (rowImages.length) {
-    images = rowImages;
+  if (action.isBuiltIn) {
+    const defaultImagesRaw = guildSettings?.defaultImages;
+    const guildDefaultImage =
+      defaultImagesRaw && typeof defaultImagesRaw === "object"
+        ? (defaultImagesRaw as Record<string, string>)[actionKind]
+        : undefined;
+    const defaultImage = guildDefaultImage ?? action.builtInDefaultImage!;
+
+    const rowImages = (imageRow?.images as string[]) ?? [];
+    if (isRestricted) {
+      images = [defaultImage];
+    } else if (rowImages.length) {
+      images = rowImages;
+    } else {
+      images = [defaultImage];
+    }
   } else {
-    images = [defaultImage];
+    const picked = pickCustomActionImage(
+      action,
+      (targetRow?.images as string[]) ?? [],
+      (authorRow?.images as string[]) ?? [],
+      isRestricted,
+    );
+    images = picked ? [picked] : [];
   }
 
   const normalizeDate = (value: unknown): string => {
@@ -112,7 +125,8 @@ export async function performAction(
     };
   }
 
-  const image = randomImage(imageUser);
+  // Custom actions have no built-in placeholder, so the reply omits the image.
+  const image: string | null = randomImage(imageUser) ?? null;
 
   await Promise.all([
     drizzleDb
@@ -137,6 +151,7 @@ export async function performAction(
     performerId: author.id,
     targetId: target.id,
     locationId: guild,
+    ...(action.isBuiltIn ? {} : { phrase: action.phrase }),
   }).catch((error) => {
     logger.error({ err: error }, "Failed to record action event");
   });
@@ -152,17 +167,18 @@ export async function performAction(
     target,
     author,
     guild,
-    actionKind,
+    action,
     image,
     refreshedRow.hasReceived,
   );
 }
 
 export async function getActionStatsContainer(
-  actionKind: ActionKind,
+  action: ResolvedAction,
   target: User | GuildMember,
   guild: string,
 ): Promise<ContainerBuilder> {
+  const actionKind = action.name;
   const rows: any[] = await drizzleDb
     .select()
     .from(actionData)
@@ -196,5 +212,5 @@ export async function getActionStatsContainer(
 
   const images: string[] = (row.images as string[]) ?? [];
 
-  return buildStatsReply(row, images, target, actionKind, totalHasReceived);
+  return buildStatsReply(row, images, target, action, totalHasReceived);
 }

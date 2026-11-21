@@ -9,6 +9,7 @@ import {
   User,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -90,7 +91,7 @@ export const command = {
         continue;
       }
       const statsContainer = await getActionStatsContainer(
-        kind,
+        resolveBuiltIn(kind),
         targetUser,
         guild,
       );

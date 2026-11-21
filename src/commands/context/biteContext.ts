@@ -6,6 +6,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { isOptedOut } from "../../utilities/check_user.js";
 
 export const command = {
@@ -50,7 +51,7 @@ export const command = {
 
     await target.fetch(true);
 
-    const container = await performAction("bite", target, author, guild);
+    const container = await performAction(resolveBuiltIn("bite"), target, author, guild);
 
     await interaction.editReply({
       components: [container],

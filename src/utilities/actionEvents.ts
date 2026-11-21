@@ -11,6 +11,7 @@ export type PublicActionEvent = {
   id: number;
   actionType: string;
   createdAt: string;
+  phrase?: string;
   role?: "performed" | "received" | "both";
 };
 
@@ -31,6 +32,7 @@ export async function recordActionEvent(input: {
   performerId: string;
   targetId: string;
   locationId: string | null;
+  phrase?: string;
 }): Promise<ActionEventRow> {
   const [row] = await drizzleDb
     .insert(actionEvents)
@@ -39,6 +41,7 @@ export async function recordActionEvent(input: {
       performerHash: hashUserId(input.performerId),
       targetHash: hashUserId(input.targetId),
       locationId: input.locationId,
+      phrase: input.phrase ?? null,
       createdAt: new Date().toISOString(),
     })
     .returning();
@@ -97,6 +100,9 @@ export function toPublicActionEvent(
     actionType: row.actionType,
     createdAt: row.createdAt,
   };
+  if (row.phrase !== null) {
+    event.phrase = row.phrase;
+  }
   if (userId === undefined) {
     return event;
   }

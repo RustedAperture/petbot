@@ -7,6 +7,7 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 // isOptedOut no longer needed; opt-out logic handled by helper
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 import { collectUniqueUsers } from "../../utilities/targetCollection.js";
@@ -96,7 +97,7 @@ export const command = {
         actionKinds[Math.floor(Math.random() * actionKinds.length)];
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performAction(action, target, author, guild);
+      const container = await performAction(resolveBuiltIn(action), target, author, guild);
       const replyOptions = {
         components: [container],
         flags: MessageFlags.IsComponentsV2,

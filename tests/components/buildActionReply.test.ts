@@ -47,6 +47,7 @@ vi.mock("@utils/helper.js", () => ({
 vi.mock("../../logger.js", () => ({ default: { debug: vi.fn() } }));
 
 import { buildActionReply } from "@components/buildActionReply.js";
+import { resolveBuiltIn } from "../../src/utilities/customActions/resolver.js";
 
 describe("buildActionReply", () => {
   beforeEach(() => {
@@ -65,7 +66,7 @@ describe("buildActionReply", () => {
       target,
       author,
       "g1",
-      "pet",
+      resolveBuiltIn("pet"),
       "http://img",
       5 as any,
     );
@@ -78,5 +79,19 @@ describe("buildActionReply", () => {
     expect((container as any).texts[1].content).toContain(
       "has been pet 5 times".replace("5", "5"),
     );
+  });
+
+  it("uses a custom action's phrase and omits the gallery without an image", () => {
+    const custom = { ...resolveBuiltIn("pet"), name: "boop", phrase: "booped" };
+    const container = buildActionReply(
+      { id: "123", name: "T" } as any,
+      { id: "456", name: "A" } as any,
+      "g1",
+      custom,
+      null,
+      2,
+    );
+    expect((container as any).texts[0].content).toContain("has been booped!");
+    expect((container as any).media.length).toBe(0);
   });
 });

@@ -52,6 +52,7 @@ const sampleRow: ActionEventRow = {
   performerHash: hashUserId("A"),
   targetHash: hashUserId("B"),
   locationId: "g1",
+  phrase: null,
   createdAt: "2026-11-21T00:00:00.000Z",
 };
 
@@ -129,6 +130,22 @@ describe("recordActionEvent", () => {
   });
 });
 
+describe("recordActionEvent phrase", () => {
+  it.each([
+    ["stores the phrase when given", "booped", "booped"],
+    ["stores null when omitted", undefined, null],
+  ])("%s", async (_name, phrase, expected) => {
+    const row = await recordActionEvent({
+      actionType: "boop",
+      performerId: "1",
+      targetId: "2",
+      locationId: "g1",
+      ...(phrase ? { phrase } : {}),
+    });
+    expect(row.phrase).toBe(expected);
+  });
+});
+
 describe("listRecentActionEvents", () => {
   it("lists newest first, capped, filtered by location AND user", async () => {
     await seed("A", "B", "g1");
@@ -167,6 +184,16 @@ describe("toPublicActionEvent", () => {
       createdAt: row.createdAt,
       role,
     });
+  });
+
+  it("includes phrase only when the row has one", () => {
+    expect(toPublicActionEvent({ ...sampleRow, phrase: "booped" })).toEqual({
+      id: 1,
+      actionType: "hug",
+      createdAt: sampleRow.createdAt,
+      phrase: "booped",
+    });
+    expect(toPublicActionEvent(sampleRow)).not.toHaveProperty("phrase");
   });
 
   it("without a user omits role, hashes and location", () => {

@@ -3,18 +3,21 @@ import { drizzleDb } from "../db/connector.js";
 import { actionData, botData } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import logger from "../logger.js";
-import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
+import { ACTIONS, type ActionType } from "../types/constants.js";
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 export const resetAction = async (
-  actionKind: ActionKind,
+  actionKind: string,
   interaction: any,
   userId: string,
   slot: number,
   everywhere: boolean = false,
 ) => {
-  const config = ACTIONS[actionKind];
+  const config = Object.hasOwn(ACTIONS, actionKind)
+    ? ACTIONS[actionKind as ActionType]
+    : undefined;
+  const noun = config?.noun ?? actionKind;
   let guildSettings: any, logChannel: any, img: string | null | undefined;
   const inServer = interaction.guild;
   const target = interaction.user;
@@ -37,22 +40,22 @@ export const resetAction = async (
     const defaultImagesRaw = guildSettings
       ? guildSettings.defaultImages
       : undefined;
-    let baseImage: string;
+    let baseImage: string | undefined;
     if (defaultImagesRaw && typeof defaultImagesRaw === "object") {
       baseImage =
         (defaultImagesRaw as Record<string, string>)[actionKind] ??
-        config.defaultImage;
+        config?.defaultImage;
     } else if (typeof defaultImagesRaw === "string") {
       baseImage = defaultImagesRaw as string;
     } else {
-      baseImage = config.defaultImage;
+      baseImage = config?.defaultImage;
     }
     img = slot === 1 ? baseImage : null;
     const logMsg = `> **User**: ${target.username} (<@${target.id}>)
     > **Slot**: ${slot}${everywhere ? "\n    > **Everywhere**: true" : ""}`;
 
     await log(
-      `Reset ${capitalize(config.noun)} Image`,
+      `Reset ${capitalize(noun)} Image`,
       logMsg,
       logChannel,
       target,

@@ -64,6 +64,7 @@ vi.mock("@utils/helper.js", () => ({
 }));
 
 import { buildStatsReply } from "@components/buildStatsReply.js";
+import { resolveBuiltIn } from "../../src/utilities/customActions/resolver.js";
 
 describe("buildStatsReply", () => {
   beforeEach(() => {
@@ -78,7 +79,7 @@ describe("buildStatsReply", () => {
       displayAvatarURL: () => "http://avatar",
     } as any;
 
-    const container = buildStatsReply(data, images, target, "pet", 7);
+    const container = buildStatsReply(data, images, target, resolveBuiltIn("pet"), 7);
 
     expect((container as any).accent).toEqual([1, 2, 3]);
     expect((container as any).media.length).toBe(1);

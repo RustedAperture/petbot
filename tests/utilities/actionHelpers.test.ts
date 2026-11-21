@@ -39,6 +39,7 @@ import { drizzleDb } from "../../src/db/connector.js";
 import { recordActionEvent } from "../../src/utilities/actionEvents.js";
 import { randomImage } from "../../src/utilities/helper.js";
 import { buildActionReply } from "../../src/components/buildActionReply.js";
+import { resolveBuiltIn } from "../../src/utilities/customActions/resolver.js";
 import { buildStatsReply } from "../../src/components/buildStatsReply.js";
 
 describe("actionHelpers", () => {
@@ -75,7 +76,7 @@ describe("actionHelpers", () => {
   it("performAction sets updatedAt on both counters and records one event", async () => {
     arrangePerform();
     await performAction(
-      "pet" as any,
+      resolveBuiltIn("pet"),
       { id: "t" } as any,
       { id: "a" } as any,
       "g1",
@@ -96,11 +97,57 @@ describe("actionHelpers", () => {
     });
   });
 
+  it("custom action replies with its phrase and the target image, and records the phrase", async () => {
+    arrangePerform();
+    (drizzleDb as any).select.mockReset();
+    const rows = [
+      [{ id: 11, images: ["t.png"], hasReceived: 1 }],
+      [{ id: 22, images: [], hasPerformed: 2 }],
+      [],
+      [{ id: 11, images: ["t.png"], hasReceived: 2 }],
+    ];
+    for (const r of rows) {
+      (drizzleDb as any).select.mockImplementationOnce(() => ({
+        from: () => ({
+          where: () => ({
+            then: (cb: any) => cb(r),
+            limit: () => Promise.resolve(r),
+          }),
+        }),
+      }));
+    }
+    (randomImage as any).mockImplementation((u: any) => u.images[0]);
+    const custom = {
+      name: "boop",
+      phrase: "booped",
+      isBuiltIn: false,
+      sources: ["guild" as const],
+      imageSource: "custom" as const,
+      definitionImages: { guild: "g.png" },
+    };
+    await performAction(custom, { id: "t" } as any, { id: "a" } as any, "g1");
+    expect(buildActionReply).toHaveBeenCalledWith(
+      { id: "t" },
+      { id: "a" },
+      "g1",
+      custom,
+      "t.png",
+      2,
+    );
+    expect(recordActionEvent).toHaveBeenCalledWith({
+      actionType: "boop",
+      performerId: "a",
+      targetId: "t",
+      locationId: "g1",
+      phrase: "booped",
+    });
+  });
+
   it("performAction still returns the reply when recording the event fails", async () => {
     arrangePerform();
     (recordActionEvent as any).mockRejectedValueOnce(new Error("db down"));
     await expect(
-      performAction("pet" as any, { id: "t" } as any, { id: "a" } as any, "g1"),
+      performAction(resolveBuiltIn("pet"), { id: "t" } as any, { id: "a" } as any, "g1"),
     ).resolves.toBe("container");
   });
 
@@ -108,7 +155,7 @@ describe("actionHelpers", () => {
     arrangePerform();
     (recordActionEvent as any).mockReturnValueOnce(new Promise(() => {}));
     await expect(
-      performAction("pet" as any, { id: "t" } as any, { id: "a" } as any, "g1"),
+      performAction(resolveBuiltIn("pet"), { id: "t" } as any, { id: "a" } as any, "g1"),
     ).resolves.toBe("container");
   });
 
@@ -166,7 +213,7 @@ describe("actionHelpers", () => {
     (buildActionReply as any).mockReturnValue("container");
 
     const res = await performAction(
-      "pet" as any,
+      resolveBuiltIn("pet"),
       { id: "t" } as any,
       { id: "a" } as any,
       "g1",
@@ -243,7 +290,7 @@ describe("actionHelpers", () => {
     (buildActionReply as any).mockReturnValue("container");
 
     await performAction(
-      "pet" as any,
+      resolveBuiltIn("pet"),
       { id: "t" } as any,
       { id: "a" } as any,
       "g1",
@@ -279,7 +326,7 @@ describe("actionHelpers", () => {
     (buildStatsReply as any).mockReturnValue("statsContainer");
 
     const res = await getActionStatsContainer(
-      "pet" as any,
+      resolveBuiltIn("pet"),
       { id: "t" } as any,
       "g1",
     );

@@ -8,6 +8,7 @@ import {
   UserContextMenuCommandInteraction,
 } from "discord.js";
 import { getActionStatsContainer } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
 export const command = {
@@ -45,7 +46,11 @@ export const command = {
 
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
     for (const kind of actionKinds) {
-      const stats = await getActionStatsContainer(kind, target, guild);
+      const stats = await getActionStatsContainer(
+        resolveBuiltIn(kind),
+        target,
+        guild,
+      );
       containers.push(stats);
     }
 

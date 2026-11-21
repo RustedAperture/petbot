@@ -6,6 +6,7 @@ import {
   MessageFlags,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { isOptedOut } from "../../utilities/check_user.js";
 import { ACTIONS, type ActionType } from "../../types/constants.js";
 
@@ -54,7 +55,7 @@ export const command = {
     const actionKinds = Object.keys(ACTIONS) as ActionType[];
     const action = actionKinds[Math.floor(Math.random() * actionKinds.length)];
 
-    const container = await performAction(action, target, author, guild);
+    const container = await performAction(resolveBuiltIn(action), target, author, guild);
 
     await interaction.editReply({
       components: [container],

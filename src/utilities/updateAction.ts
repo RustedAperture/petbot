@@ -4,12 +4,12 @@ import { actionData, botData } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
 import { log } from "./log.js";
 import logger from "../logger.js";
-import { ACTIONS, ActionType as ActionKind } from "../types/constants.js";
+import { ACTIONS, type ActionType } from "../types/constants.js";
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 export const updateAction = async (
-  actionKind: ActionKind,
+  actionKind: string,
   interaction: any,
   userId: string,
   url: string,
@@ -17,7 +17,10 @@ export const updateAction = async (
   reason: string | null = null,
   slot: number,
 ) => {
-  const config = ACTIONS[actionKind];
+  const config = Object.hasOwn(ACTIONS, actionKind)
+    ? ACTIONS[actionKind as ActionType]
+    : undefined;
+  const noun = config?.noun ?? actionKind;
   let guildSettings: any, logChannel: any, row: any;
   const inServer = interaction.guild;
   let loggermsg: string;
@@ -102,7 +105,7 @@ export const updateAction = async (
       });
       row = new ButtonBuilder()
         .setCustomId(`reset-${actionKind}`)
-        .setLabel(`Reset ${capitalize(config.noun)}`)
+        .setLabel(`Reset ${capitalize(noun)}`)
         .setStyle(ButtonStyle.Danger);
       reason = undefined as any;
     } else {
@@ -118,7 +121,7 @@ export const updateAction = async (
     > **Reason**: ${reason}`;
 
     await log(
-      `Updated ${capitalize(config.noun)} Image`,
+      `Updated ${capitalize(noun)} Image`,
       logMsg,
       logChannel,
       interaction.user,

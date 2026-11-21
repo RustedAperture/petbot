@@ -1,3 +1,4 @@
+import type { ActionType } from "../types/constants.js";
 import {
   GuildMember,
   MessageFlags,
@@ -96,8 +97,11 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
       checkUser(action as any, author, guild),
     ]);
 
+    const { resolveBuiltIn } = await import(
+      "../utilities/customActions/resolver.js"
+    );
     const container = await performAction(
-      action as any,
+      resolveBuiltIn(action as ActionType),
       target,
       author,
       guild,
