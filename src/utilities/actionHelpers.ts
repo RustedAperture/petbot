@@ -15,6 +15,11 @@ import {
   type ResolvedAction,
 } from "./customActions/resolver.js";
 
+// Slots cleared in the middle of a row are stored as null.
+function presentImages(images: unknown): string[] {
+  return Array.isArray(images) ? images.filter(Boolean) : [];
+}
+
 export async function performAction(
   action: ResolvedAction,
   target: User | GuildMember,
@@ -81,8 +86,8 @@ export async function performAction(
   } else {
     const picked = pickCustomActionImage(
       action,
-      (targetRow?.images as string[]) ?? [],
-      (authorRow?.images as string[]) ?? [],
+      presentImages(targetRow?.images),
+      presentImages(authorRow?.images),
       isRestricted,
     );
     images = picked ? [picked] : [];

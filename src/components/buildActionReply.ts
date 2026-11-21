@@ -34,17 +34,18 @@ export function buildActionReply(
     `-# ${targetName} has been ${past} ${count} times | Command ran by ${authorName}`,
   );
 
-  if (image) {
+  const isGalleryShown = action.isBuiltIn || Boolean(image);
+  if (isGalleryShown) {
     gallery.addItems([
       {
         description: `${targetName} being ${past}`,
-        media: { url: image },
+        media: { url: image as string },
       },
     ]);
   }
 
   container.setAccentColor(accentColour);
-  if (image) {
+  if (isGalleryShown) {
     container.addMediaGalleryComponents(gallery);
   }
   container.addTextDisplayComponents(targetText);

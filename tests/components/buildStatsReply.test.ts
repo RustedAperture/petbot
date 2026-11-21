@@ -90,4 +90,25 @@ describe("buildStatsReply", () => {
       "Tester pet stats",
     );
   });
+
+  it("renders custom stats without a gallery when every slot is null", () => {
+    const custom = {
+      ...resolveBuiltIn("pet"),
+      name: "boop",
+      phrase: "booped",
+      isBuiltIn: false,
+    };
+    const target = {
+      username: "Tester",
+      displayAvatarURL: () => "http://avatar",
+    } as any;
+    const container = buildStatsReply(
+      { hasReceived: 1, hasPerformed: 1 },
+      [null],
+      target,
+      custom,
+      1,
+    );
+    expect((container as any).media.length).toBe(0);
+  });
 });

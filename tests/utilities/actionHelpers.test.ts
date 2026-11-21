@@ -143,6 +143,38 @@ describe("actionHelpers", () => {
     });
   });
 
+  it("custom action ignores null image slots when picking", async () => {
+    arrangePerform();
+    (drizzleDb as any).select.mockReset();
+    const rows = [
+      [{ id: 11, images: [null, "t.png"], hasReceived: 1 }],
+      [{ id: 22, images: [], hasPerformed: 2 }],
+      [],
+      [{ id: 11, images: [null, "t.png"], hasReceived: 2 }],
+    ];
+    for (const r of rows) {
+      (drizzleDb as any).select.mockImplementationOnce(() => ({
+        from: () => ({
+          where: () => ({
+            then: (cb: any) => cb(r),
+            limit: () => Promise.resolve(r),
+          }),
+        }),
+      }));
+    }
+    (randomImage as any).mockImplementation((u: any) => u.images[0]);
+    const custom = {
+      name: "boop",
+      phrase: "booped",
+      isBuiltIn: false,
+      sources: ["guild" as const],
+      imageSource: "custom" as const,
+      definitionImages: {},
+    };
+    await performAction(custom, { id: "t" } as any, { id: "a" } as any, "g1");
+    expect((buildActionReply as any).mock.calls[0][4]).toBe("t.png");
+  });
+
   it("performAction still returns the reply when recording the event fails", async () => {
     arrangePerform();
     (recordActionEvent as any).mockRejectedValueOnce(new Error("db down"));

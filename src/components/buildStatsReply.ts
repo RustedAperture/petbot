@@ -12,7 +12,7 @@ import type { ResolvedAction } from "../utilities/customActions/resolver.js";
 
 export function buildStatsReply(
   data: any,
-  images: string[],
+  rawImages: (string | null)[],
   target: User | GuildMember,
   action: ResolvedAction,
   totalCount: number,
@@ -38,6 +38,9 @@ export function buildStatsReply(
     ].join("\n"),
   );
 
+  const images = action.isBuiltIn
+    ? (rawImages as string[])
+    : rawImages.filter((image): image is string => Boolean(image));
   const gallery = new MediaGalleryBuilder();
 
   for (let i = 0; i < images.length; i++) {

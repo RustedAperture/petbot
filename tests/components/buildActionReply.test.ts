@@ -82,7 +82,12 @@ describe("buildActionReply", () => {
   });
 
   it("uses a custom action's phrase and omits the gallery without an image", () => {
-    const custom = { ...resolveBuiltIn("pet"), name: "boop", phrase: "booped" };
+    const custom = {
+      ...resolveBuiltIn("pet"),
+      name: "boop",
+      phrase: "booped",
+      isBuiltIn: false,
+    };
     const container = buildActionReply(
       { id: "123", name: "T" } as any,
       { id: "456", name: "A" } as any,
@@ -93,5 +98,17 @@ describe("buildActionReply", () => {
     );
     expect((container as any).texts[0].content).toContain("has been booped!");
     expect((container as any).media.length).toBe(0);
+  });
+
+  it("keeps the gallery for a built-in even without a usable image", () => {
+    const container = buildActionReply(
+      { id: "123", name: "T" } as any,
+      { id: "456", name: "A" } as any,
+      "g1",
+      resolveBuiltIn("pet"),
+      null,
+      1,
+    );
+    expect((container as any).media.length).toBe(1);
   });
 });
