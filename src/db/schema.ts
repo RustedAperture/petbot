@@ -85,6 +85,7 @@ export const actionEvents = sqliteTable(
     performerHash: text("performer_hash").notNull(),
     targetHash: text("target_hash").notNull(),
     locationId: text("location_id"),
+    phrase: text("phrase"),
     createdAt: text("created_at").notNull(),
   },
   (table) => [
@@ -97,3 +98,31 @@ export const actionEvents = sqliteTable(
     index("action_events_target_idx").on(table.targetHash),
   ],
 );
+
+export const customActions = sqliteTable(
+  "custom_actions",
+  {
+    id: integer().primaryKey({ autoIncrement: true }),
+    name: text().notNull(),
+    phrase: text().notNull(),
+    scope: text().notNull().$type<"guild" | "user">(),
+    ownerId: text("owner_id").notNull(),
+    image: text(),
+    createdBy: text("created_by"),
+    createdAt: text().notNull(),
+    updatedAt: text().notNull(),
+  },
+  (table) => [
+    uniqueIndex("custom_actions_scope_owner_name_unique").on(
+      table.scope,
+      table.ownerId,
+      table.name,
+    ),
+    index("custom_actions_name_idx").on(table.name),
+  ],
+);
+
+export const customActionBans = sqliteTable("custom_action_bans", {
+  userId: text("user_id").primaryKey(),
+  createdAt: text().notNull(),
+});

@@ -1,0 +1,178 @@
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import type { TestDb } from "../../helpers/testDb.js";
+import { customActionBans, customActions } from "../../../src/db/schema.js";
+
+vi.mock("../../../src/logger.js", () => ({
+  default: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
+
+const { testDb } = vi.hoisted(() => ({
+  testDb: { current: null as unknown as TestDb },
+}));
+
+vi.mock("../../../src/db/connector.js", async () => {
+  const { createTestDb } = await import("../../helpers/testDb.js");
+  testDb.current = await createTestDb();
+  return { drizzleDb: testDb.current.db, default: testDb.current.db };
+});
+
+import {
+  banCreator,
+  CUSTOM_ACTION_LIMIT,
+  deleteCustomActionById,
+  deleteUserCustomActionData,
+  isCreatorBanned,
+  listAllCustomActions,
+  listBannedCreators,
+  listCustomActions,
+  listCustomActionsForOwners,
+  removeCustomAction,
+  setCustomActionImage,
+  unbanCreator,
+  upsertCustomAction,
+} from "../../../src/utilities/customActions/store.js";
+
+afterAll(() => testDb.current.cleanup());
+
+beforeEach(async () => {
+  await testDb.current.db.delete(customActions);
+  await testDb.current.db.delete(customActionBans);
+});
+
+const input = (over: Partial<Parameters<typeof upsertCustomAction>[0]> = {}) => ({
+  scope: "user" as const,
+  ownerId: "u1",
+  name: "boop",
+  phrase: "booped",
+  image: null,
+  createdBy: "u1",
+  ...over,
+});
+
+describe("upsertCustomAction", () => {
+  it("creates a row, then updates it in place", async () => {
+    const created = await upsertCustomAction(input());
+    const updated = await upsertCustomAction(input({ phrase: "bopped" }));
+    expect(created).toHaveProperty("action");
+    expect(updated).toHaveProperty("action");
+    if ("error" in created || "error" in updated) {
+      throw new Error("unexpected");
+    }
+    expect(updated.action.id).toBe(created.action.id);
+    expect(updated.action.phrase).toBe("bopped");
+    expect(await listCustomActions("user", "u1")).toHaveLength(1);
+  });
+
+  it.each([
+    ["user", "You've reached the limit of 5 custom actions."],
+    ["guild", "This server has reached the limit of 5 custom actions."],
+  ] as const)("rejects the 6th insert for %s scope", async (scope, error) => {
+    for (let i = 0; i < CUSTOM_ACTION_LIMIT; i++) {
+      const name = "a".repeat(i + 1);
+      expect(await upsertCustomAction(input({ scope, name }))).toHaveProperty(
+        "action",
+      );
+    }
+    expect(await upsertCustomAction(input({ scope, name: "zzz" }))).toEqual({
+      error,
+    });
+  });
+
+  it("allows updating an existing action at the limit", async () => {
+    for (let i = 0; i < CUSTOM_ACTION_LIMIT; i++) {
+      await upsertCustomAction(input({ name: "a".repeat(i + 1) }));
+    }
+    expect(
+      await upsertCustomAction(input({ name: "a", phrase: "new" })),
+    ).toHaveProperty("action");
+  });
+
+  it("rejects a banned creator", async () => {
+    await banCreator("u1");
+    expect(await upsertCustomAction(input())).toEqual({
+      error: "You can't create custom actions.",
+    });
+  });
+});
+
+describe("queries", () => {
+  it("lists by owners across scopes", async () => {
+    await upsertCustomAction(input());
+    await upsertCustomAction(input({ ownerId: "u2", createdBy: "u2" }));
+    await upsertCustomAction(input({ ownerId: "u3", createdBy: "u3" }));
+    await upsertCustomAction(
+      input({ scope: "guild", ownerId: "g1", name: "wave" }),
+    );
+    const rows = await listCustomActionsForOwners("g1", ["u1", "u2"]);
+    expect(rows.map((r) => `${r.scope}:${r.ownerId}`).sort()).toEqual([
+      "guild:g1",
+      "user:u1",
+      "user:u2",
+    ]);
+    expect(await listCustomActionsForOwners(null, [])).toEqual([]);
+    expect(await listCustomActionsForOwners(null, ["u3"])).toHaveLength(1);
+  });
+
+  it("filters all actions", async () => {
+    await upsertCustomAction(input());
+    await upsertCustomAction(input({ ownerId: "u2", createdBy: "u2" }));
+    await upsertCustomAction(input({ name: "wave" }));
+    expect(await listAllCustomActions({})).toHaveLength(3);
+    expect(await listAllCustomActions({ name: "boop" })).toHaveLength(2);
+    expect(await listAllCustomActions({ ownerId: "u1" })).toHaveLength(2);
+    expect(await listAllCustomActions({ scope: "guild" })).toHaveLength(0);
+  });
+});
+
+describe("mutations", () => {
+  it("removes and sets image", async () => {
+    await upsertCustomAction(input());
+    expect(await setCustomActionImage("user", "u1", "boop", "https://i/x")).toBe(
+      true,
+    );
+    expect((await listCustomActions("user", "u1"))[0].image).toBe("https://i/x");
+    expect(await setCustomActionImage("user", "u1", "nope", null)).toBe(false);
+    expect(await removeCustomAction("user", "u1", "boop")).toBe(true);
+    expect(await removeCustomAction("user", "u1", "boop")).toBe(false);
+  });
+
+  it("deletes by id and returns the row", async () => {
+    const res = await upsertCustomAction(input());
+    if ("error" in res) {
+      throw new Error("unexpected");
+    }
+    expect((await deleteCustomActionById(res.action.id))?.name).toBe("boop");
+    expect(await deleteCustomActionById(res.action.id)).toBeNull();
+  });
+});
+
+describe("bans", () => {
+  it("bans, lists and unbans", async () => {
+    expect(await isCreatorBanned("u1")).toBe(false);
+    await banCreator("u1");
+    await banCreator("u1");
+    expect(await isCreatorBanned("u1")).toBe(true);
+    expect((await listBannedCreators()).map((b) => b.userId)).toEqual(["u1"]);
+    await unbanCreator("u1");
+    expect(await isCreatorBanned("u1")).toBe(false);
+  });
+});
+
+describe("deleteUserCustomActionData", () => {
+  it("removes personal rows, nulls createdBy on guild rows and keeps the ban", async () => {
+    await upsertCustomAction(input());
+    await upsertCustomAction(
+      input({ scope: "guild", ownerId: "g1", name: "wave" }),
+    );
+    await banCreator("u1");
+    await deleteUserCustomActionData("u1");
+    expect(await listCustomActions("user", "u1")).toEqual([]);
+    const guild = await testDb.current.db
+      .select()
+      .from(customActions)
+      .where(eq(customActions.ownerId, "g1"));
+    expect(guild[0].createdBy).toBeNull();
+    expect(await isCreatorBanned("u1")).toBe(true);
+  });
+});

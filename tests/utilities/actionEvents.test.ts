@@ -73,13 +73,15 @@ async function seed(
 }
 
 // The baseline migrations in ./drizzle assume an existing database, so a fresh
-// one is built from the action_events migration alone.
+// one is built from the action_events migration plus the one that adds its phrase column.
 beforeAll(async () => {
   const migrationsFolder = mkdtempSync(join(tmpdir(), "action-events-"));
-  const name = readdirSync("drizzle").find((d) => d.endsWith("_action_events"));
-  cpSync(join("drizzle", name!), join(migrationsFolder, name!), {
-    recursive: true,
-  });
+  for (const suffix of ["_action_events", "_custom_actions"]) {
+    const name = readdirSync("drizzle").find((d) => d.endsWith(suffix));
+    cpSync(join("drizzle", name!), join(migrationsFolder, name!), {
+      recursive: true,
+    });
+  }
   await migrate(testDb(), { migrationsFolder });
 });
 
