@@ -66,3 +66,28 @@ it.each([false, true])(
     expect(select).toHaveValue("");
   },
 );
+
+it("lists built-ins first, then the custom names present in the stats", () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ locationId: "123", actionType: null, entries: [] }),
+    })),
+  );
+  render(
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <Leaderboard
+        locationId="123"
+        context="guild"
+        actionType={null}
+        onActionTypeChange={() => {}}
+        actionKeys={["zap", "hug", "boop", "pet"]}
+      />
+    </SWRConfig>,
+  );
+  const select = screen.getByRole("combobox", { name: "Leaderboard action" });
+  expect(
+    Array.from(select.querySelectorAll("option")).map((o) => o.textContent),
+  ).toEqual(["All actions", "Pet", "Hug", "Boop", "Zap"]);
+});

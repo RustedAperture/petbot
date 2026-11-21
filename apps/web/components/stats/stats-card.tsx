@@ -9,25 +9,26 @@ import {
   type CarouselApi,
 } from "../ui/carousel";
 import React from "react";
-import { ChevronLeftIcon, ChevronRightIcon, PencilIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
-import { EditImagesDialog } from "../dialogs/edit-images-dialog";
+import { ActionIcon } from "../action-icon";
 
 interface StatsCardProps {
   actionName: string;
-  actionImageUrl: string;
+  actionImageUrl: string | null;
   performedCount: number;
   receivedCount?: number;
   userCount: number;
   totalUniqueUsers: number;
   totalActionsPerformed: number;
   userImages?: string[];
-  guildId?: string | null;
   hideUserCount?: boolean;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   compact?: boolean;
+  /** Shows an Adopt button, for a custom action the user doesn't own. */
+  onAdopt?: () => void;
 }
 
 export default function StatsCard({
@@ -39,11 +40,11 @@ export default function StatsCard({
   totalUniqueUsers,
   totalActionsPerformed,
   userImages,
-  guildId,
   hideUserCount,
   onMouseEnter,
   onMouseLeave,
   compact = false,
+  onAdopt,
 }: StatsCardProps) {
   const displayName = actionName
     ? actionName[0].toUpperCase() + actionName.slice(1)
@@ -52,20 +53,8 @@ export default function StatsCard({
   const [carouselApi, setCarouselApi] = React.useState<CarouselApi | null>(
     null,
   );
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [liveImages, setLiveImages] = React.useState<string[]>(
-    userImages ?? [],
-  );
-
-  // Re-sync when the parent passes new images.
-  const [prevUserImages, setPrevUserImages] = React.useState(userImages);
-  if (userImages !== prevUserImages) {
-    setPrevUserImages(userImages);
-    setLiveImages(userImages ?? []);
-  }
-
   const VALID_URL = /^https?:\/\//i;
-  const displayImages = liveImages.filter((url) => VALID_URL.test(url));
+  const displayImages = (userImages ?? []).filter((url) => VALID_URL.test(url));
 
   return (
     <>
@@ -101,7 +90,7 @@ export default function StatsCard({
               ))}
             </CarouselContent>
           </Carousel>
-        ) : (
+        ) : actionImageUrl ? (
           <Image
             src={actionImageUrl}
             alt={displayName}
@@ -110,6 +99,16 @@ export default function StatsCard({
             sizes="(min-width: 768px) 384px, 100vw"
             className="block w-full aspect-square object-cover rounded-xl"
           />
+        ) : (
+          <div
+            data-testid="action-placeholder"
+            className="flex w-full aspect-square items-center justify-center rounded-xl bg-muted"
+          >
+            <ActionIcon
+              actionType={actionName}
+              className="size-24 rounded-2xl [&_svg]:size-12"
+            />
+          </div>
         )}
         <CardHeader
           className={
@@ -118,46 +117,51 @@ export default function StatsCard({
               : "flex flex-grow items-center justify-between"
           }
         >
-          <CardTitle className={compact ? "text-sm" : undefined}>
+          <CardTitle
+            className={compact ? "flex items-center gap-2 text-sm" : undefined}
+          >
+            {compact && <ActionIcon actionType={actionName} />}
             {displayName}
           </CardTitle>
 
-          <ButtonGroup>
-            {!compact && displayImages.length > 1 && (
-              <Button
-                type="button"
-                onClick={() => carouselApi?.scrollPrev()}
-                data-testid="prev"
-                size={"sm"}
-                aria-label="Previous image"
-              >
-                <ChevronLeftIcon />
-                <span className="sr-only">Previous Image</span>
-              </Button>
-            )}
-            {!!guildId && (
+          <div className="flex items-center gap-2">
+            {onAdopt && (
               <Button
                 type="button"
                 size="sm"
-                aria-label="Edit images"
-                onClick={() => setEditOpen(true)}
+                variant="outline"
+                onClick={onAdopt}
               >
-                <PencilIcon />
+                Adopt
               </Button>
             )}
-            {!compact && displayImages.length > 1 && (
-              <Button
-                type="button"
-                onClick={() => carouselApi?.scrollNext()}
-                data-testid="next"
-                size={"sm"}
-                aria-label="Next image"
-              >
-                <ChevronRightIcon />
-                <span className="sr-only">Next Image</span>
-              </Button>
-            )}
-          </ButtonGroup>
+            <ButtonGroup>
+              {!compact && displayImages.length > 1 && (
+                <Button
+                  type="button"
+                  onClick={() => carouselApi?.scrollPrev()}
+                  data-testid="prev"
+                  size={"sm"}
+                  aria-label="Previous image"
+                >
+                  <ChevronLeftIcon />
+                  <span className="sr-only">Previous Image</span>
+                </Button>
+              )}
+              {!compact && displayImages.length > 1 && (
+                <Button
+                  type="button"
+                  onClick={() => carouselApi?.scrollNext()}
+                  data-testid="next"
+                  size={"sm"}
+                  aria-label="Next image"
+                >
+                  <ChevronRightIcon />
+                  <span className="sr-only">Next Image</span>
+                </Button>
+              )}
+            </ButtonGroup>
+          </div>
         </CardHeader>
         <CardFooter
           className={
@@ -215,18 +219,6 @@ export default function StatsCard({
           </div>
         </CardFooter>
       </Card>
-
-      <EditImagesDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        actionName={actionName}
-        guildId={guildId ?? null}
-        initialImages={liveImages}
-        onSaved={(saved) => {
-          const filtered = saved.filter(Boolean);
-          setLiveImages(filtered);
-        }}
-      />
     </>
   );
 }

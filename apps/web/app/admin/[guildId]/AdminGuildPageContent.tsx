@@ -3,8 +3,18 @@
 import { useSession } from "@/hooks/use-session";
 import { useGuildChannels } from "@/hooks/use-guild-channels";
 import { useGuildSettings } from "@/hooks/use-guild-settings";
+import { useBotMembership } from "@/hooks/use-bot-membership";
 import { getDiscordGuildIconUrl } from "@/lib/utils";
+import CustomActionsManager from "@/components/custom-actions-manager";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import AdminGuildSettingsForm from "./AdminGuildSettingsForm";
+import DefaultImagesCard from "./DefaultImagesCard";
 
 export default function AdminGuildPageContent({
   guildId,
@@ -12,18 +22,23 @@ export default function AdminGuildPageContent({
   guildId: string;
 }) {
   const { session, loading: sessionLoading } = useSession();
+  const { isBotMember, isLoading: isMembershipLoading } = useBotMembership(
+    guildId || null,
+  );
+  const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
+  const userId = session?.user?.id ?? null;
   const {
     settings,
     isLoading: isSettingsLoading,
     error: isSettingsError,
     update,
-  } = useGuildSettings({ guildId, userId: session?.user?.id ?? undefined });
+  } = useGuildSettings({ guildId, userId });
 
   const {
     channels,
     isLoading: channelsLoading,
     error: channelsError,
-  } = useGuildChannels(guildId || null, session?.user?.id ?? null);
+  } = useGuildChannels(guildId || null, userId);
 
   const pageLoading =
     sessionLoading ||
@@ -44,22 +59,51 @@ export default function AdminGuildPageContent({
         },
       ];
 
-  const guild = session?.guilds?.find((g) => g.id === guildId) ?? null;
   const guildIconUrl = guild
     ? getDiscordGuildIconUrl(guild.id, guild.icon)
     : null;
+  const isShowingServerActions =
+    !pageLoading && !isMembershipLoading && isBotMember === true;
+  // Matches the settings form, which shows an error alert in place of its cards.
+  const isShowingDefaultImages =
+    !pageLoading && !isSettingsError && !channelsError;
   return (
-    <AdminGuildSettingsForm
-      guildId={guildId}
-      settings={settings}
-      isSettingsLoading={isSettingsLoading}
-      isSettingsError={isSettingsError}
-      update={update}
-      channelItems={channelItems}
-      channelsError={channelsError}
-      pageLoading={pageLoading}
-      guild={guild}
-      guildIconUrl={guildIconUrl}
-    />
+    <div className="grid w-full items-start gap-6 xl:grid-cols-2">
+      <AdminGuildSettingsForm
+        guildId={guildId}
+        settings={settings}
+        isSettingsLoading={isSettingsLoading}
+        isSettingsError={isSettingsError}
+        update={update}
+        channelItems={channelItems}
+        channelsError={channelsError}
+        pageLoading={pageLoading}
+        guild={guild}
+        guildIconUrl={guildIconUrl}
+      />
+      {/* Without the bot, the settings form's "Bot not in server" alert is the only notice. */}
+      {isShowingServerActions && (
+        <Card className="order-1 min-w-0">
+          <CardHeader>
+            <CardTitle>Server actions</CardTitle>
+            <CardDescription>
+              Custom actions everyone in this server can use with /action.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CustomActionsManager scope={{ kind: "guild", guildId }} />
+          </CardContent>
+        </Card>
+      )}
+      {isShowingDefaultImages && (
+        <DefaultImagesCard
+          settings={settings}
+          update={update}
+          className={
+            isShowingServerActions ? "order-2 min-w-0" : "xl:col-span-2"
+          }
+        />
+      )}
+    </div>
   );
 }

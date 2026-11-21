@@ -11,6 +11,11 @@ import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Leaderboard from "@/components/leaderboard";
+import { useLiveEvents } from "@/hooks/use-live-events";
+import LiveActivityFeed from "@/components/live-activity-feed";
+import { flashKeyFor } from "@/lib/live-events";
+import { ACTIONS } from "@petbot/constants";
+import type { LiveScope } from "@/types/live";
 
 export default function DmStatsLocationPage({
   params,
@@ -26,9 +31,21 @@ export default function DmStatsLocationPage({
   const userInitiatedRef = React.useRef(false);
   const attemptedLocationRef = React.useRef<string | null>(null);
 
-  const { data, isLoading, error } = useGlobalStats({
+  const sessionUserId = session?.user.id ?? null;
+  const { data, isLoading, error, refresh, applyLiveEvent } = useGlobalStats({
     locationId,
-    userId: session?.user.id ?? null,
+    userId: sessionUserId,
+  });
+  const scope = React.useMemo<LiveScope | null>(
+    () =>
+      sessionUserId
+        ? { kind: "userLocation", userId: sessionUserId, locationId }
+        : null,
+    [sessionUserId, locationId],
+  );
+  const live = useLiveEvents(scope, {
+    onEvent: (e) => applyLiveEvent(e, "user"),
+    onReconnect: refresh,
   });
 
   const [hoveredAction, setHoveredAction] = React.useState<string | null>(null);
@@ -201,7 +218,7 @@ export default function DmStatsLocationPage({
   >;
 
   return (
-    <main>
+    <main className="w-full">
       <div className="grid gap-4 grid-cols-4">
         {/* Left: stats */}
         <div className="flex-1 min-w-0 col-span-4 xl:col-span-3">
@@ -213,6 +230,7 @@ export default function DmStatsLocationPage({
               <StatsCardSimple
                 statString="Total Actions Performed"
                 value={data.totalActionsPerformed}
+                flashKey={flashKeyFor(live.latestLiveEvent, "user")}
               />
               <StatsCardSimple
                 statString="Total Unique Users"
@@ -231,7 +249,11 @@ export default function DmStatsLocationPage({
                     userCount={totals.totalUsers}
                     totalUniqueUsers={data.totalUniqueUsers}
                     totalActionsPerformed={data.totalActionsPerformed}
-                    onMouseEnter={() => setHoveredAction(actionKey)}
+                    onMouseEnter={() =>
+                      setHoveredAction(
+                        Object.hasOwn(ACTIONS, actionKey) ? actionKey : null,
+                      )
+                    }
                     onMouseLeave={() => setHoveredAction(null)}
                     compact={compact}
                   />
@@ -248,11 +270,14 @@ export default function DmStatsLocationPage({
         </div>
 
         {/* Right: leaderboard (desktop) */}
-        <Leaderboard
-          locationId={locationId}
-          actionType={hoveredAction}
-          className="col-span-4 xl:col-span-1"
-        />
+        <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+          <LiveActivityFeed
+            events={live.events}
+            status={live.status}
+            isLoading={live.isLoading}
+          />
+          <Leaderboard locationId={locationId} actionType={hoveredAction} />
+        </div>
       </div>
     </main>
   );

@@ -46,3 +46,17 @@ it("shows actual counts and shares alongside the rings", () => {
   expect(within(totals).queryByText("Bonk")).not.toBeInTheDocument();
   expect(screen.getByText(/logarithmic scale/i)).toBeInTheDocument();
 });
+
+it("renders a custom action with the muted colour fallback", () => {
+  render(
+    <DistributionChart
+      totalsByAction={{
+        boop: { totalHasPerformed: 4, totalUsers: 2, imageUrl: null },
+      }}
+    />,
+  );
+  const totals = screen.getByRole("list", { name: "Action totals" });
+  const swatch = within(totals).getByText("boop")
+    .previousElementSibling as HTMLElement;
+  expect(swatch.style.backgroundColor).toBe("var(--muted-foreground)");
+});

@@ -19,8 +19,11 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { orderActionKeys } from "@/lib/action-keys";
 
 interface LeaderboardProps {
+  /** Action keys present in the page's stats; defaults to the built-ins. */
+  actionKeys?: string[];
   locationId: string | null;
   actionType: string | null;
   onActionTypeChange?: (action: string | null) => void;
@@ -30,6 +33,7 @@ interface LeaderboardProps {
 }
 
 const MAX_LIMIT = 10;
+const builtInKeys = Object.keys(ACTIONS);
 
 function responsiveClass(index: number): string {
   if (index < 10) {
@@ -47,6 +51,7 @@ function responsiveClass(index: number): string {
 export default function Leaderboard({
   locationId,
   actionType,
+  actionKeys,
   onActionTypeChange,
   limit = MAX_LIMIT,
   className,
@@ -98,11 +103,13 @@ export default function Leaderboard({
               }
             >
               <NativeSelectOption value="">All actions</NativeSelectOption>
-              {Object.keys(ACTIONS).map((action) => (
-                <NativeSelectOption key={action} value={action}>
-                  {action[0].toUpperCase() + action.slice(1)}
-                </NativeSelectOption>
-              ))}
+              {orderActionKeys(actionKeys ?? builtInKeys, builtInKeys).map(
+                (action) => (
+                  <NativeSelectOption key={action} value={action}>
+                    {action[0].toUpperCase() + action.slice(1)}
+                  </NativeSelectOption>
+                ),
+              )}
             </NativeSelect>
           )}
         </div>

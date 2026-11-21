@@ -1,3 +1,45 @@
+## v9.0.0 - Nov 21, 2026
+
+### What You'll Notice
+
+- **Live activity.** The global, guild, DM, and personal stats pages have a Live activity card that lists actions as they happen, such as "Someone got petted · now". It shows the latest 50 actions and never shows who was involved.
+- Stats counters update as actions come in, and Total Actions Performed shows a brief +1.
+- If the connection drops, the card shows Reconnecting. Once it is back, it catches up on missed actions and refreshes the stats.
+- The card stops animating when reduced motion is on. Screen readers announce when it goes live or starts reconnecting.
+
+- **Custom actions.** Make your own actions with `/custom-action add`, then use them with `/action target action`. Autocomplete lists the actions available for that person and server.
+- Each server action also gets its own slash command in that server, such as `/boop`.
+- `/custom-action add`, `remove`, and `list` work for `me` or `server`. Any `for:server` use needs PetBot in the server. Adding or removing server actions needs Manage Server, and anyone can list them.
+- Each person can have 5 personal actions, and each server can have 5. Names are lowercase letters, 1 to 20 characters. Phrases are up to 32 characters, with no mentions, links, formatting, or line breaks. Each action has one image, which goes through the same image check as `/set`.
+- Personal actions work in any server, both when you use them and when someone uses them on you. A server in restricted mode hides personal actions.
+- Autocomplete includes custom actions in `/set`, `/reset`, `/server-set`, `/stats`, and `/leaderboard`. The right-click Perform, random, and stats menus include them too, and show whose action each one is. `/server-set` replaces a server action's image.
+- Custom actions appear only on that server's pages and feed, or on your own pages. The global page, global feed, and global leaderboard show built-in actions only.
+- PetBot saves names in lowercase. You can't rename an action, but you can edit its phrase and image. When you type a name that is already in use, the form suggests its phrase.
+
+- **Actions page.** The new Actions page on the website lists your custom actions and your images for each action, per server. Click an image to view it full size. It replaces the custom actions section in user settings and the pencil on user stats cards.
+- "Set everywhere" starts ticked when you edit images. It asks before saving, then sets the images in every server you have used PetBot in.
+- Personal stats list other people's custom actions in a separate section. Adopt one to make it your own.
+- The server admin page lists default images the same way and shows the bot's default image when the server has none. Server actions sit beside the default images. Members with Manage Server can change server settings.
+
+### Fixes
+
+- Action counts update their last-updated time whenever someone uses an action, not only when images change.
+
+### Privacy
+
+- PetBot keeps an anonymous activity log for the live feed: the action type, time, location, and hashed user IDs. PetBot deletes entries after 30 days, and "Delete my data" removes yours straight away. The privacy policy explains this.
+- Custom actions store their name, phrase, and image URL. "Delete my data" deletes your personal actions.
+- Server actions belong to the server, so they stay after you delete your data. PetBot clears your Discord ID from the ones you created.
+- A moderation ban keeps the banned user's Discord ID and the ban reason. The banned user sees the reason.
+- The activity log stores the custom phrase used, and keeps it for 30 days even if someone deletes the action.
+
+### Under the Hood
+
+- New storage for custom actions, and one availability check that the bot and the website share.
+- A new owner moderation page, opened from the user menu, edits or deletes any custom action and bans creators with a reason.
+- New `action_events` table, plus bot API routes for recent events and a Server-Sent Events stream. Matching relay routes on the website apply the same sign-in and server checks as the stats pages.
+- New database indexes for guild stats, leaderboards, and server settings lookups, so those lookups no longer scan every row.
+
 ## v8.9.0 - Sep 23, 2026
 
 ### What You'll Notice

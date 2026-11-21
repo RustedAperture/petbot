@@ -118,9 +118,9 @@ describe("/api/setImages proxy – validation", () => {
     expect(await res.json()).toEqual({ error: "invalid_actionType" });
   });
 
-  it("POST with unrecognised actionType → 400 invalid_actionType", async () => {
+  it("POST with malformed actionType → 400 invalid_actionType", async () => {
     const res = await POST(
-      makeRequest({ cookie, body: validBody({ actionType: "slap" }) }) as any,
+      makeRequest({ cookie, body: validBody({ actionType: "Slap!" }) }) as any,
     );
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "invalid_actionType" });

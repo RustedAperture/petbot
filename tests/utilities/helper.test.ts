@@ -15,7 +15,7 @@ import {
   randomImage,
   fetchGlobalStats,
   fetchStatsForLocation,
-  isGuildAdmin,
+  canManageServer,
 } from "../../src/utilities/helper.js";
 import type { ActionUser } from "../../src/types/user.js";
 import { drizzleDb } from "../../src/db/connector.js";
@@ -152,95 +152,43 @@ describe("helper util", () => {
     expect(res.totalsByAction.pet.totalUsers).toBe(0);
     expect(res.totalLocations).toBe(0);
   });
+});
 
-  interface MockMember {
-    permissions: { has: (perm: number) => boolean };
+describe("canManageServer", () => {
+  const fetchMember = vi.fn();
+  function clientWith(ownerId: string, perms: string[] | null) {
+    const member = perms
+      ? { permissions: { has: (p: any) => [p].flat().some((x) => perms.includes(String(x))) } }
+      : null;
+    return {
+      guilds: {
+        fetch: async () => ({
+          ownerId,
+          members: {
+            fetch: async (arg: unknown) => {
+              fetchMember(arg);
+              return member ?? Promise.reject(new Error("x"));
+            },
+          },
+        }),
+      },
+    } as unknown as Client;
   }
+  const MANAGE_GUILD = String(32n);
+  const ADMINISTRATOR = String(8n);
 
-  interface MockGuild {
-    ownerId: string;
-    members: { fetch: () => Promise<MockMember | null> };
-  }
-
-  it("isGuildAdmin returns false for unknown guild", async () => {
-    const client = {
-      guilds: { fetch: vi.fn().mockRejectedValue(new Error("UnknownGuild")) },
-    } as unknown as Client<boolean>;
-
-    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
-      false,
-    );
+  it.each([
+    ["the owner", "u1", null, true],
+    ["Manage Server only", "owner", [MANAGE_GUILD], true],
+    ["Administrator only", "owner", [ADMINISTRATOR], true],
+    ["neither permission", "owner", [], false],
+    ["a non-member", "owner", null, false],
+  ])("%s", async (_label, ownerId, perms, expected) => {
+    expect(await canManageServer(clientWith(ownerId, perms), "g", "u1")).toBe(expected);
   });
 
-  it("isGuildAdmin returns false for missing member", async () => {
-    const mockGuild: MockGuild = {
-      ownerId: "owner-1",
-      members: { fetch: vi.fn().mockResolvedValue(null) },
-    };
-
-    const client = {
-      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as unknown as Client<boolean>;
-
-    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
-      false,
-    );
-  });
-
-  it("isGuildAdmin returns false for non-admin non-owner", async () => {
-    const mockMember: MockMember = {
-      permissions: { has: vi.fn().mockReturnValue(false) },
-    };
-
-    const mockGuild: MockGuild = {
-      ownerId: "owner-1",
-      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
-    };
-
-    const client = {
-      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as unknown as Client<boolean>;
-
-    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
-      false,
-    );
-  });
-
-  it("isGuildAdmin returns true when member has Administrator permission", async () => {
-    const mockMember: MockMember = {
-      permissions: { has: vi.fn().mockReturnValue(true) },
-    };
-
-    const mockGuild: MockGuild = {
-      ownerId: "owner-1",
-      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
-    };
-
-    const client = {
-      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as unknown as Client<boolean>;
-
-    await expect(isGuildAdmin(client, "guild-99", "user-1")).resolves.toBe(
-      true,
-    );
-  });
-
-  it("isGuildAdmin returns true for owner", async () => {
-    const mockMember: MockMember = {
-      permissions: { has: vi.fn().mockReturnValue(false) },
-    };
-
-    const mockGuild: MockGuild = {
-      ownerId: "owner-1",
-      members: { fetch: vi.fn().mockResolvedValue(mockMember) },
-    };
-
-    const client = {
-      guilds: { fetch: vi.fn().mockResolvedValue(mockGuild) },
-    } as unknown as Client<boolean>;
-
-    await expect(isGuildAdmin(client, "guild-99", "owner-1")).resolves.toBe(
-      true,
-    );
+  it("bypasses the member cache", async () => {
+    await canManageServer(clientWith("owner", [MANAGE_GUILD]), "g", "u1");
+    expect(fetchMember).toHaveBeenCalledWith({ user: "u1", force: true });
   });
 });

@@ -93,3 +93,14 @@ it("shows an empty state instead of an empty plot", () => {
     screen.queryByRole("table", { name: "Action totals" }),
   ).not.toBeInTheDocument();
 });
+
+it("renders a custom action", () => {
+  render(
+    <UserDistributionChart
+      totalsByAction={{
+        boop: { totalHasPerformed: 4, totalHasReceived: 1, totalUsers: 1, imageUrl: null },
+      }}
+    />,
+  );
+  expect(screen.getByRole("rowheader", { name: "Boop" })).toBeInTheDocument();
+});

@@ -67,7 +67,7 @@ export default function ChangelogPage() {
   }, [selectedVersion, sections, timelineItems]);
 
   return (
-    <main className="prose dark:prose-invert p-4">
+    <main className="prose dark:prose-invert mx-auto w-full max-w-5xl p-4">
       <h1>Changelog</h1>
 
       {sections.length > 0 && (
@@ -109,7 +109,7 @@ export default function ChangelogPage() {
                 <p className="text-xs text-muted-foreground">{item.date}</p>
               )}
               <h3 className="mt-1 text-2xl font-semibold">{item.title}</h3>
-              <div className="mt-1 text-sm text-muted-foreground prose prose-sm dark:prose-invert">
+              <div className="mt-1 max-w-none text-sm text-muted-foreground prose prose-sm dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {item.description}
                 </ReactMarkdown>

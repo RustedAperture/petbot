@@ -76,6 +76,16 @@ describe("setImagesBody", () => {
     expect(result.actionType).toBe("pet");
   });
 
+  it("accepts a custom action name", () => {
+    const result = setImagesBody.parse({
+      guildId: "123",
+      actionType: "boop",
+      images: [""],
+      everywhere: false,
+    });
+    expect(result.actionType).toBe("boop");
+  });
+
   it("parses a valid setImages body with everywhere=true and no guildId", () => {
     const result = setImagesBody.parse({
       actionType: "pet",

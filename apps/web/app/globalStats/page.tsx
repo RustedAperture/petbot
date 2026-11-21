@@ -13,12 +13,21 @@ import { ActionTotals } from "@/types/stats";
 import StatsCardSimple from "@/components/stats/stats-card-simple";
 import Leaderboard from "@/components/leaderboard";
 import { DistributionChart } from "@/components/stats/distribution-chart";
+import { useLiveEvents } from "@/hooks/use-live-events";
+import LiveActivityFeed from "@/components/live-activity-feed";
+import { flashKeyFor } from "@/lib/live-events";
+import type { LiveScope } from "@/types/live";
 
 export default function GlobalStatsPage() {
-  const { data, isLoading, error, refresh } = useGlobalStats();
+  const { data, isLoading, error, refresh, applyLiveEvent } = useGlobalStats();
   const [selectedAction, setSelectedAction] = React.useState<string | null>(
     null,
   );
+  const scope = React.useMemo<LiveScope>(() => ({ kind: "global" }), []);
+  const live = useLiveEvents(scope, {
+    onEvent: (e) => applyLiveEvent(e, "location"),
+    onReconnect: refresh,
+  });
 
   if (!data) {
     return (
@@ -62,6 +71,7 @@ export default function GlobalStatsPage() {
               <StatsCardSimple
                 statString="Total Actions Performed"
                 value={data.totalActionsPerformed}
+                flashKey={flashKeyFor(live.latestLiveEvent, "location")}
               />
               <StatsCardSimple
                 statString="Total Unique Users"
@@ -93,6 +103,11 @@ export default function GlobalStatsPage() {
         </div>
 
         <div className="col-span-4 xl:col-span-1 flex flex-col gap-4">
+          <LiveActivityFeed
+            events={live.events}
+            status={live.status}
+            isLoading={live.isLoading}
+          />
           <DistributionChart
             totalsByAction={data.totalsByAction}
             title="Global Action Distribution"
@@ -103,6 +118,7 @@ export default function GlobalStatsPage() {
             locationId={null}
             actionType={selectedAction}
             onActionTypeChange={setSelectedAction}
+            actionKeys={Object.keys(data.totalsByAction)}
             className="w-full"
           />
         </div>

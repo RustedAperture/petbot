@@ -38,7 +38,9 @@ let params = { guildId: "guild1" };
 let sessionState = {
   session: {
     user: { id: "user1" },
-    guilds: [{ id: "guild1", name: "Test Guild", icon: "abc" }],
+    guilds: [
+      { id: "guild1", name: "Test Guild", icon: "abc", permissions: "8" },
+    ],
   },
   loading: false,
   refresh: vi.fn(),
@@ -64,6 +66,21 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/use-session", () => ({
   useSession: () => sessionState,
+}));
+
+vi.mock("@/components/custom-actions-manager", () => ({
+  default: () => createElement("div", { "data-testid": "custom-actions" }),
+}));
+vi.mock("@/app/admin/[guildId]/DefaultImagesCard", () => ({
+  default: () => createElement("div", { "data-testid": "default-images" }),
+}));
+
+let botMembershipState: {
+  isBotMember: boolean | null;
+  isLoading: boolean;
+} = { isBotMember: true, isLoading: false };
+vi.mock("@/hooks/use-bot-membership", () => ({
+  useBotMembership: () => botMembershipState,
 }));
 
 vi.mock("@/hooks/use-guild-channels", () => ({
@@ -120,6 +137,7 @@ vi.mock("@/components/ui/card", () => ({
   CardTitle: (props: any) => createElement("div", props, props.children),
   CardDescription: (props: any) => createElement("div", props, props.children),
   CardAction: (props: any) => createElement("div", props, props.children),
+  CardContent: (props: any) => createElement("div", props, props.children),
 }));
 
 vi.mock("@/components/ui/avatar", () => ({
@@ -221,10 +239,13 @@ describe("Admin guild page", () => {
       });
 
     params = { guildId: "guild1" };
+    botMembershipState = { isBotMember: true, isLoading: false };
     sessionState = {
       session: {
         user: { id: "user1" },
-        guilds: [{ id: "guild1", name: "Test Guild", icon: "abc" }],
+        guilds: [
+          { id: "guild1", name: "Test Guild", icon: "abc", permissions: "8" },
+        ],
       },
       loading: false,
       refresh: vi.fn(),
@@ -265,6 +286,76 @@ describe("Admin guild page", () => {
   it("renders AdminGuildPage with params-derived guildId", () => {
     const { container, unmount } = render(<AdminGuildPage />);
     expect(container.textContent).toContain("Test Guild");
+    expect(container.textContent).toContain("Server actions");
+    expect(
+      container.querySelector("[data-testid=custom-actions]"),
+    ).toBeTruthy();
+    unmount();
+  });
+
+  it("shows the settings form and Server actions to a Manage Server user", () => {
+    sessionState.session.guilds = [
+      { id: "guild1", name: "Test Guild", icon: "abc", permissions: "32" },
+    ];
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.querySelector("form")).toBeTruthy();
+    expect(container.textContent).toContain("Guild ID: guild1");
+    expect(container.textContent).toContain("Server actions");
+    expect(
+      container.querySelector("[data-testid=custom-actions]"),
+    ).toBeTruthy();
+    unmount();
+  });
+
+  it.each([
+    ["an admin", "8"],
+    ["a Manage Server user", "32"],
+  ])(
+    "with the bot absent, %s gets no Server actions card and no extra notice",
+    (_who, permissions) => {
+      botMembershipState = { isBotMember: false, isLoading: false };
+      sessionState.session.guilds = [
+        { id: "guild1", name: "Test Guild", icon: "abc", permissions },
+      ];
+
+      const { container, unmount } = render(
+        <AdminGuildPageContent guildId="guild1" />,
+      );
+
+      expect(container.textContent).not.toContain("Server actions");
+      expect(container.textContent).not.toContain("Add PetBot");
+      expect(
+        container.querySelector("[data-testid=custom-actions]"),
+      ).toBeNull();
+      unmount();
+    },
+  );
+
+  it("shows no Server actions card while membership is unknown", () => {
+    botMembershipState = { isBotMember: null, isLoading: false };
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.textContent).not.toContain("Server actions");
+    expect(container.textContent).not.toContain("Add PetBot");
+    unmount();
+  });
+
+  it("shows neither the manager nor the note while membership loads", () => {
+    botMembershipState = { isBotMember: false, isLoading: true };
+
+    const { container, unmount } = render(
+      <AdminGuildPageContent guildId="guild1" />,
+    );
+
+    expect(container.querySelector("[data-testid=custom-actions]")).toBeNull();
+    expect(container.textContent).not.toContain("Add PetBot");
     unmount();
   });
 

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import supertest from "supertest";
 
-const { selectMock, updateMock, insertMock, checkImageMock } = vi.hoisted(() => ({
+const { selectMock, updateMock, insertMock, checkImageMock, listSettableMock, setEverywhereMock } = vi.hoisted(() => ({
+  setEverywhereMock: vi.fn(),
+  listSettableMock: vi.fn(),
   selectMock: vi.fn(),
   updateMock: vi.fn(),
   insertMock: vi.fn(),
@@ -30,6 +32,15 @@ vi.mock("../../../src/logger.js", () => ({
 vi.mock("../../../src/utilities/check_image.js", () => ({
   checkImage: checkImageMock,
 }));
+vi.mock("../../../src/utilities/customActions/context.js", () => ({
+  buildActionContextFor: vi.fn(async (input: unknown) => input),
+}));
+vi.mock("../../../src/utilities/customActions/resolver.js", () => ({
+  listSettableActionNames: listSettableMock,
+}));
+vi.mock("../../../src/utilities/setImagesEverywhere.js", () => ({
+  setImagesEverywhere: setEverywhereMock,
+}));
 
 import { createApp } from "../../../src/http/expressServer.js";
 
@@ -46,6 +57,7 @@ describe("POST /api/setImages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     checkImageMock.mockResolvedValue(true);
+    listSettableMock.mockResolvedValue(["pet", "boop"]);
     delete process.env.INTERNAL_API_SECRET;
     app = createApp();
   });
@@ -67,6 +79,34 @@ describe("POST /api/setImages", () => {
         .expect(400);
 
       expect(res.body).toEqual({ error: "invalid_actionType" });
+    });
+
+    it("unknown custom actionType → 400 invalid_actionType", async () => {
+      const res = await supertest(app)
+        .post("/api/setImages")
+        .send({ ...validBody, actionType: "nope" })
+        .expect(400);
+
+      expect(res.body).toEqual({ error: "invalid_actionType" });
+      expect(listSettableMock).toHaveBeenCalledWith(
+        expect.objectContaining({ authorId: "111", guildId: "999" }),
+      );
+    });
+
+    it("settable custom actionType is accepted", async () => {
+      (selectMock as any).mockImplementation(() => ({
+        from: () => ({
+          where: () => ({ limit: () => Promise.resolve([{ id: 1 }]) }),
+        }),
+      }));
+      (updateMock as any).mockImplementation(() => ({
+        set: () => ({ where: () => Promise.resolve() }),
+      }));
+
+      await supertest(app)
+        .post("/api/setImages")
+        .send({ ...validBody, actionType: "boop" })
+        .expect(200, { ok: true });
     });
 
     it("images not an array → 400 invalid_images", async () => {
@@ -209,10 +249,8 @@ describe("POST /api/setImages", () => {
       expect(inserted.images).toEqual(["https://example.com/pet.png"]);
     });
 
-    it("everywhere=true issues bulk UPDATE without prior SELECT", async () => {
-      const updateWhere = vi.fn().mockResolvedValue(undefined);
-      const updateSet = vi.fn(() => ({ where: updateWhere }));
-      (updateMock as any).mockReturnValueOnce({ set: updateSet });
+    it("everywhere=true hands the cleaned images to setImagesEverywhere", async () => {
+      setEverywhereMock.mockResolvedValue(undefined);
 
       const res = await supertest(app)
         .post("/api/setImages")
@@ -225,7 +263,9 @@ describe("POST /api/setImages", () => {
         .expect(200);
 
       expect(res.body).toEqual({ ok: true });
-      expect(updateMock).toHaveBeenCalledTimes(1);
+      expect(setEverywhereMock).toHaveBeenCalledWith("111", "pet", [
+        "https://example.com/pet.png",
+      ]);
       expect(selectMock).not.toHaveBeenCalled();
     });
   });

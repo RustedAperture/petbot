@@ -1,5 +1,14 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
+import { ACTIONS } from "../../src/types/constants.js";
 import { mockInteraction } from "../helpers/mockInteraction.js";
+
+vi.mock("../../src/db/functions.js", () => ({
+  getBotData: vi.fn().mockResolvedValue(null),
+}));
+vi.mock("../../src/utilities/customActions/resolver.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/utilities/customActions/resolver.js")>()),
+  listSettableActionNames: vi.fn(async () => Object.keys(ACTIONS)),
+}));
 
 vi.mock("../../src/utilities/check_user.js", () => ({ checkUser: vi.fn() }));
 vi.mock("../../src/utilities/resetAction.js", () => ({ resetAction: vi.fn() }));
@@ -21,7 +30,7 @@ describe("/reset command", () => {
 
     expect(interaction.__calls.editedReplies.length).toBe(1);
     expect(interaction.__calls.editedReplies[0].content).toContain(
-      "Invalid action",
+      "That action isn't available here.",
     );
   });
 

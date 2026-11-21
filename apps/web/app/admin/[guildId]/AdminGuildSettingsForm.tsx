@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { ACTIONS } from "@petbot/constants";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +11,9 @@ import {
   CardTitle,
   CardDescription,
   CardAction,
+  CardContent,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Field,
@@ -36,29 +37,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { InfoIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GuildSettings } from "@/types/guild";
 
-const ACTION_DEFAULT_IMAGE_FIELDS = Object.keys(ACTIONS) as Array<
-  keyof typeof ACTIONS
->;
-
-const actionImagesSchemaShape = ACTION_DEFAULT_IMAGE_FIELDS.reduce(
-  (shape, action) => ({
-    ...shape,
-    [action]: z.url().or(z.literal("")).optional(),
-  }),
-  {} as Record<keyof typeof ACTIONS, z.ZodTypeAny>,
-);
-
 const AdminGuildSettingsSchema = z.object({
   nickname: z.string().optional(),
   logChannel: z.string().optional(),
-  sleepImage: z.url().or(z.literal("")).optional(),
   restricted: z.boolean().optional(),
-  defaultImages: z.object(actionImagesSchemaShape).optional(),
 });
 
 type AdminGuildSettingsFormValues = z.infer<typeof AdminGuildSettingsSchema>;
@@ -76,38 +62,6 @@ export type AdminGuildSettingsFormProps = {
   update: (values: Partial<GuildSettings>) => Promise<unknown> | unknown;
 };
 
-function titleCase(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-export function ImagePreview({ url, alt }: { url: string; alt: string }) {
-  const [hasError, setHasError] = React.useState(false);
-
-  // Any URL change clears the error so the new value gets a load attempt.
-  const [prevUrl, setPrevUrl] = React.useState(url);
-  if (url !== prevUrl) {
-    setPrevUrl(url);
-    setHasError(false);
-  }
-
-  const trimmed = url.trim();
-  if (!trimmed || hasError) {
-    return null;
-  }
-
-  return (
-    <div className="mx-auto w-24 shrink-0 aspect-square overflow-hidden rounded-md border bg-muted/20">
-      <img
-        src={trimmed}
-        alt={alt}
-        className="h-full w-full object-contain"
-        loading="lazy"
-        onError={() => setHasError(true)}
-      />
-    </div>
-  );
-}
-
 export default function AdminGuildSettingsForm({
   guildId,
   settings,
@@ -124,12 +78,7 @@ export default function AdminGuildSettingsForm({
     defaultValues: {
       nickname: "",
       logChannel: "",
-      sleepImage: "",
       restricted: false,
-      defaultImages: ACTION_DEFAULT_IMAGE_FIELDS.reduce(
-        (acc, action) => ({ ...acc, [action]: "" }),
-        {} as Record<keyof typeof ACTIONS, string>,
-      ),
     },
   });
 
@@ -138,24 +87,15 @@ export default function AdminGuildSettingsForm({
       return;
     }
 
-    form.reset({
-      nickname: settings.nickname ?? "",
-      logChannel: settings.logChannel ?? "",
-      sleepImage: settings.sleepImage ?? "",
-      restricted: settings.restricted ?? false,
-      defaultImages: {
-        ...ACTION_DEFAULT_IMAGE_FIELDS.reduce(
-          (acc, action) => ({
-            ...acc,
-            [action]:
-              settings.defaultImages?.[
-                action as keyof typeof settings.defaultImages
-              ] ?? "",
-          }),
-          {} as Record<keyof typeof ACTIONS, string>,
-        ),
+    // Default images save on their own and refresh `settings`; keep any unsaved edits here.
+    form.reset(
+      {
+        nickname: settings.nickname ?? "",
+        logChannel: settings.logChannel ?? "",
+        restricted: settings.restricted ?? false,
       },
-    });
+      { keepDirtyValues: true },
+    );
   }, [settings, form]);
 
   const [saving, setSaving] = React.useState(false);
@@ -180,7 +120,7 @@ export default function AdminGuildSettingsForm({
 
   if (pageLoading) {
     return (
-      <div className="w-full p-4">
+      <div className="w-full p-4 xl:col-span-2">
         <div className="grid gap-6 md:grid-cols-[minmax(0,0.75fr)_auto_minmax(0,1.25fr)] md:items-stretch">
           <div className="space-y-6">
             <Skeleton className="h-8 w-3/4" />
@@ -203,7 +143,7 @@ export default function AdminGuildSettingsForm({
 
   return (
     <form
-      className="w-full flex flex-col gap-6"
+      className="flex w-full flex-col gap-6 xl:col-span-2"
       onSubmit={form.handleSubmit(onSubmit)}
       noValidate
     >
@@ -264,160 +204,88 @@ export default function AdminGuildSettingsForm({
       ) : null}
 
       {!effectiveError && (
-        <FieldGroup>
-          <div className="grid gap-6 md:grid-cols-[minmax(0,0.75fr)_auto_minmax(0,1.25fr)] md:items-stretch">
-            <div className="flex flex-col gap-6">
-              <Field>
-                <FieldLabel htmlFor="nickname">Nickname</FieldLabel>
-                <FieldDescription>
-                  This is the nickname that PetBot will use in this server.
-                </FieldDescription>
-                <Input
-                  id="nickname"
-                  type="text"
-                  placeholder="PetBot"
-                  aria-invalid={!!form.formState.errors.nickname}
-                  {...form.register("nickname")}
-                />
-                {form.formState.errors.nickname?.message ? (
-                  <FieldError>
-                    {form.formState.errors.nickname.message}
-                  </FieldError>
-                ) : null}
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="logChannel">Log Channel</FieldLabel>
-                <FieldDescription>
-                  This is the channel where PetBot will post its logs and
-                  notifications.
-                </FieldDescription>
-                <Select
-                  items={channelItems}
-                  value={form.watch("logChannel") ?? ""}
-                  onValueChange={(val) =>
-                    form.setValue("logChannel", val ?? "", {
-                      shouldDirty: true,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a log channel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Text channels</SelectLabel>
-                      {channelItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <FieldLabel htmlFor="restrictedMode">
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>Restricted Mode</FieldTitle>
-                    <FieldDescription>
-                      When enabled users in this server will only be able to use
-                      the images specified below
-                    </FieldDescription>
-                  </FieldContent>
-                  <Switch
-                    id="restricted"
-                    checked={form.watch("restricted")}
-                    onCheckedChange={(checked) =>
-                      form.setValue("restricted", checked, {
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Server settings</CardTitle>
+              <CardDescription>
+                How PetBot behaves in this server.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="nickname">Nickname</FieldLabel>
+                  <FieldDescription>
+                    This is the nickname that PetBot will use in this server.
+                  </FieldDescription>
+                  <Input
+                    id="nickname"
+                    type="text"
+                    placeholder="PetBot"
+                    aria-invalid={!!form.formState.errors.nickname}
+                    {...form.register("nickname")}
+                  />
+                  {form.formState.errors.nickname?.message ? (
+                    <FieldError>
+                      {form.formState.errors.nickname.message}
+                    </FieldError>
+                  ) : null}
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="logChannel">Log Channel</FieldLabel>
+                  <FieldDescription>
+                    This is the channel where PetBot will post its logs and
+                    notifications.
+                  </FieldDescription>
+                  <Select
+                    items={channelItems}
+                    value={form.watch("logChannel") ?? ""}
+                    onValueChange={(val) =>
+                      form.setValue("logChannel", val ?? "", {
                         shouldDirty: true,
                       })
                     }
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a log channel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Text channels</SelectLabel>
+                        {channelItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </Field>
-              </FieldLabel>
-            </div>
-
-            <Separator
-              orientation="vertical"
-              className="hidden md:block md:h-full"
-            />
-
-            <div className="flex flex-col gap-6">
-              <Field>
-                <div className="flex items-start gap-3">
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <FieldLabel htmlFor="sleepImage">Sleep Image</FieldLabel>
-                    <FieldDescription>
-                      Used when /sleep command is used.
-                    </FieldDescription>
-                    <Input
-                      id="sleepImage"
-                      type="text"
-                      placeholder="http://example.com/image.jpg"
-                      aria-invalid={!!form.formState.errors.sleepImage}
-                      {...form.register("sleepImage")}
+                <FieldLabel htmlFor="restrictedMode">
+                  <Field orientation="horizontal">
+                    <FieldContent>
+                      <FieldTitle>Restricted Mode</FieldTitle>
+                      <FieldDescription>
+                        When enabled users in this server will only be able to
+                        use the images specified below
+                      </FieldDescription>
+                    </FieldContent>
+                    <Switch
+                      id="restricted"
+                      checked={form.watch("restricted")}
+                      onCheckedChange={(checked) =>
+                        form.setValue("restricted", checked, {
+                          shouldDirty: true,
+                        })
+                      }
                     />
-                    {form.formState.errors.sleepImage?.message ? (
-                      <FieldError>
-                        {form.formState.errors.sleepImage.message}
-                      </FieldError>
-                    ) : null}
-                  </div>
-                  <ImagePreview
-                    url={String(form.watch("sleepImage") ?? "")}
-                    alt="Sleep image preview"
-                  />
-                </div>
-              </Field>
-              {ACTION_DEFAULT_IMAGE_FIELDS.map((action) => {
-                const displayName = titleCase(action);
-                return (
-                  <Field key={action}>
-                    <div className="flex items-center gap-3">
-                      <div className="min-w-0 flex-1 space-y-3">
-                        <FieldLabel htmlFor={`${action}Image`}>
-                          {displayName} Image
-                        </FieldLabel>
-                        <FieldDescription>
-                          Used when /{action} command is used.
-                        </FieldDescription>
-                        <Input
-                          id={`${action}Image`}
-                          type="text"
-                          placeholder="http://example.com/image.jpg"
-                          aria-invalid={
-                            !!form.formState.errors.defaultImages?.[action]
-                          }
-                          {...form.register(`defaultImages.${action}` as const)}
-                        />
-                        {form.formState.errors.defaultImages?.[action]
-                          ?.message ? (
-                            <FieldError>
-                              {
-                                form.formState.errors.defaultImages[action]
-                                  ?.message
-                              }
-                            </FieldError>
-                          ) : null}
-                      </div>
-                      <ImagePreview
-                        url={String(
-                          (
-                            form.watch("defaultImages") as Record<
-                              string,
-                              string
-                            >
-                          )[action] ?? "",
-                        )}
-                        alt={`${displayName} image preview`}
-                      />
-                    </div>
                   </Field>
-                );
-              })}
-            </div>
-          </div>
-        </FieldGroup>
+                </FieldLabel>
+              </FieldGroup>
+            </CardContent>
+          </Card>
+        </>
       )}
     </form>
   );

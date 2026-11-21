@@ -7,6 +7,7 @@ import {
   User,
 } from "discord.js";
 import { performAction } from "../../utilities/actionHelpers.js";
+import { resolveBuiltIn } from "../../utilities/customActions/resolver.js";
 import { checkUser } from "../../utilities/check_user.js";
 import { collectUniqueUsers } from "../../utilities/targetCollection.js";
 import { checkOptOuts } from "../../utilities/optOutHelper.js";
@@ -94,7 +95,7 @@ export const command = {
       }
       const target = member ?? user;
       await target.fetch(true);
-      const container = await performAction("pet", target, author, guild);
+      const container = await performAction(resolveBuiltIn("pet"), target, author, guild);
       const replyOptions = {
         components: [container],
         flags: MessageFlags.IsComponentsV2,

@@ -107,132 +107,132 @@ export function UserSettingsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-xl p-0 pt-6">
+        <DialogContent className="max-h-[85dvh] grid-rows-[auto_auto_minmax(0,1fr)_auto] sm:max-w-xl p-0 pt-6">
           <DialogHeader className="px-6">
             <DialogTitle>User Settings</DialogTitle>
           </DialogHeader>
           <Separator />
-          <FieldGroup className="px-6">
-            <FieldSet>
-              <FieldLegend>Opt-Out of PetBot</FieldLegend>
-              <FieldDescription>
-                If you wish to opt-out of PetBot, please click the button below.
-                This will prevent PetBot from interacting with your user on
-                Discord. You can opt back in at any time by clicking the button
-                again.
-              </FieldDescription>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  // toggle opt-out status via hook
-                  await toggle();
-                }}
-                disabled={isLoading}
-              >
-                {optedOut === null
-                  ? "Loading…"
-                  : optedOut
-                    ? "Opt In"
-                    : "Opt Out"}
-              </Button>
-              {optOutError && (
-                <p className="text-sm text-destructive mt-1">
-                  {optOutError.message}
-                </p>
-              )}
-            </FieldSet>
-          </FieldGroup>
-          <Separator />
-          <FieldGroup className="px-6">
-            <FieldSet>
-              <FieldLegend>Leaderboard Display</FieldLegend>
-              <FieldDescription>
-                Choose how your name appears on leaderboards. When disabled,
-                you&apos;ll appear anonymously.
-              </FieldDescription>
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">
-                  Show my name on leaderboards
-                </label>
-                <Switch
-                  checked={consentEnabled === true}
-                  onCheckedChange={async (checked) => {
-                    if (checked) {
-                      const name =
-                        leaderboardNameValue || session?.user.username || "";
-                      setLeaderboardName(name);
-                      await updateConsent(name);
-                    } else {
-                      await disableConsent();
-                    }
-                  }}
-                  disabled={consentEnabled === null || consentLoading}
-                />
-              </div>
-              <Field>
-                <Input
-                  type="text"
-                  placeholder="Display name"
-                  value={
-                    consentEnabled
-                      ? leaderboardNameValue
-                      : (hashLabel ?? "")
-                  }
-                  disabled={!consentEnabled || consentLoading}
-                  onChange={(e) => {
-                    setLeaderboardName(e.target.value);
-                    setLeaderboardNameTouched(true);
-                  }}
-                  onBlur={(e) => {
-                    if (consentEnabled) {
-                      void saveLeaderboardName(e.target.value);
-                    }
-                  }}
-                />
-                {consentEnabled && (
-                  <FieldDescription>
-                    Defaults to your Discord username
-                  </FieldDescription>
-                )}
-              </Field>
-            </FieldSet>
-          </FieldGroup>
-          <Separator />
-          <FieldGroup className="px-6">
-            <FieldSet>
-              <FieldLegend className="text-destructive">
-                Delete My Data
-              </FieldLegend>
-              <FieldDescription>
-                Deleting your data will permanently remove all Petbot
-                information tied to your account, including your personal stats,
-                any guild statistics and your opt-out status. This cannot be
-                undone. To confirm, please type your Discord user ID (
-                <code className="font-mono">{session?.user.id}</code>) in the
-                field below.
-              </FieldDescription>
-              <Field orientation="horizontal">
-                <Input
-                  type="text"
-                  placeholder={"User ID"}
-                  value={typedId}
-                  onChange={(e) => setTypedId(e.target.value)}
-                />
+          <div className="grid min-h-0 content-start gap-6 overflow-y-auto">
+            <FieldGroup className="px-6">
+              <FieldSet>
+                <FieldLegend>Opt-Out of PetBot</FieldLegend>
+                <FieldDescription>
+                  If you wish to opt-out of PetBot, please click the button
+                  below. This will prevent PetBot from interacting with your
+                  user on Discord. You can opt back in at any time by clicking
+                  the button again.
+                </FieldDescription>
                 <Button
-                  variant="destructive"
-                  onClick={handleDeleteClick}
-                  disabled={
-                    !session?.user.id || typedId.trim() !== session?.user.id
-                  }
+                  variant="outline"
+                  onClick={async () => {
+                    // toggle opt-out status via hook
+                    await toggle();
+                  }}
+                  disabled={isLoading}
                 >
-                  Delete
+                  {optedOut === null
+                    ? "Loading…"
+                    : optedOut
+                      ? "Opt In"
+                      : "Opt Out"}
                 </Button>
-              </Field>
-              {error && (
-                <p className="text-sm text-destructive mt-1">{error}</p>
-              )}
-            </FieldSet>
-          </FieldGroup>
+                {optOutError && (
+                  <p className="text-sm text-destructive mt-1">
+                    {optOutError.message}
+                  </p>
+                )}
+              </FieldSet>
+            </FieldGroup>
+            <Separator />
+            <FieldGroup className="px-6">
+              <FieldSet>
+                <FieldLegend>Leaderboard Display</FieldLegend>
+                <FieldDescription>
+                  Choose how your name appears on leaderboards. When disabled,
+                  you&apos;ll appear anonymously.
+                </FieldDescription>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">
+                    Show my name on leaderboards
+                  </label>
+                  <Switch
+                    checked={consentEnabled === true}
+                    onCheckedChange={async (checked) => {
+                      if (checked) {
+                        const name =
+                          leaderboardNameValue || session?.user.username || "";
+                        setLeaderboardName(name);
+                        await updateConsent(name);
+                      } else {
+                        await disableConsent();
+                      }
+                    }}
+                    disabled={consentEnabled === null || consentLoading}
+                  />
+                </div>
+                <Field>
+                  <Input
+                    type="text"
+                    placeholder="Display name"
+                    value={
+                      consentEnabled ? leaderboardNameValue : (hashLabel ?? "")
+                    }
+                    disabled={!consentEnabled || consentLoading}
+                    onChange={(e) => {
+                      setLeaderboardName(e.target.value);
+                      setLeaderboardNameTouched(true);
+                    }}
+                    onBlur={(e) => {
+                      if (consentEnabled) {
+                        void saveLeaderboardName(e.target.value);
+                      }
+                    }}
+                  />
+                  {consentEnabled && (
+                    <FieldDescription>
+                      Defaults to your Discord username
+                    </FieldDescription>
+                  )}
+                </Field>
+              </FieldSet>
+            </FieldGroup>
+            <Separator />
+            <FieldGroup className="px-6">
+              <FieldSet>
+                <FieldLegend className="text-destructive">
+                  Delete My Data
+                </FieldLegend>
+                <FieldDescription>
+                  Deleting your data will permanently remove all Petbot
+                  information tied to your account, including your personal
+                  stats, any guild statistics and your opt-out status. This
+                  cannot be undone. To confirm, please type your Discord user ID
+                  (<code className="font-mono">{session?.user.id}</code>) in the
+                  field below.
+                </FieldDescription>
+                <Field orientation="horizontal">
+                  <Input
+                    type="text"
+                    placeholder={"User ID"}
+                    value={typedId}
+                    onChange={(e) => setTypedId(e.target.value)}
+                  />
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteClick}
+                    disabled={
+                      !session?.user.id || typedId.trim() !== session?.user.id
+                    }
+                  >
+                    Delete
+                  </Button>
+                </Field>
+                {error && (
+                  <p className="text-sm text-destructive mt-1">{error}</p>
+                )}
+              </FieldSet>
+            </FieldGroup>
+          </div>
           <DialogFooter
             showCloseButton
             className="bg-muted/50 p-6 border-t rounded-b-4xl"

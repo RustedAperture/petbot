@@ -43,7 +43,8 @@ export function EditImagesDialog({
   const [images, setImages] = React.useState<string[]>(() =>
     Array.from({ length: SLOT_COUNT }, (_, i) => initialImages[i] ?? ""),
   );
-  const [everywhere, setEverywhere] = React.useState(false);
+  const [everywhere, setEverywhere] = React.useState(true);
+  const [isConfirming, setIsConfirming] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [urlErrors, setUrlErrors] = React.useState<(string | null)[]>(
@@ -74,7 +75,8 @@ export function EditImagesDialog({
       setImages(
         Array.from({ length: SLOT_COUNT }, (_, i) => initialImages[i] ?? ""),
       );
-      setEverywhere(false);
+      setEverywhere(true);
+      setIsConfirming(false);
       setError(null);
       setUrlErrors(Array(SLOT_COUNT).fill(null));
     }
@@ -97,6 +99,11 @@ export function EditImagesDialog({
     const validated = images.map((url) => validateUrl(url.trim()));
     setUrlErrors(validated);
     if (validated.some(Boolean)) {
+      return;
+    }
+    // Saving everywhere replaces this action's images in every server, so ask first.
+    if (everywhere && !isConfirming) {
+      setIsConfirming(true);
       return;
     }
 
@@ -177,44 +184,70 @@ export function EditImagesDialog({
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="set-everywhere"
-              checked={everywhere}
-              onCheckedChange={(checked) => setEverywhere(Boolean(checked))}
-            />
-            <Label htmlFor="set-everywhere" className="text-sm cursor-pointer">
-              Set everywhere
-            </Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger
-                  aria-label="What does 'Set everywhere' do?"
-                  className="cursor-help text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                >
-                  <InfoIcon className="size-3.5" aria-hidden="true" />
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  Sets these images everywhere you have performed this action
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        </DialogFooter>
+        {isConfirming ? (
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">
+              Replace your {displayName} images in every server you&apos;ve used
+              PetBot in?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsConfirming(false)}
+                disabled={isSaving}
+              >
+                Back
+              </Button>
+              <Button type="button" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Saving…" : "Save everywhere"}
+              </Button>
+            </div>
+          </DialogFooter>
+        ) : (
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="set-everywhere"
+                checked={everywhere}
+                onCheckedChange={(checked) => setEverywhere(Boolean(checked))}
+              />
+              <Label
+                htmlFor="set-everywhere"
+                className="text-sm cursor-pointer"
+              >
+                Set everywhere
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    aria-label="What does 'Set everywhere' do?"
+                    className="cursor-help text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    <InfoIcon className="size-3.5" aria-hidden="true" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    Uses these images in every server you&apos;ve used PetBot
+                    in. Untick to change them for this server only.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                disabled={isSaving}
+              >
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

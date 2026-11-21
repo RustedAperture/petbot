@@ -5,7 +5,7 @@ import {
 } from "../../../../../../lib/auth";
 import { proxyRequest } from "../../../../../../lib/proxy";
 import { apiError } from "../../../../../../lib/errors";
-import { isAdminOrOwnerGuild } from "../../../../../../lib/utils";
+import { canManageServerGuild } from "../../../../../../lib/utils";
 
 async function authorize(
   req: Request,
@@ -28,7 +28,7 @@ async function authorize(
     throw apiError(403, "forbidden");
   }
 
-  if (!isAdminOrOwnerGuild(guild)) {
+  if (!canManageServerGuild(guild)) {
     throw apiError(403, "forbidden");
   }
 

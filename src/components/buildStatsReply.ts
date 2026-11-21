@@ -8,16 +8,17 @@ import {
   type User,
 } from "discord.js";
 import { getAccentColor, getName } from "../utilities/helper.js";
-import { ACTIONS, ActionType } from "../types/constants.js";
+import type { ResolvedAction } from "../utilities/customActions/resolver.js";
 
 export function buildStatsReply(
   data: any,
-  images: string[],
+  rawImages: (string | null)[],
   target: User | GuildMember,
-  action: ActionType,
+  action: ResolvedAction,
   totalCount: number,
 ) {
-  const actionObj = ACTIONS[action];
+  const noun = action.name;
+  const past = action.phrase;
   const targetName = getName(target);
   const accentColour = getAccentColor(target);
 
@@ -30,25 +31,30 @@ export function buildStatsReply(
 
   targetText.setContent(
     [
-      `# ${targetName} ${actionObj.noun} stats`,
-      `**Times ${actionObj.past} here**: ${data.hasReceived}x`,
-      `**Total times ${actionObj.past}**: ${totalCount}x`,
-      `**Used ${actionObj.noun}**: ${data.hasPerformed}x`,
+      `# ${targetName} ${noun} stats`,
+      `**Times ${past} here**: ${data.hasReceived}x`,
+      `**Total times ${past}**: ${totalCount}x`,
+      `**Used ${noun}**: ${data.hasPerformed}x`,
     ].join("\n"),
   );
 
+  const images = action.isBuiltIn
+    ? (rawImages as string[])
+    : rawImages.filter((image): image is string => Boolean(image));
   const gallery = new MediaGalleryBuilder();
 
   for (let i = 0; i < images.length; i++) {
     gallery.addItems([
       {
-        description: `${actionObj.noun} Image ${i + 1}`,
+        description: `${noun} Image ${i + 1}`,
         media: { url: images[i] },
       },
     ]);
   }
 
-  statsContainer.addMediaGalleryComponents(gallery);
+  if (images.length > 0 || action.isBuiltIn) {
+    statsContainer.addMediaGalleryComponents(gallery);
+  }
 
   const targetThumbnail = new ThumbnailBuilder().setURL(
     target.displayAvatarURL(),

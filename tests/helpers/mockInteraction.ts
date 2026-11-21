@@ -3,10 +3,21 @@ export function mockInteraction(overrides: any = {}) {
     editedReplies: [],
     replies: [],
     followUps: [],
+    deletedReplies: 0,
     showModals: [],
   };
 
   const options = {
+    get: (k: string) => {
+      if (overrides.options?.get) {
+        return overrides.options.get(k);
+      }
+      const raw = overrides.options?.[k];
+      if (raw === undefined || raw === null || typeof raw === "function") {
+        return null;
+      }
+      return { value: typeof raw === "object" ? raw.id : raw };
+    },
     getString: (k: string) =>
       overrides.options?.getString
         ? overrides.options.getString(k)
@@ -44,12 +55,18 @@ export function mockInteraction(overrides: any = {}) {
     },
   };
 
-  const client = overrides.client ?? { application: { id: "bot-id" } };
+  const client = overrides.client ?? {
+    application: { id: "bot-id" },
+    guilds: { cache: { has: () => true } },
+  };
 
   const interaction: any = {
     deferReply: async () => {},
     showModal: async (modal: any) => calls.showModals.push(modal),
     editReply: async (payload: any) => calls.editedReplies.push(payload),
+    deleteReply: async () => {
+      calls.deletedReplies += 1;
+    },
     followUp: async (payload: any) => calls.followUps.push(payload),
     reply: async (payload: any) => calls.replies.push(payload),
     options,

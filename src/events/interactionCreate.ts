@@ -3,13 +3,19 @@ import {
   MessageFlags,
   type Interaction,
   type ButtonInteraction,
+  type ChatInputCommandInteraction,
+  type UserContextMenuCommandInteraction,
+  type MessageContextMenuCommandInteraction,
   type Client,
 } from "discord.js";
 import logger from "../logger.js";
+import { executeCustomGuildCommand } from "../commands/customGuildCommand.js";
+import { UNAVAILABLE_MESSAGE } from "../commands/slash/action.js";
 
 interface Executable {
   name: string;
   execute: (interaction: Interaction) => Promise<void>;
+  autocomplete?: (interaction: Interaction) => Promise<void>;
   aliases?: string[];
 }
 
@@ -34,9 +40,43 @@ function findCommandByAlias(
   return undefined;
 }
 
+async function replyWithCommandError(
+  interaction: ChatInputCommandInteraction | UserContextMenuCommandInteraction | MessageContextMenuCommandInteraction,
+  error: unknown,
+): Promise<void> {
+  logger.error({ error, commandName: interaction.commandName }, "Command failed");
+  if (!interaction.replied && !interaction.deferred) {
+    try {
+      await interaction.reply({
+        content: "There was an error while executing this command!",
+        flags: MessageFlags.Ephemeral,
+      });
+    } catch (replyError) {
+      logger.error({ error: replyError }, "Failed to send error reply");
+    }
+  } else if (interaction.deferred) {
+    try {
+      await interaction.editReply({
+        content: "There was an error while executing this command!",
+      });
+    } catch (editError) {
+      logger.error({ error: editError }, "Failed to edit error reply");
+    }
+  }
+}
+
 const interactionCreate = {
   name: Events.InteractionCreate,
   async execute(interaction: Interaction): Promise<void> {
+    if (interaction.isAutocomplete()) {
+      const client = interaction.client as ClientWithCommands;
+      try {
+        await client.slashCommands?.get(interaction.commandName)?.autocomplete?.(interaction);
+      } catch (error) {
+        logger.error({ error, commandName: interaction.commandName }, "Autocomplete failed");
+      }
+      return;
+    }
     if (
       interaction.isChatInputCommand() ||
       interaction.isUserContextMenuCommand() ||
@@ -66,6 +106,29 @@ const interactionCreate = {
       }
 
       if (!command) {
+        if (interaction.isChatInputCommand() && interaction.guildId) {
+          try {
+            if (await executeCustomGuildCommand(interaction)) {
+              return;
+            }
+          } catch (error) {
+            await replyWithCommandError(interaction, error);
+            return;
+          }
+          logger.error(
+            { commandName: interaction.commandName },
+            "No command matching interaction was found.",
+          );
+          try {
+            await interaction.reply({
+              content: UNAVAILABLE_MESSAGE,
+              flags: MessageFlags.Ephemeral,
+            });
+          } catch (replyError) {
+            logger.error({ error: replyError }, "Failed to send unavailable reply");
+          }
+          return;
+        }
         logger.error(
           { commandName: interaction.commandName },
           "No command matching interaction was found.",
@@ -76,25 +139,7 @@ const interactionCreate = {
       try {
         await command.execute(interaction);
       } catch (error) {
-        logger.error({ error, commandName: interaction.commandName }, "Command failed");
-        if (!interaction.replied && !interaction.deferred) {
-          try {
-            await interaction.reply({
-              content: "There was an error while executing this command!",
-              flags: MessageFlags.Ephemeral,
-            });
-          } catch (replyError) {
-            logger.error({ error: replyError }, "Failed to send error reply");
-          }
-        } else if (interaction.deferred) {
-          try {
-            await interaction.editReply({
-              content: "There was an error while executing this command!",
-            });
-          } catch (editError) {
-            logger.error({ error: editError }, "Failed to edit error reply");
-          }
-        }
+        await replyWithCommandError(interaction, error);
       }
     } else if (interaction.isButton()) {
       const buttonInteraction = interaction as ButtonInteraction;

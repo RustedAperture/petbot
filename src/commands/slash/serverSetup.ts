@@ -18,7 +18,7 @@ export const command = {
   data: new SlashCommandBuilder()
     .setName("server-setup")
     .setDescription("Setup a bot when added to a guild")
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator),
+    .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild),
   async execute(interaction: any) {
     const gsRows: GuildSettings[] = await drizzleDb
       .select()

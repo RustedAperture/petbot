@@ -19,6 +19,19 @@ logged:
 - **Image URLs:** When a user supplies or generates an image via the bot,
   the URL(s) of the chosen image(s) are stored so the bot can recreate
   or display them later.
+- **Activity Log:** Every action performed through the bot, including by
+  users who have opted out, is logged anonymously for 30 days (action
+  type, time, location, hashed user IDs, and the custom phrase used, if
+  any) to power the live activity
+  feed. These entries, including any custom phrase, are removed when you
+  delete your data via the web interface, and otherwise after 30 days
+  even if the action itself has been deleted.
+- **Custom Actions:** Each custom action stores its name, phrase, and
+  image URL. Personal actions also store your Discord ID and are deleted
+  when you delete your data via the web interface. Server actions belong
+  to the server and survive "Delete my data"; your Discord ID is cleared
+  from the ones you created. Moderation bans keep the banned user's
+  Discord ID.
 
 No personally identifiable information (such as usernames, email
 addresses, or real names) is collected or stored by PetBot.
@@ -28,7 +41,9 @@ addresses, or real names) is collected or stored by PetBot.
 The collected data are used solely to power the bot's features, keep
 track of user statistics, and maintain operational integrity. Data are
 retained indefinitely unless a user chooses to delete their information
-via the web interface. Removing the bot from a server or uninstalling it
+via the web interface. Server custom actions and moderation bans are
+retained as described above. The activity log is automatically removed
+after 30 days. Removing the bot from a server or uninstalling it
 from your Discord applications does **not** automatically erase any
 stored data; you must explicitly request deletion through the web
 interface.

@@ -5,8 +5,11 @@ import {
   InteractionContextType,
   ApplicationIntegrationType,
   EmbedBuilder,
+  type AutocompleteInteraction,
 } from "discord.js";
 import { getLeaderboard } from "../../utilities/leaderboard.js";
+import { listBuiltInAndGuildNames, respondWithActions } from "../actionAutocomplete.js";
+import { UNAVAILABLE_MESSAGE } from "./action.js";
 
 export const command = {
   data: new SlashCommandBuilder()
@@ -17,14 +20,7 @@ export const command = {
         .setName("action")
         .setDescription("Filter by action type (omit for all actions)")
         .setRequired(false)
-        .addChoices(
-          { name: "Pet", value: "pet" },
-          { name: "Bite", value: "bite" },
-          { name: "Hug", value: "hug" },
-          { name: "Bonk", value: "bonk" },
-          { name: "Squish", value: "squish" },
-          { name: "Explode", value: "explode" },
-        ),
+        .setAutocomplete(true),
     )
     .setIntegrationTypes([
       ApplicationIntegrationType.GuildInstall,
@@ -36,7 +32,24 @@ export const command = {
       InteractionContextType.PrivateChannel,
     ]),
 
+  async autocomplete(interaction: AutocompleteInteraction) {
+    await respondWithActions(
+      interaction,
+      await listBuiltInAndGuildNames(interaction.guildId),
+    );
+  },
+
   async execute(interaction: ChatInputCommandInteraction) {
+    const requested = interaction.options.getString("action");
+    const names = await listBuiltInAndGuildNames(interaction.guildId);
+    if (requested && !names.includes(requested)) {
+      await interaction.reply({
+        content: UNAVAILABLE_MESSAGE,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     await interaction.deferReply({
       flags: MessageFlags.Ephemeral,
     });
@@ -51,6 +64,7 @@ export const command = {
     const result = await getLeaderboard({
       locationId,
       actionType,
+      actionTypes: names,
       limit: 10,
       discordClient: interaction.client,
     });
