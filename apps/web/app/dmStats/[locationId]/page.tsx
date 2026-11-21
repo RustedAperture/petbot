@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import Leaderboard from "@/components/leaderboard";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import LiveActivityFeed from "@/components/live-activity-feed";
+import { flashKeyFor } from "@/lib/live-events";
 import type { LiveScope } from "@/types/live";
 
 export default function DmStatsLocationPage({
@@ -228,6 +229,7 @@ export default function DmStatsLocationPage({
               <StatsCardSimple
                 statString="Total Actions Performed"
                 value={data.totalActionsPerformed}
+                flashKey={flashKeyFor(live.latestLiveEvent, "user")}
               />
               <StatsCardSimple
                 statString="Total Unique Users"

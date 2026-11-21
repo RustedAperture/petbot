@@ -16,6 +16,7 @@ import StatsCardSimple from "@/components/stats/stats-card-simple";
 import { UserDistributionChart } from "@/components/stats/user-distribution-chart";
 import { useLiveEvents } from "@/hooks/use-live-events";
 import LiveActivityFeed from "@/components/live-activity-feed";
+import { flashKeyFor } from "@/lib/live-events";
 import type { LiveScope } from "@/types/live";
 
 export default function UserStatsPage() {
@@ -89,8 +90,9 @@ function UserStatsContent({
       ? { kind: "userLocation", userId, locationId: queryLocationId }
       : { kind: "guild", guildId: queryLocationId };
   }, [userId, queryLocationId, userScoped]);
+  const countMode = isLegacyLocation ? "location" : "user";
   const live = useLiveEvents(scope, {
-    onEvent: (e) => applyLiveEvent(e, isLegacyLocation ? "location" : "user"),
+    onEvent: (e) => applyLiveEvent(e, countMode),
     onReconnect: refresh,
   });
 
@@ -134,6 +136,7 @@ function UserStatsContent({
             <StatsCardSimple
               statString="Total Actions Performed"
               value={data.totalActionsPerformed}
+              flashKey={flashKeyFor(live.latestLiveEvent, countMode)}
             />
             {!queryLocationId && (
               <StatsCardSimple

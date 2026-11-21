@@ -14,6 +14,19 @@ import type { LiveActionEvent } from "@/types/live";
 vi.mock("@/hooks/use-global-stats");
 vi.mock("@/hooks/use-live-events");
 vi.mock("@/hooks/use-session");
+vi.mock("@/components/stats/stats-card-simple", () => ({
+  default: ({
+    statString,
+    flashKey,
+  }: {
+    statString: string;
+    flashKey?: number;
+  }) => (
+    <div data-testid={statString} data-flash-key={flashKey}>
+      {statString}
+    </div>
+  ),
+}));
 vi.mock("@/hooks/use-bot-guilds", () => ({
   useBotGuilds: () => ({ data: [], isLoading: false }),
 }));
@@ -145,6 +158,11 @@ describe("live feed wiring", () => {
     ["dm", () => renderDm("3", { user: { id: "2" } }), "user"],
     ["user", () => renderUser({ userId: "2" }), "user"],
     [
+      "user scoped location",
+      () => renderUser({ userId: "2", locationId: "3", userScoped: "true" }),
+      "user",
+    ],
+    [
       "user legacy location",
       () => renderUser({ userId: "2", locationId: "3", userScoped: "false" }),
       "location",
@@ -163,10 +181,40 @@ describe("live feed wiring", () => {
   it.each([
     ["global", () => renderGlobal()],
     ["guild", () => renderGuild("1")],
+    ["dm", () => renderDm("3", { user: { id: "2" } })],
     ["user", () => renderUser({ userId: "2" })],
   ])("%s page resyncs stats on reconnect", async (_n, render) => {
     await render();
     vi.mocked(useLiveEvents).mock.calls[0][1]?.onReconnect?.();
     expect(refresh).toHaveBeenCalled();
   });
+
+  it.each([
+    ["dm", () => renderDm("3", { user: { id: "2" } }), "performed", "9"],
+    ["dm", () => renderDm("3", { user: { id: "2" } }), "received", undefined],
+    ["user", () => renderUser({ userId: "2" }), "performed", "9"],
+    ["user", () => renderUser({ userId: "2" }), "received", undefined],
+    [
+      "user legacy location",
+      () => renderUser({ userId: "2", locationId: "3", userScoped: "false" }),
+      "received",
+      "9",
+    ],
+  ])(
+    "%s page performed-total flash for a %s event",
+    async (_n, render, role, flashKey) => {
+      vi.mocked(useLiveEvents).mockReturnValue({
+        events: [],
+        status: "live",
+        isLoading: false,
+        latestLiveEvent: { id: 9, role } as LiveActionEvent,
+      });
+      await render();
+      expect(
+        screen
+          .getByTestId("Total Actions Performed")
+          .getAttribute("data-flash-key") ?? undefined,
+      ).toBe(flashKey);
+    },
+  );
 });
