@@ -91,7 +91,7 @@ export default function LiveActivityFeed({
               <EmptyTitle>It&apos;s quiet in here</EmptyTitle>
               <EmptyDescription>
                 Run{" "}
-                <code className="rounded bg-secondary px-1.5 py-px font-mono text-xs">
+                <code className="rounded bg-muted px-1.5 py-px font-mono text-xs text-foreground">
                   /pet
                 </code>{" "}
                 on someone in Discord and it shows up here straight away.
