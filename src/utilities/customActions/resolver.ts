@@ -10,6 +10,8 @@ export type ActionContext = {
   authorId: string;
   targetId?: string | null;
   isRestricted: boolean;
+  /** False when PetBot has left the guild: its server actions are then not offered. */
+  isBotInGuild: boolean;
 };
 
 export type ResolvedAction = {
@@ -83,7 +85,10 @@ async function loadCustomActions(ctx: ActionContext): Promise<CustomAction[]> {
   const userIds = ctx.isRestricted
     ? []
     : [ctx.authorId, ...(ctx.targetId ? [ctx.targetId] : [])];
-  return listCustomActionsForOwners(ctx.guildId, userIds);
+  return listCustomActionsForOwners(
+    ctx.isBotInGuild ? ctx.guildId : null,
+    userIds,
+  );
 }
 
 function groupByName(defs: CustomAction[]): Map<string, CustomAction[]> {

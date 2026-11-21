@@ -59,6 +59,7 @@ export const command = {
       channelId: interaction.channelId,
       authorId: interaction.user.id,
       targetId: target.id,
+      client: interaction.client,
     });
     const options = (await resolveAvailableActions(ctx))
       .slice(0, MAX_OPTIONS)

@@ -119,6 +119,7 @@ export const command = {
       guildId: interaction.guildId,
       channelId: interaction.channelId,
       authorId: targetId,
+      client: interaction.client,
     });
     const actionKinds = action !== null ? [action] : names;
 

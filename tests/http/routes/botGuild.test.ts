@@ -40,8 +40,14 @@ beforeEach(async () => {
 
 describe("GET /api/guilds/bot/:guildId", () => {
   it("is true for a guild in the cache and false for an unknown id", async () => {
-    expect((await ask("g1").expect(200)).body).toEqual({ isBotGuild: true });
-    expect((await ask("dm-1").expect(200)).body).toEqual({ isBotGuild: false });
+    expect((await ask("g1").expect(200)).body).toEqual({
+      isBotGuild: true,
+      isBotMember: true,
+    });
+    expect((await ask("dm-1").expect(200)).body).toEqual({
+      isBotGuild: false,
+      isBotMember: false,
+    });
   });
 
   it("stays true after the bot left while custom actions remain", async () => {
@@ -55,7 +61,10 @@ describe("GET /api/guilds/bot/:guildId", () => {
       createdAt: NOW,
       updatedAt: NOW,
     });
-    expect((await ask("gone").expect(200)).body).toEqual({ isBotGuild: true });
+    expect((await ask("gone").expect(200)).body).toEqual({
+      isBotGuild: true,
+      isBotMember: false,
+    });
   });
 
   it("stays true after the bot left while a botData row remains", async () => {
@@ -65,7 +74,10 @@ describe("GET /api/guilds/bot/:guildId", () => {
       createdAt: NOW,
       updatedAt: NOW,
     });
-    expect((await ask("gone").expect(200)).body).toEqual({ isBotGuild: true });
+    expect((await ask("gone").expect(200)).body).toEqual({
+      isBotGuild: true,
+      isBotMember: false,
+    });
   });
 
   it("answers 503 before the client is ready", async () => {

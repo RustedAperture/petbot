@@ -51,6 +51,7 @@ export const command = {
       guildId: interaction.guildId,
       channelId: interaction.channelId,
       authorId: interaction.targetUser.id,
+      client: interaction.client,
     });
     const kinds = [
       ...Object.keys(ACTIONS),

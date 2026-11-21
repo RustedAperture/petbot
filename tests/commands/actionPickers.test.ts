@@ -80,7 +80,10 @@ function autocompleteInteraction(guildId: string | null) {
   interaction.guildId = guildId;
   interaction.options.getFocused = () => "";
   interaction.respond = vi.fn();
-  interaction.client = { users: { cache: { get: () => undefined } } };
+  interaction.client = {
+    users: { cache: { get: () => undefined } },
+    guilds: { cache: { has: () => true } },
+  };
   return interaction;
 }
 
@@ -304,7 +307,10 @@ describe("perform modal", () => {
         guildId: "guild-1",
         channelId: "channel-1",
         guild: { members: { fetch: async () => target } },
-        client: { users: { fetch: async () => target } },
+        client: {
+          users: { fetch: async () => target },
+          guilds: { cache: { has: () => true } },
+        },
         member: { user: { id: "user-1" } },
         user: { id: "user-1" },
         deferReply: vi.fn(),

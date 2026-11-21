@@ -67,6 +67,7 @@ function buildInteraction(opts: {
   commandName?: string;
   guildId?: string | null;
   cachedUsers?: Record<string, any>;
+  isBotInGuild?: boolean;
 }) {
   const target = { id: "target-1", fetch: vi.fn().mockResolvedValue(true) };
   const interaction = mockInteraction({
@@ -88,6 +89,7 @@ function buildInteraction(opts: {
   interaction.respond = vi.fn();
   interaction.client = {
     users: { cache: { get: (id: string) => opts.cachedUsers?.[id] } },
+    guilds: { cache: { has: () => opts.isBotInGuild ?? true } },
   };
   return interaction;
 }
@@ -109,6 +111,25 @@ describe("/action autocomplete", () => {
       value: string;
     }>;
   }
+
+  it("offers a guild action only while the bot is in the guild", async () => {
+    await seed("guild", "guild-1", "boop");
+
+    const present = await choices({ isBotInGuild: true });
+    const absent = await choices({ isBotInGuild: false });
+
+    expect(present.map((c) => c.value)).toContain("boop");
+    expect(absent.map((c) => c.value)).not.toContain("boop");
+    expect(absent.map((c) => c.value)).toContain("pet");
+  });
+
+  it("keeps personal actions when the bot is not in the guild", async () => {
+    await seed("user", "target-1", "wave");
+
+    const absent = await choices({ targetId: "target-1", isBotInGuild: false });
+
+    expect(absent.map((c) => c.value)).toContain("wave");
+  });
 
   it("includes built-ins, guild actions and the target's personal names", async () => {
     await seed("guild", "guild-1", "boop");
@@ -208,6 +229,18 @@ describe("/action execute", () => {
     expect(performAction).not.toHaveBeenCalled();
     expect(interaction.__calls.replies).toHaveLength(1);
     expect(interaction.__calls.replies[0].flags).toBe(MessageFlags.Ephemeral);
+  });
+
+  it("rejects a guild action when the bot is not in the guild", async () => {
+    await seed("guild", "guild-1", "boop");
+    const interaction = buildInteraction({ actionName: "boop", isBotInGuild: false });
+
+    await command.execute(interaction as any);
+
+    expect(performAction).not.toHaveBeenCalled();
+    expect(interaction.__calls.replies[0].content).toBe(
+      "That action isn't available here.",
+    );
   });
 
   it("rejects a removed action ephemerally without performing", async () => {

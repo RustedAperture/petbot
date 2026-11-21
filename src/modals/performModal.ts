@@ -68,6 +68,7 @@ export async function handlePerformModal(modal: ModalSubmitInteraction) {
       channelId: modal.channelId,
       authorId: author.id,
       targetId,
+      client: modal.client,
     });
     resolved = await resolveAction(action, ctx);
     if (!resolved) {

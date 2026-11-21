@@ -76,6 +76,7 @@ export async function memberGuildsHandler(
 /**
  * GET /api/guilds/bot/:guildId — whether the id is a known guild location: the
  * bot is in it, or it still has custom actions or settings after the bot left.
+ * `isBotMember` is narrower: the bot is in the guild right now.
  * 503 until the client is ready, so callers fail closed.
  */
 export function botGuildHandler(client: Client) {
@@ -86,7 +87,7 @@ export function botGuildHandler(client: Client) {
     }
     const guildId = req.params.guildId as string;
     if (client.guilds.cache.has(guildId)) {
-      res.json({ isBotGuild: true });
+      res.json({ isBotGuild: true, isBotMember: true });
       return;
     }
     const [action] = await drizzleDb
@@ -97,7 +98,7 @@ export function botGuildHandler(client: Client) {
       )
       .limit(1);
     if (action) {
-      res.json({ isBotGuild: true });
+      res.json({ isBotGuild: true, isBotMember: false });
       return;
     }
     const [settings] = await drizzleDb
@@ -105,6 +106,6 @@ export function botGuildHandler(client: Client) {
       .from(botData)
       .where(eq(botData.guildId, guildId))
       .limit(1);
-    res.json({ isBotGuild: Boolean(settings) });
+    res.json({ isBotGuild: Boolean(settings), isBotMember: false });
   };
 }

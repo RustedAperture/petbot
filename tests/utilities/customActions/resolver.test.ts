@@ -79,6 +79,7 @@ describe("resolveAction", () => {
       authorId: "A",
       targetId: "T",
       isRestricted: false,
+      isBotInGuild: true,
     });
     expect(a).toMatchObject({
       name: "boop",
@@ -99,6 +100,7 @@ describe("resolveAction", () => {
       authorId: "A",
       targetId: "T",
       isRestricted: false,
+      isBotInGuild: true,
     });
     expect(a?.phrase).toBe("target phrase");
   });
@@ -109,6 +111,7 @@ describe("resolveAction", () => {
       locationId: "G",
       authorId: "A",
       isRestricted: false,
+      isBotInGuild: true,
     };
     expect((await resolveAction("hug", ctx))?.isBuiltIn).toBe(true);
     expect(await resolveAction("nope", ctx)).toBeNull();
@@ -125,6 +128,7 @@ describe("resolveAvailableActions", () => {
         locationId: "G",
         authorId: "A",
         isRestricted: true,
+        isBotInGuild: true,
       })
     ).map((a) => a.name);
     expect(names).toEqual([...BUILT_INS, "wave"]);
@@ -139,6 +143,7 @@ describe("resolveAvailableActions", () => {
         locationId: "G",
         authorId: "A",
         isRestricted: false,
+        isBotInGuild: true,
       })
     ).map((a) => a.name);
     expect(names).toEqual([...BUILT_INS, "boop", "zap"]);
@@ -154,6 +159,7 @@ describe("resolveAvailableActions", () => {
         authorId: "A",
         targetId: "T",
         isRestricted: false,
+        isBotInGuild: true,
       })
     ).map((a) => a.name);
     expect(names.filter((n) => n === "boop")).toHaveLength(1);
@@ -170,6 +176,7 @@ describe("resolveAvailableActions", () => {
         authorId: "A",
         targetId: "T",
         isRestricted: false,
+        isBotInGuild: true,
       })
     ).map((a) => a.name);
     expect(names).toEqual([...BUILT_INS, "boop", "zap"]);
@@ -202,6 +209,7 @@ describe("listSettableActionNames", () => {
       locationId: "G",
       authorId: "A",
       isRestricted: false,
+      isBotInGuild: true,
     });
     expect(names).toEqual([...BUILT_INS, "wave", "boop"]);
   });

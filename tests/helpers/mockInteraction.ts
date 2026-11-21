@@ -55,7 +55,10 @@ export function mockInteraction(overrides: any = {}) {
     },
   };
 
-  const client = overrides.client ?? { application: { id: "bot-id" } };
+  const client = overrides.client ?? {
+    application: { id: "bot-id" },
+    guilds: { cache: { has: () => true } },
+  };
 
   const interaction: any = {
     deferReply: async () => {},

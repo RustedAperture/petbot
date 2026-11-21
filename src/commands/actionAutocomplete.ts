@@ -25,6 +25,7 @@ export async function buildActionContext(
     channelId: interaction.channelId,
     authorId: interaction.user.id,
     targetId: typeof target === "string" ? target : null,
+    client: interaction.client,
   });
 }
 

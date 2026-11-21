@@ -95,6 +95,7 @@ export const command = {
         channelId: interaction.channelId,
         authorId: interaction.user.id,
         targetId: user.id,
+        client: interaction.client,
       });
       const actions = await resolveAvailableActions(ctx);
       const action = actions[Math.floor(Math.random() * actions.length)];
