@@ -1,3 +1,24 @@
+## v8.10.0 - Nov 21, 2026
+
+### What You'll Notice
+
+- **Live Activity:** The global, guild, DM, and personal stats pages now have a Live activity card that shows actions as they happen, such as "Someone got petted · now". It shows the latest 50 actions and never shows who was involved.
+- Stats counters update live as actions come in, and Total Actions Performed shows a brief +1.
+- If the connection drops, the card shows Reconnecting, then catches up on missed actions and refreshes the stats once it is back.
+- The card respects reduced-motion settings, and screen readers announce when it goes live or starts reconnecting.
+
+### Fixes
+
+- Action counts now update their last-updated time whenever someone uses an action, not only when images change.
+
+### Privacy
+
+- PetBot now keeps an anonymous activity log for the live feed: the action type, time, location, and hashed user IDs. Entries are deleted automatically after 30 days, and "Delete my data" removes yours right away. The privacy policy has been updated.
+
+### Under the Hood
+
+- New `action_events` table, plus bot API routes for recent events and a Server-Sent Events stream, with matching relay routes on the website that apply the same sign-in and server checks as the stats pages.
+
 ## v8.9.0 - Sep 23, 2026
 
 ### What You'll Notice
