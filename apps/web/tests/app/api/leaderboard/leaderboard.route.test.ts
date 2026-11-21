@@ -172,10 +172,10 @@ it.each(["", "&scope=guild"])(
   },
 );
 
-it("fails closed when the bot guild list is unavailable", async () => {
+it.each([500, 503])("fails closed when the bot answers %s for the guild lookup", async (status) => {
   upstream.mockImplementation(async (url: string) =>
     String(url).includes("/api/guilds/bot/")
-      ? new Response("{}", { status: 500 })
+      ? new Response("{}", { status })
       : Response.json(someActivity),
   );
   const response = await GET(memberRequest("?locationId=456", []));

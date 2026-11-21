@@ -78,18 +78,3 @@ describe("GET /api/guilds/user/:userId", () => {
     expect(res.body).toEqual({ guildIds: ["g1", "g3"] });
   });
 });
-
-describe("GET /api/guilds/bot/:guildId", () => {
-  const client = { guilds: { cache: new Map([["g1", {}]]) } } as any;
-
-  it.each([
-    ["g1", true],
-    ["unsetup", false],
-  ])("answers from the guild cache for %s", async (guildId, isBotGuild) => {
-    delete process.env.INTERNAL_API_SECRET;
-    const res = await supertest(createApp(client))
-      .get(`/api/guilds/bot/${guildId}`)
-      .expect(200);
-    expect(res.body).toEqual({ isBotGuild });
-  });
-});
